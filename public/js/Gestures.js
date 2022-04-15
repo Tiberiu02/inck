@@ -45,6 +45,16 @@ export class ViewManager {
     this.pointers = {}
   }
 
+  disableWindowOverscrolling() {
+    if (window.safari) {
+      history.pushState(null, null, location.href)
+      window.onpopstate = function(event) {
+          history.go(1)
+      }
+    } else
+      document.body.style.overscrollBehavior = 'none'
+  }
+
   getVars() {
     return {
       'u_AspectRatio': window.innerWidth / window.innerHeight,
@@ -116,8 +126,12 @@ export class ViewManager {
       this.top = Math.max(0, this.top)
       this.left = Math.max(0, Math.min(1 - 1 / this.zoom, this.left))
 
-      this.app.render()
+      this.app.scheduleRender()
     }
+  }
+
+  handleWheelEvent(e) {
+    console.log(e)
   }
 
 }

@@ -6,24 +6,22 @@ import { ViewManager } from './Gestures.js'
 export default class App {
 
   constructor() {
-    
-    this.initCanvas()
-
-    window.addEventListener('pointerdown', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointermove', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointerup', e => this.handlePointerEvent(e), true)
+    this.init()
   }
 
-  async initCanvas() {
-    // Create canvas & GL context
+  async init() {
+    // Create canvas
     this.canvas = document.createElement('canvas')
     document.body.appendChild(this.canvas)
 
-    this.view = new ViewManager(this)
-
+    // Create WebGL
     this.gl = GL.initWebGL(this.canvas)
     this.program = await GL.createProgram(this.gl, '/gl/vertex.glsl', '/gl/fragment.glsl')
     this.gl.useProgram(this.program)
+
+    // Create view
+    this.view = new ViewManager(this)
+    this.view.disableWindowOverscrolling()
 
     // Create buffers
     this.activeBuffers = GL.createBuffers(this.gl)
@@ -32,7 +30,48 @@ export default class App {
 
     // Adjust canvas size
     this.resizeCanvas()
-    window.addEventListener('resize', () => this.resizeCanvas())
+
+    // Add event listeners
+    //window.addEventListener('resize', () => this.resizeCanvas())
+    window.addEventListener('pointerdown', e => this.handlePointerEvent(e), true)
+    window.addEventListener('pointermove', e => this.handlePointerEvent(e), true)
+    window.addEventListener('pointerup', e => this.handlePointerEvent(e), true)
+    window.addEventListener('wheel', e => this.view.handleWheelEvent(e), true)
+
+    // Start rendering loop
+    requestAnimationFrame(() => this.renderLoop())
+  }
+
+  scheduleRender() {
+    this.rerender = true
+  }
+
+  renderLoop() {
+
+    const correctSize = (this.canvas.width == window.innerWidth * devicePixelRatio && this.canvas.height == window.innerHeight * devicePixelRatio)
+
+    if (!correctSize && !this.skipResizeFrames) {
+      console.log('detected resize')
+      this.canvas.width = window.innerWidth * devicePixelRatio
+      this.canvas.height = window.innerHeight * devicePixelRatio
+      this.canvas.style.width = window.innerWidth
+      this.canvas.style.height = window.innerHeight
+      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
+      this.rerender = true
+    }
+
+    if (this.skipResizeFrames > 0)
+      this.skipResizeFrames--
+
+    if (this.rerender) {
+      delete this.rerender
+      this.render()
+      // For some reason, drawing and resizing very fast causes black screen.
+      // Skipping resize for a few frames.
+      this.skipResizeFrames = 2 
+    }
+
+    requestAnimationFrame(() => this.renderLoop())
   }
 
   resizeCanvas() {
@@ -42,7 +81,7 @@ export default class App {
     this.canvas.style.height = window.innerHeight
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 
-    this.render()
+    this.scheduleRender()
   }
 
   handlePointerEvent(e) {
