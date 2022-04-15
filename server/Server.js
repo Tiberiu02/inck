@@ -13,7 +13,12 @@ class Server {
     
     this.app = express()
     this.server = http.createServer(this.app)
-    this.io = new SocketServer(this.server)
+    this.io = new SocketServer(this.server, {
+      cors: {
+        origin: "http://localhost",
+        methods: ["GET", "POST"]
+      }
+    })
 
     this.app.use('/', express.static('client'))
     this.app.get('/doc/:docid', (req, res) => {

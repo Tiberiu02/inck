@@ -2,6 +2,7 @@ import { StrokeToPath } from './Physics.js'
 import Profiler from './Profiler.js'
 import { GL, ELEMENTS_PER_VERTEX } from './GL.js'
 import { ViewManager } from './Gestures.js'
+import Connector from './Connector.js'
 
 export default class App {
 
@@ -38,6 +39,9 @@ export default class App {
 
     // Start rendering loop
     requestAnimationFrame(() => this.renderLoop())
+
+    // Connect to the backend server
+    this.connector = new Connector(this)
   }
 
   scheduleRender() {
@@ -88,6 +92,7 @@ export default class App {
     }
 
     e.preventDefault()
+    e.stopPropagation()
 
     let { x, y, pressure, timeStamp } = e
     
@@ -105,12 +110,8 @@ export default class App {
       this.stroke.push(x, y, pressure, timeStamp - this.strokeStartTime)
     } else {
       let [vertex, index] = StrokeToPath(this.stroke)
-
-      this.staticArrays.index.push(...index.map(i => i + this.staticArrays.vertex.length / ELEMENTS_PER_VERTEX))
-      this.staticArrays.vertex.push(...vertex)
-      
-      GL.bindBuffers(this.gl, this.staticBuffers)
-      GL.bufferArrays(this.gl, this.staticArrays, 'DYNAMIC_DRAW')
+      GL.appendArray(this.staticArrays, vertex, index)
+      this.updateStaticBuffers()
 
       this.stroke = undefined;
     }
@@ -118,12 +119,17 @@ export default class App {
     this.render()
   }
 
+  updateStaticBuffers() {
+    GL.bindBuffers(this.gl, this.staticBuffers)
+    GL.bufferArrays(this.gl, this.staticArrays, 'DYNAMIC_DRAW')
+  }
+
   render() {    
     Profiler.start('rendering')
     
     this.clearCanvas()
-    this.drawActiveStroke()
     this.drawOldStrokes()
+    this.drawActiveStroke()
 
     Profiler.stop('rendering')
   }

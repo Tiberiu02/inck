@@ -77,13 +77,15 @@ export class ViewManager {
   }
 
   update(touches) {
-    const N = touches.length
+    // Update touches
     this.touches = []
+    for (let i = 0; i < touches.length; i++) {
+      const t = touches.item(i)
+      if (t.radiusX > 1 && t.radiusY > 1)
+        this.touches.push({ x: t.clientX, y: t.clientY })
+    }
+    const N = this.touches.length
     if (!N) return
-
-    // Add touches
-    for (let i = 0; i < touches.length; i++)
-      this.touches.push({ x: touches.item(i).clientX, y: touches.item(i).clientY })
 
     // Compute average position and radius
     let xAvg = 0, yAvg = 0, rAvg = 0
@@ -126,11 +128,15 @@ export class ViewManager {
   handleTouchEvent(e) {
     const { type, touches, timeStamp } = e
 
+    if (e.changedTouches[0].radiusX <= 1 && e.changedTouches[0].radiusY <= 1) // Ignore stylus events
+      return
+
     if (!this.touches.length) // Reset inertia on touch start
       this.inertia.reset(timeStamp)
 
     if (type != 'touchmove' || touches.length != this.touches.length) {
       this.update(touches)
+      this.inertia.reset()
     } else {
       const [x0, y0, r0] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist]
       this.update(touches)
@@ -218,6 +224,11 @@ class ScrollInertia {
   }
 
   move() {
+    if (!this.v) {
+      this.reset()
+      return
+    }
+
     const t = performance.now()
     const dt = t - this.t
 

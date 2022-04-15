@@ -6,7 +6,15 @@ const stiffness = 0.005
 const drag = 0.1
 const A_STEP = (Math.PI / 2) / 4 // rounded tip angular distance between vertices
 
-export function StrokeToPath(s, w = 0.01, color = [0, 0, 0, 1], full = true) {
+/**
+ * Turns a series of input points into drawable elements (WebGL vertices & indices), using a spring-base physics simulation.
+ * @param {number[]} s Float array of length 4*N containing the X, Y, Pressure, TimeStamp of all N input points
+ * @param {number} w Stroke width as a fraction of screen width
+ * @param {number} color RGBA color of stroke as an array of 4 floats
+ * @param {boolean} full True if the path should connect to last input point
+ * @returns Vertices array and indices array, as two elements of a single list.
+ */
+export function StrokeToPath(s, w = 0.002, color = [0, 0, 0, 1], full = true) {
   Profiler.start('physics')
 
   let vertices = []

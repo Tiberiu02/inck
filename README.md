@@ -48,9 +48,9 @@ Open your browser and go to https://localhost:3000.
 * [X] Shader support for diferent colors, zoom levels, view position, view height
 * [X] Zoom / scroll gesture
 * [X] Zoom / scroll JS events
-* [ ] Scrolling inertia
-* [ ] Display scroll bar
+* [X] Scrolling inertia
 * [ ] Connect with backend
+* [ ] Display scroll bar
 * [ ] Pen prediction
 * [ ] Optimize physics engine & rewrite in WebAssembly
 * [ ] Optimize WebGL buffers

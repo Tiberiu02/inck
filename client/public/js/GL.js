@@ -100,4 +100,9 @@ export class GL {
       GL.setUniform1f(gl, program, name, uniforms[name])
   }
 
+  static appendArray({ vertex, index }, vertexNew, indexNew) {
+    index.push(...indexNew.map(i => i + vertex.length / ELEMENTS_PER_VERTEX))
+    vertex.push(...vertexNew)
+  }
+
 }
