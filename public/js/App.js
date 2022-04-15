@@ -32,11 +32,14 @@ export default class App {
     this.resizeCanvas()
 
     // Add event listeners
-    //window.addEventListener('resize', () => this.resizeCanvas())
-    window.addEventListener('pointerdown', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointermove', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointerup', e => this.handlePointerEvent(e), true)
-    window.addEventListener('wheel', e => this.view.handleWheelEvent(e), true)
+    window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
+    window.addEventListener('pointermove', e => this.handlePointerEvent(e))
+    window.addEventListener('pointerup', e => this.handlePointerEvent(e))
+    window.addEventListener('wheel', e => this.view.handleWheelEvent(e))
+    window.addEventListener('touchstart', e => this.view.handleTouchEvent(e));
+    window.addEventListener('touchend', e => this.view.handleTouchEvent(e));
+    window.addEventListener('touchcancel', e => this.view.handleTouchEvent(e));
+    window.addEventListener('touchmove', e => this.view.handleTouchEvent(e));
 
     // Start rendering loop
     requestAnimationFrame(() => this.renderLoop())
@@ -86,7 +89,6 @@ export default class App {
 
   handlePointerEvent(e) {
     if (e.pointerType == 'touch') {
-      this.view.handleTouchEvent(e)
       return
     }
 

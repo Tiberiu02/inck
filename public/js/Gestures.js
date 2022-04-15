@@ -64,10 +64,13 @@ export class ViewManager {
     }
   }
 
-  update() {
-    const N = Object.entries(this.pointers).length
-    if (!N) 
-      return
+  update(touches) {
+    const N = touches.length
+    this.pointers = []
+    if (!N) return
+
+    for (let i = 0; i < touches.length; i++)
+      this.pointers.push({ x: touches.item(i).clientX, y: touches.item(i).clientY })
 
     let xAvg = 0, yAvg = 0, rAvg = 0
 
@@ -95,20 +98,13 @@ export class ViewManager {
   }
 
   handleTouchEvent(e) {
-    e.preventDefault()
+    const { type, touches } = e
 
-    const { x, y, type, pointerId } = e
-
-    if (type == 'pointerdown') {
-      this.pointers[pointerId] = { x, y }
-      this.update()
-    } else if (type == 'pointerup') {
-      delete this.pointers[pointerId]
-      this.update()
-    } else if (type == 'pointermove') {
+    if (type != 'touchmove' || touches.length != this.pointers.length)
+      this.update(touches)
+    else {
       const [x0, y0, r0] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist]
-      this.pointers[pointerId] = { x, y }
-      this.update()
+      this.update(touches)
       const [x1, y1, r1] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist]
 
       // Scroll
@@ -132,6 +128,8 @@ export class ViewManager {
 
   handleWheelEvent(e) {
     console.log(e)
+    
+    let { deltaX, deltaY, deltaMode } = e
   }
 
 }
