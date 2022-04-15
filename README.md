@@ -47,9 +47,10 @@ Open your browser and go to https://localhost:3000.
 * [X] Set up WebGL pipeline
 * [X] Shader support for diferent colors, zoom levels, view position, view height
 * [X] Zoom / scroll gesture
-* [ ] Zoom / scroll JS events
+* [X] Zoom / scroll JS events
 * [ ] Scrolling inertia
 * [ ] Display scroll bar
+* [ ] Connect with backend
 * [ ] Pen prediction
 * [ ] Optimize physics engine & rewrite in WebAssembly
 * [ ] Optimize WebGL buffers
