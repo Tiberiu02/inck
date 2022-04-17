@@ -20,3 +20,23 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.circular-wave-animation {
+  position: absolute;
+  border-radius: 50%;
+  background-color: green;
+  opacity: 0%;
+  animation-name: circular-wave;
+  animation-duration: 0.5s;
+}
+
+@keyframes circular-wave {
+  from {
+    transform: scale(0);
+    opacity: 100%;
+  }
+  to {
+    transform: scale(1);
+    opacity: 10%;
+  }
+}

@@ -14,7 +14,7 @@ const A_STEP = (Math.PI / 2) / 4 // rounded tip angular distance between vertice
  * @param {boolean} full True if the path should connect to last input point
  * @returns Vertices array and indices array, as two elements of a single list.
  */
-export function StrokeToPath(s, w = 0.002, color = [0, 0, 0, 1], full = true) {
+export function StrokeToPath(s, w, color, full = true) {
   Profiler.start('physics')
 
   let vertices = []
@@ -117,5 +117,17 @@ export function StrokeToPath(s, w = 0.002, color = [0, 0, 0, 1], full = true) {
   
   Profiler.stop('physics')
 
+  return [vertices, indices]
+}
+
+export function FillPath(path, color) {
+  let vertices = []
+  for (let i = 0; i < path.length; i += 2)
+    vertices.push(path[i], path[i + 1], ...color)
+  
+  let indices = []
+  for (let i = 1; i * 2 < path.length; i++)
+    indices.push(0, i - 1, i)
+  
   return [vertices, indices]
 }

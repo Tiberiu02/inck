@@ -1,8 +1,10 @@
-import { StrokeToPath } from './Physics.js'
 import Profiler from './Profiler.js'
 import { GL, ELEMENTS_PER_VERTEX } from './GL.js'
 import { ViewManager } from './Gestures.js'
 import Connector from './Connector.js'
+import { Pen, Eraser } from './Tools.js'
+import { ShowCircularWave, ScrollBars } from './UI.js'
+import Buffers from './Buffers.js'
 
 export default class App {
 
@@ -17,17 +19,20 @@ export default class App {
 
     // Create WebGL
     this.gl = GL.initWebGL(this.canvas)
-    this.program = await GL.createProgram(this.gl, '/gl/vertex.glsl', '/gl/fragment.glsl')
-    this.gl.useProgram(this.program)
+    this.programs = {
+      canvas: await GL.createProgram(this.gl, '/gl/canvas/vertex.glsl', '/gl/canvas/fragment.glsl')
+    }
 
     // Create view
     this.view = new ViewManager(this)
     this.view.disableWindowOverscrolling()
 
+    // Create scroll bars
+    this.scrollBars = new ScrollBars('rgba(0, 0, 0, 0.5)', 10, 0)
+
     // Create buffers
     this.activeBuffers = GL.createBuffers(this.gl)
-    this.staticBuffers = GL.createBuffers(this.gl)
-    this.staticArrays = { vertex: [], index: [] }
+    this.staticBuffers = new Buffers(this.gl, 'DYNAMIC_DRAW')
 
     // Adjust canvas size
     this.resizeCanvas()
@@ -36,12 +41,13 @@ export default class App {
     window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
     window.addEventListener('pointermove', e => this.handlePointerEvent(e))
     window.addEventListener('pointerup', e => this.handlePointerEvent(e))
+    window.addEventListener('contextmenu', e => e.preventDefault())
 
     // Start rendering loop
     requestAnimationFrame(() => this.renderLoop())
 
     // Connect to the backend server
-    this.connector = new Connector(this)
+    this.connector = new Connector(this.staticBuffers, () => this.scheduleRender())
   }
 
   scheduleRender() {
@@ -50,16 +56,11 @@ export default class App {
 
   renderLoop() {
 
-    const correctSize = (this.canvas.width == window.innerWidth * devicePixelRatio && this.canvas.height == window.innerHeight * devicePixelRatio)
+    const correctSize = (this.canvas.width == Math.round(window.innerWidth * devicePixelRatio) && this.canvas.height == Math.round(window.innerHeight * devicePixelRatio))
 
     if (!correctSize && !this.skipResizeFrames) {
       console.log('detected resize')
-      this.canvas.width = window.innerWidth * devicePixelRatio
-      this.canvas.height = window.innerHeight * devicePixelRatio
-      this.canvas.style.width = window.innerWidth
-      this.canvas.style.height = window.innerHeight
-      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
-      this.rerender = true
+      this.resizeCanvas()
     }
 
     if (this.skipResizeFrames > 0)
@@ -77,59 +78,60 @@ export default class App {
   }
 
   resizeCanvas() {
-    this.canvas.width = window.innerWidth * window.devicePixelRatio
-    this.canvas.height = window.innerHeight * window.devicePixelRatio
-    this.canvas.style.width = window.innerWidth
-    this.canvas.style.height = window.innerHeight
+    this.canvas.width = Math.round(window.innerWidth * window.devicePixelRatio)
+    this.canvas.height = Math.round(window.innerHeight * window.devicePixelRatio)
+    this.canvas.style.width = window.innerWidth + 'px'
+    this.canvas.style.height = window.innerHeight + 'px'
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 
     this.scheduleRender()
   }
 
   handlePointerEvent(e) {
-    if (e.pointerType == 'touch') {
-      return
-    }
+    let { pressure, timeStamp, pointerType } = e
+    let [x, y] = this.view.mapCoords(e.x, e.y)
 
-    e.preventDefault()
-    e.stopPropagation()
+    this.drawing = (pressure > 0 && pointerType != 'touch')
 
-    let { x, y, pressure, timeStamp } = e
-    
-    if (!pressure && !this.stroke)
-      return
-    
-    [x, y] = this.view.mapCoords(x, y)
+    if (e.pointerType != 'touch') {
+      e.preventDefault()
+      e.stopPropagation()
 
-    if (pressure) {
-      if (!this.stroke) {
-        this.stroke = []
-        this.strokeStartTime = timeStamp
+      if (pressure) { // Writing
+        if (!this.activeTool) { // New stroke
+          this.activeTool = new Pen(0.002, [0, 0, 0, 1])
+          // Long press eraser gesture
+          const d = 15
+          this.activeTool.ifLongPress(500, d / innerWidth * devicePixelRatio, () => {
+            this.activeTool.delete()
+            this.activeTool = new Eraser()
+            ShowCircularWave(e.x, e.y, d, 500)
+            this.render()
+          })
+        }
+        
+        this.activeTool.update(x, y, pressure, timeStamp)
+        this.render()
+      } else if (this.activeTool) { // Finished stroke
+        this.staticBuffers.push(...this.activeTool.vectorize(false))
+        this.connector.registerStroke(this.activeTool.serialize())
+
+        this.activeTool.delete()
+        delete this.activeTool
+        
+        this.render()
       }
-      
-      this.stroke.push(x, y, pressure, timeStamp - this.strokeStartTime)
-    } else {
-      let [vertex, index] = StrokeToPath(this.stroke)
-      GL.appendArray(this.staticArrays, vertex, index)
-      this.updateStaticBuffers()
-
-      this.stroke = undefined;
     }
-
-    this.render()
-  }
-
-  updateStaticBuffers() {
-    GL.bindBuffers(this.gl, this.staticBuffers)
-    GL.bufferArrays(this.gl, this.staticArrays, 'DYNAMIC_DRAW')
   }
 
   render() {    
     Profiler.start('rendering')
     
     this.clearCanvas()
+    this.gl.useProgram(this.programs.canvas)
     this.drawOldStrokes()
     this.drawActiveStroke()
+    this.scrollBars.update(this.view, this.staticBuffers.yMax)
 
     Profiler.stop('rendering')
   }
@@ -140,23 +142,22 @@ export default class App {
   }
 
   drawActiveStroke() {
-    if (!this.stroke)
+    if (!this.activeTool)
       return
     
-    let [vertex, index] = StrokeToPath(this.stroke)
+    let [vertex, index] = this.activeTool.vectorize(true)
     
     GL.bindBuffers(this.gl, this.activeBuffers)
     GL.bufferArrays(this.gl, { vertex, index }, 'STREAM_DRAW')
-    GL.setVars(this.gl, this.program, this.view.getVars())
+    GL.setVars(this.gl, this.programs.canvas, this.view.getVars())
     
     this.gl.drawElements(this.gl.TRIANGLES, index.length, this.gl.UNSIGNED_SHORT, 0)
   }
 
   drawOldStrokes() {
-    GL.bindBuffers(this.gl, this.staticBuffers)
-    GL.setVars(this.gl, this.program, this.view.getVars())
-    
-    this.gl.drawElements(this.gl.TRIANGLES, this.staticArrays.index.length, this.gl.UNSIGNED_SHORT, 0)
+    this.staticBuffers.draw(() => {
+      GL.setVars(this.gl, this.programs.canvas, this.view.getVars())
+    })
   }
 
 }

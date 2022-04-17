@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 attribute vec2 a_Position;
 attribute vec4 a_Color;

@@ -1,9 +1,20 @@
 export const ELEMENTS_PER_VERTEX = 6
 
+export function desynchronizedHintAvailable() {
+  const userAgent = window.navigator.userAgent
+  const chrome = userAgent.includes('Chrome')
+  if (!chrome)
+    return false
+
+  const android = userAgent.includes('Android')
+  const version = parseInt(window.navigator.userAgent.match(/Chrome\/(\d+)/)[1])
+  return (version >= 85 || android && version >= 75)
+}
+
 export class GL {
 
   static initWebGL(canvas) {
-    let gl = canvas.getContext('webgl', {desynchronized: true, alpha: false})
+    let gl = canvas.getContext('webgl', desynchronizedHintAvailable() ? {desynchronized: true, alpha: false} : {})
 
     if (!gl) {
       console.warn('WebGL not supported, falling back on experimental')
@@ -64,14 +75,14 @@ export class GL {
     }
   }
 
-  static bindBuffers(gl, buffers) {    
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertex)
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index)
+  static bindBuffers(gl, { vertex, index }) {    
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index)
   }
 
-  static bufferArrays(gl, arrays, drawType = 'STREAM_DRAW') {
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arrays.vertex), gl[drawType])
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(arrays.index), gl[drawType])
+  static bufferArrays(gl, { vertex, index }, drawType = 'STREAM_DRAW') {
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertex), gl[drawType])
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(index), gl[drawType])
   }
 
   static setAttribute(gl, program, name, size, offset) {

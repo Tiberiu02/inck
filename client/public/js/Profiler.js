@@ -41,4 +41,8 @@ export default class Profiler {
     return performance.now() - start
   }
 
+  static reset(name) {
+    delete window.profiler[name]
+  }
+
 }
