@@ -6,6 +6,14 @@ const stiffness = 0.005
 const drag = 0.1
 const A_STEP = (Math.PI / 2) / 4 // rounded tip angular distance between vertices
 
+export const ELEMENTS_PER_INPUT = 4
+export const OFFSET_INPUT = {
+  X: 0,
+  Y: 1,
+  P: 2,
+  T: 3,
+}
+
 /**
  * Turns a series of input points into drawable elements (WebGL vertices & indices), using a spring-base physics simulation.
  * @param {number[]} s Float array of length 4*N containing the X, Y, Pressure, TimeStamp of all N input points
@@ -19,9 +27,9 @@ export function StrokeToPath(s, w, color, full = true) {
 
   let vertices = []
 
-  if (s.length == 4) {
+  if (s.length == ELEMENTS_PER_INPUT) {
 
-    const [x, y, r] = [s[0], s[1], s[2] * w]
+    const [x, y, r] = [s[OFFSET_INPUT.X], s[OFFSET_INPUT.Y], s[OFFSET_INPUT.P] * w]
     for (let a = A_STEP / 2; a < Math.PI; a += A_STEP) {
       const [sin, cos] = [Math.sin(a), Math.cos(a)]
       vertices.push(x + sin * r, y + cos * r, ...color)
@@ -33,12 +41,12 @@ export function StrokeToPath(s, w, color, full = true) {
   let [x, y, vx, vy, t] = [+s[0], +s[1], 0.0, 0.0, +s[3]]
   while (t < s.at(-1)) {
     while (t > s[i + 7])
-      i += 4
+      i += ELEMENTS_PER_INPUT
 
-    const k = (t - s[i + 3]) / (s[i + 7] - s[i + 3])
-    const X = s[i] * (1 - k) + s[i + 4] * k 
-    const Y = s[i + 1] * (1 - k) + s[i + 5] * k 
-    const P = s[i + 2] * (1 - k) + s[i + 6] * k
+    const k = (t - s[i + OFFSET_INPUT.T]) / (s[i + ELEMENTS_PER_INPUT + OFFSET_INPUT.T] - s[i + OFFSET_INPUT.T])
+    const X = s[i + OFFSET_INPUT.X] * (1 - k) + s[i + ELEMENTS_PER_INPUT + OFFSET_INPUT.X] * k
+    const Y = s[i + OFFSET_INPUT.Y] * (1 - k) + s[i + ELEMENTS_PER_INPUT + OFFSET_INPUT.Y] * k
+    const P = s[i + OFFSET_INPUT.P] * (1 - k) + s[i + ELEMENTS_PER_INPUT + OFFSET_INPUT.P] * k
     const v = Math.sqrt(vx * vx + vy * vy)
 
     if (v) {
@@ -73,9 +81,9 @@ export function StrokeToPath(s, w, color, full = true) {
 
   if (full) {
     let dt = 1
-    const X = s.at(-4)
-    const Y = s.at(-3)
-    const P = s.at(-2)
+    const X = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.X)
+    const Y = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.Y)
+    const P = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.P)
     let dist = Math.sqrt((X - x) ** 2 + (Y - y) ** 2)
     while (dist > 0) {
       const v = Math.sqrt(vx * vx + vy * vy)

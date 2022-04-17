@@ -13,6 +13,8 @@ function hexToRgb(hex) {
   return null;
 }
 
+const SERVER_PORT = 88
+
 /**
  * EXPLANATION OF SERVER INTERACTION PROTOCOL
  * 
@@ -26,7 +28,7 @@ export default class Connector {
   constructor(buffers, renderFn) {
     this.buffers = buffers
     this.render = renderFn
-    this.socket = io(`${window.location.host.split(':')[0]}:88`)
+    this.socket = io(`${window.location.host.split(':')[0]}:${SERVER_PORT}`)
 
     this.socket.on('connect', () => {
       const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/)

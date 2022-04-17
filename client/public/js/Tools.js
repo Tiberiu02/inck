@@ -41,7 +41,7 @@ export class Pen extends Tool {
     this.color = color
   }
 
-  vectorize() {
+  vectorize(active) {
     return StrokeToPath(this.inputs, this.width, this.color)
   }
 
