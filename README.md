@@ -49,11 +49,15 @@ Open your browser and go to https://localhost:3000.
 * [X] Zoom / scroll gesture
 * [X] Zoom / scroll JS events
 * [X] Scrolling inertia
-* [ ] Connect with backend
-* [ ] Display scroll bar
+* [X] Connect with backend
+* [X] Eraser
+* [X] Optimize WebGL buffers
+* [X] Display scroll bar
+* [X] Full screen button
 * [ ] Pen prediction
+* [ ] Live collab
 * [ ] Optimize physics engine & rewrite in WebAssembly
-* [ ] Optimize WebGL buffers
+* [ ] Download notes as PNG
 
 # License
 
