@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"cd client && next dev -- -p 80\" \"node server/index.js\"",
-    "build": "next build",
-    "start": "next start",
+    "build": "cd client && next build",
+    "start": "concurrently \"cd client && next start -- -p 80\" \"node server/index.js\"",
     "lint": "next lint"
   },
   "dependencies": {
