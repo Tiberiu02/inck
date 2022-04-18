@@ -4,7 +4,18 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'primary': '#3fbd15'
+      },
+      fontFamily: {
+        'cursive': ['"Shadows Into Light Two"', 'cursive'],
+        'round': ['"Varela Round"', 'sans-serif']
+      },
+      backgroundImage: {
+        'notes': "url('/img/notes.png')",
+      }
+    },
   },
   plugins: [],
 }
