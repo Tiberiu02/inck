@@ -35,6 +35,7 @@ class Server {
       let ip = socket.conn.remoteAddress.replace('::ffff:', '')
       let userId = Math.random()
       let docId
+      let canWrite = true
 
       socket.on('disconnect', () => {
         this.docs[docId].users = this.docs[docId].users.filter(u => u != socket)
@@ -48,12 +49,9 @@ class Server {
           if (u != socket)
             u.emit('load strokes', [stroke])
 
-        if (docId == 'demo')
+        if (!canWrite)
           return
         
-        if (docId == 'secret_welcome_page')
-          docId = 'demo'
-
         QueryAllDB('data', 'notes', { id: docId }, { id: 1 }, response => {
           if (response.length)
             UpdateDB('data', 'notes', { id: docId }, { $push: { 'strokes': stroke } } )
@@ -65,11 +63,8 @@ class Server {
       socket.on('undo stroke', () => {
         console.log(`[${new Date().toLocaleString()}] ${ip} is undoing on /doc/${docId}`)
 
-        if (docId == '')
+        if (docId == '' || !canWrite)
           return
-        
-        if (docId == 'secret_welcome_page')
-          docId = ''
 
         QueryAllDB('data', 'notes', { id: docId }, { id: 1 }, response => {
           if (response.length)
@@ -90,9 +85,11 @@ class Server {
           }
         else
           this.docs[id].users.push(socket)
-
-        if (docId == 'secret_welcome_page')
-          docId = ''
+        
+        if (docId == 'demo')
+          canWrite = false
+        if (docId == 'secret_demo_page')
+          docId = 'demo'
 
         QueryAllDB('data', 'notes', { id: docId }, {}, result => {
           if (!result.length)

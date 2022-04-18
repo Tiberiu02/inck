@@ -39,10 +39,6 @@ export default function Canvas() {
         <title>Inck</title>
         <meta name="description" content="The only ink that you will ever need" />
         <link rel="icon" href="/favicon.ico" />
-
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Shadows+Into+Light+Two&family=Varela+Round&display=swap" rel="stylesheet" />
       </Head>
       
       <main>
@@ -55,7 +51,7 @@ export default function Canvas() {
             <div className='h-2 w-20 bg-primary rounded-xl my-10' />
             <div className='relative max-w-fit'>
               <div className='absolute -inset-2 bg-white blur-md'></div>
-              <p className='text-4xl sm:text-5xl font-cursive italic blur-0'>the only ink you'll ever&nbsp;need</p>
+              <p className='text-4xl sm:text-5xl font-cursive italic blur-0'>the only ink you&apos;ll ever&nbsp;need</p>
             </div>
             <div className='flex flex-col lg:flex-row mt-20 gap-5 text-lg sm:text-3xl font-round text-white'>
               <OpenNoteBtn />

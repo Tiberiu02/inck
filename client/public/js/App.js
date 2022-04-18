@@ -124,13 +124,18 @@ export default class App {
 
         this.activeTool.delete()
         delete this.activeTool
+        delete this.lastLiveUpdate
         
         this.render()
       }
 
-      const pointer = (type == 'pointerleave' || type == 'pointerout') ? undefined : { x, y }
-      const activeStroke = this.activeTool ? this.activeTool.serialize() : undefined
-      this.connector.socket.emit('live update', pointer, activeStroke)
+      const FPS = this.activeTool ? 20 : 60
+      if (!this.lastLiveUpdate || this.lastLiveUpdate + 1000 / FPS < performance.now()) {
+        const pointer = (type == 'pointerleave' || type == 'pointerout') ? undefined : { x, y }
+        const activeStroke = this.activeTool ? this.activeTool.serialize() : undefined
+        this.connector.socket.emit('live update', pointer, activeStroke)
+        this.lastLiveUpdate = performance.now()
+      }
     }
   }
 

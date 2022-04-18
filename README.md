@@ -61,6 +61,10 @@ Open your browser and go to https://localhost:3000.
 * [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)
 * [ ] Pen prediction (very hard, requires neural nets)e
 
+### Tech debt
+* [ ] Send live collaboration update on scroll (not just on pointer move), so that pointer appears to move when scrolling
+* [ ] Optimize live collaboration (send only stroke modification, not entire stroke every time)
+
 # License
 
 All right reserved.
