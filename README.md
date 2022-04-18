@@ -54,9 +54,11 @@ Open your browser and go to https://localhost:3000.
 * [X] Optimize WebGL buffers
 * [X] Display scroll bar
 * [X] Full screen button
-* [ ] Live collab
-* [ ] Optimize physics engine & rewrite in WebAssembly
+* [X] Live collab
+* [ ] Make work on Apple
+* [ ] Split initial package
 * [ ] Download notes as PNG
+* [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)
 * [ ] Pen prediction (very hard, requires neural nets)
 
 # License
