@@ -48,11 +48,11 @@ class Server {
           if (u != socket)
             u.emit('load strokes', [stroke])
 
-        if (docId == '')
+        if (docId == 'demo')
           return
         
         if (docId == 'secret_welcome_page')
-          docId = ''
+          docId = 'demo'
 
         QueryAllDB('data', 'notes', { id: docId }, { id: 1 }, response => {
           if (response.length)
