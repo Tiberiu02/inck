@@ -41,6 +41,8 @@ export default class App {
     window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
     window.addEventListener('pointermove', e => this.handlePointerEvent(e))
     window.addEventListener('pointerup', e => this.handlePointerEvent(e))
+    window.addEventListener('pointerleave', e => this.handlePointerEvent(e))
+    window.addEventListener('pointerout', e => this.handlePointerEvent(e))
     window.addEventListener('contextmenu', e => e.preventDefault())
 
     // Start rendering loop
@@ -88,7 +90,7 @@ export default class App {
   }
 
   handlePointerEvent(e) {
-    let { pressure, timeStamp, pointerType } = e
+    let { type, pressure, timeStamp, pointerType } = e
     let [x, y] = this.view.mapCoords(e.x, e.y)
 
     this.drawing = (pressure > 0 && pointerType != 'touch')
@@ -121,6 +123,10 @@ export default class App {
         
         this.render()
       }
+
+      const pointer = (type == 'pointerleave' || type == 'pointerout') ? undefined : { x, y }
+      const activeStroke = this.activeTool ? this.activeTool.serialize() : undefined
+      this.connector.socket.emit('live update', pointer, activeStroke)
     }
   }
 
@@ -131,6 +137,12 @@ export default class App {
     this.gl.useProgram(this.programs.canvas)
     this.drawOldStrokes()
     this.drawActiveStroke()
+    this.connector.drawCollabs(this.view, ([vertex, index]) => {
+      GL.bindBuffers(this.gl, this.activeBuffers)
+      GL.bufferArrays(this.gl, { vertex, index }, 'STREAM_DRAW')
+      GL.setVars(this.gl, this.programs.canvas, this.view.getVars())
+      this.gl.drawElements(this.gl.TRIANGLES, index.length, this.gl.UNSIGNED_SHORT, 0)
+    })
     this.scrollBars.update(this.view, this.staticBuffers.yMax)
 
     Profiler.stop('rendering')

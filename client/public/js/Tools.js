@@ -1,6 +1,6 @@
 import { StrokeToPath } from './Physics.js'
 
-class Tool {
+export class Tool {
   constructor(inputs) {
     this.inputs = inputs
   }
@@ -10,6 +10,13 @@ class Tool {
       this.startTime = timeStamp
     
     this.inputs.push(x, y, pressure, timeStamp - this.startTime)
+  }
+
+  static deserialize(data) {
+    if (data.type == 'p')
+      return Pen.deserialize(data)
+    else if (data.type == 'e')
+      return Eraser.deserialize(data)
   }
 
   ifLongPress(duration, maxDist, callback) {

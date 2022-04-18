@@ -1,7 +1,7 @@
 import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js"
 import { StrokeToPath, FillPath } from './Physics.js'
 import { GL } from './GL.js'
-import { Eraser, Pen } from './Tools.js'
+import { Tool, Eraser, Pen } from './Tools.js'
 
 function hexToRgb(hex) {
   const normal = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
@@ -11,6 +11,14 @@ function hexToRgb(hex) {
   if (shorthand) return shorthand.slice(1).map(e => 0x11 * parseInt(e, 16));
 
   return null;
+}
+
+// input: h as an angle in [0,360] and s,l in [0,1] - output: r,g,b in [0,1]
+function hsl2rgb(h,s,l) 
+{
+   let a=s*Math.min(l,1-l);
+   let f= (n,k=(n+h/30)%12) => l - a*Math.max(Math.min(k-3,9-k,1),-1);
+   return [f(0),f(8),f(4)];
 }
 
 const SERVER_PORT = 88
@@ -37,10 +45,50 @@ export default class Connector {
       this.socket.emit('request document', this.docId)
     })
 
-    this.socket.on('load document', data => this.loadData(data))
+    this.socket.on('load strokes', data => this.loadData(data))
+
+    this.collabs = {}
+    this.socket.on('collaborator', (id, pointer, activeStroke) => {
+      if (!this.collabs[id])
+        this.collabs[id] = {}
+      this.collabs[id].pointer = pointer
+      this.collabs[id].activeStroke = activeStroke
+      this.collabs[id].vector = activeStroke && Tool.deserialize(activeStroke).vectorize(true)
+      this.render()
+    })
 
     // Backwards compatibility
     this.decodeCoordLegacy = n => [(n & 4095) / 4096, (n >> 12) / 4095]
+  }
+
+  drawCollabs(view, drawFn) {
+    for (let [id, c] of Object.entries(this.collabs)) {
+      if (!c.el) {
+        c.el = document.createElement('div')
+        Object.assign(c.el.style, {
+          width: '0px',
+          height: '0px',
+          borderTop: '15px solid transparent',
+          borderBottom: '6px solid transparent',
+          borderLeft: `15px solid rgb(${hsl2rgb(id * 360, 1, 0.5).map(x => x * 255).join(',')})`,
+          display: 'none',
+          position: 'absolute',
+        })
+        document.body.appendChild(c.el)
+      }
+
+      if (c.pointer)
+        Object.assign(c.el.style, {
+          top: `${(c.pointer.y - view.top) * view.zoom * innerWidth}px`,
+          left: `${(c.pointer.x - view.left) * view.zoom * innerWidth}px`,
+          display: 'block'
+        })
+      else
+        c.el.style.display = 'none'
+      
+      if (c.vector)
+        drawFn(c.vector)
+    }
   }
 
   loadData(data) {
@@ -73,6 +121,6 @@ export default class Connector {
   }
 
   registerStroke(stroke) {
-    this.socket.emit('new stroke', this.docId, stroke)
+    this.socket.emit('new stroke', stroke)
   }
 }
