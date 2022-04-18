@@ -38,6 +38,7 @@ export default class App {
     this.resizeCanvas()
 
     // Add event listeners
+    // Check Apple listeners for pen; different listeners for apple devices
     window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
     window.addEventListener('pointermove', e => this.handlePointerEvent(e))
     window.addEventListener('pointerup', e => this.handlePointerEvent(e))
@@ -89,6 +90,7 @@ export default class App {
     this.scheduleRender()
   }
 
+  // Apple
   handlePointerEvent(e) {
     let { type, pressure, timeStamp, pointerType } = e
     let [x, y] = this.view.mapCoords(e.x, e.y)

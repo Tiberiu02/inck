@@ -84,6 +84,7 @@ export function StrokeToPath(s, w, color, full = true) {
     const X = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.X)
     const Y = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.Y)
     const P = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.P)
+    // x, y: mass, X, Y: last position
     let dist = Math.sqrt((X - x) ** 2 + (Y - y) ** 2)
     while (dist > 0) {
       const v = Math.sqrt(vx * vx + vy * vy)
