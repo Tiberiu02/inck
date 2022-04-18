@@ -108,7 +108,7 @@ export default class App {
           this.activeTool = new Pen(0.002, [0, 0, 0, 1])
           // Long press eraser gesture
           const d = 15
-          this.activeTool.ifLongPress(500, d / innerWidth * devicePixelRatio, () => {
+          this.activeTool.ifLongPress(500, d / innerWidth / this.view.zoom, () => {
             this.activeTool.delete()
             this.activeTool = new Eraser()
             ShowCircularWave(e.x, e.y, d, 500)

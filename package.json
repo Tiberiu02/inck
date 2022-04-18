@@ -2,6 +2,7 @@
   "name": "inck",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:443",
   "scripts": {
     "dev": "concurrently \"cd client && next dev -- -p 80\" \"node server/index.js\"",
     "dev-ubt": "concurrently \"cd client && next dev -- -p 3080\" \"sudo node server/index.js\"",

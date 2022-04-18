@@ -9,7 +9,7 @@ const path = require('path')
 class Server {
   contructor() { }
   start() {
-    this.port = 88
+    this.port = 8080
     
     this.app = express()
     this.server = http.createServer(this.app)
@@ -38,6 +38,10 @@ class Server {
       let canWrite = true
 
       socket.on('disconnect', () => {
+        for (let u of this.docs[docId].users)
+          if (u != socket)
+            u.emit('collaborator', userId, null, null)
+
         this.docs[docId].users = this.docs[docId].users.filter(u => u != socket)
         console.log(`[${new Date().toLocaleString()}] ${ip} stopped drawing on ${docId}, ${this.docs[docId].users.length} users remaining`)
       })
@@ -103,7 +107,6 @@ class Server {
         if (!this.docs[docId])
           return
 
-        //console.log(pointer, activeStroke)
         for (let u of this.docs[docId].users)
           if (u != socket)
             u.emit('collaborator', userId, pointer, activeStroke)

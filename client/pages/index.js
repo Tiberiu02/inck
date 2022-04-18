@@ -34,7 +34,7 @@ function Item({ title, text, Icon }) {
 
 export default function Canvas() {
   return (
-    <div className='touch-none'>
+    <div>
       <Head>
         <title>Inck</title>
         <meta name="description" content="The only ink that you will ever need" />
@@ -74,8 +74,8 @@ export default function Canvas() {
         
         <div className='font-round w-full flex flex-col items-center py-20 px-0 justify-center bg-gray-100'>
           <div className='flex flex-col items-center w-[80vw]'>
+            <p className='text-2xl mt-4 text-gray-900 italic mb-2'>Still not convinced?</p>
             <h1 className='text-6xl text-center'>Try it out</h1>
-            <p className='text-2xl mt-4 text-gray-900 italic'>(long press to erase)</p>
             <FaArrowDown className='text-5xl text-primary mt-12 mb-4' />
             <iframe className='w-full aspect-square sm:aspect-video rounded-xl shadow-lg' src='/note/demo' />
           </div>

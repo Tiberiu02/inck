@@ -21,7 +21,7 @@ function hsl2rgb(h,s,l)
    return [f(0),f(8),f(4)];
 }
 
-const SERVER_PORT = 88
+const SERVER_PORT = 8080
 
 /**
  * EXPLANATION OF SERVER INTERACTION PROTOCOL
