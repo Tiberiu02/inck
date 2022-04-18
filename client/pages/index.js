@@ -8,7 +8,7 @@ function OpenNoteBtn() {
   return (
     <form onSubmit={(e) => {e.preventDefault(); if(noteId) window.location = '/note/' + noteId}} className='flex flex-row gap-4 items-center ins border-2 border-primary bg-white rounded-xl overflow-hidden'>
       <input required name='code' className='placeholder-gray-400 text-gray-700 mx-3 w-52' placeholder='Code' onChange={e => setNoteId(e.target.value)} />
-      <button className='flex flex-row gap-4 items-center bg-primary px-5 h-full border-primary border-2'>Open note</button>
+      <button className='flex flex-row gap-4 items-center bg-primary hover:bg-primary-dark duration-200 px-5 h-full py-[0.55rem] border-0'>Open note</button>
     </form>
   )
 }
@@ -18,7 +18,7 @@ function CreateNoteBtn() {
   const len = 6
   const id = Array(6).fill(0).map(x => chars[Math.floor(Math.random() * chars.length)]).join('')
   return (
-    <button onClick={() => window.location = '/note/' + id} className='flex flex-row gap-4 items-center bg-primary py-3 px-5 rounded-xl'>Create note<FaPen className='mx-1'/></button>
+    <button onClick={() => window.location = '/note/' + id} className='flex flex-row gap-6 items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl'>Create new note<FaPen className='mx-1'/></button>
   )
 }
 
@@ -37,7 +37,7 @@ export default function Canvas() {
       
       <main>
         <div className='w-full flex flex-col items-center h-[100vh] justify-center bg-notes bg-cover'>
-          <div className='lg:max-w-4xl xl:max-w-5xl lg:w-full'>
+          <div className='lg:max-w-4xl xl:max-w-6xl 2xl:max-w-7xl lg:w-full'>
             <div className='relative max-w-fit'>
               <div className='absolute -inset-4 bg-white blur-lg'></div>
               <p className='text-8xl font-cursive blur-0 font-bold'>Welcome to Inck!</p>
@@ -47,7 +47,7 @@ export default function Canvas() {
               <div className='absolute -inset-2 bg-white blur-md'></div>
               <p className='text-5xl font-cursive italic blur-0'>the only ink you'll ever need</p>
             </div>
-            <div className='flex flex-col sm:flex-row mt-20 gap-5 text-3xl font-round text-white'>
+            <div className='flex flex-col lg:flex-row mt-20 gap-5 text-3xl font-round text-white'>
               <OpenNoteBtn />
               <CreateNoteBtn />
             </div>
