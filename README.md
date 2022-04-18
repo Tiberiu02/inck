@@ -59,7 +59,7 @@ Open your browser and go to https://localhost:3000.
 * [ ] Split initial package
 * [ ] Download notes as PNG
 * [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)
-* [ ] Pen prediction (very hard, requires neural nets)
+* [ ] Pen prediction (very hard, requires neural nets)e
 
 # License
 
