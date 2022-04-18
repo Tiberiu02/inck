@@ -30,13 +30,14 @@ Open your browser and go to https://localhost:3000.
 # To-do list
 
 ### Landing page
-* [ ] Design
-* [ ] Code
+* [X] Design
+* [X] Code
 
 ### Account system
 * [ ] Set up API
 * [ ] Design login & registration pages
 * [ ] Code pages
+* [ ] Login/register page
 
 ### Document exporer
 * [X] Design
