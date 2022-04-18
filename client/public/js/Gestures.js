@@ -48,7 +48,8 @@ export class ViewManager {
 
     this.mouse = { x: 0, y: 0 }
     window.addEventListener('mousemove', e => this.mouse = { x: e.clientX, y: e.clientY })
-    
+    // Maybe will interfere on Apple device; Originally was just scrolling
+
     window.addEventListener('touchstart', e => this.handleTouchEvent(e))
     window.addEventListener('touchend', e => this.handleTouchEvent(e))
     window.addEventListener('touchcancel', e => this.handleTouchEvent(e))
