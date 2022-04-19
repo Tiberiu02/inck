@@ -56,6 +56,7 @@ Open your browser and go to https://localhost:3000.
 * [X] Display scroll bar
 * [X] Full screen button
 * [X] Live collab
+* [ ] Interactive strollbars
 * [ ] Make work on Apple
 * [ ] Split initial package
 * [ ] Download notes as PNG
