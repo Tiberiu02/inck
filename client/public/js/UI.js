@@ -25,6 +25,8 @@ export class ScrollBars {
       borderRadius: `${width/2}px`,
     }
 
+    this.pointers = {}
+
     this.vertical = document.createElement('div')
     Object.assign(this.vertical.style, style)
     document.body.appendChild(this.vertical)
@@ -34,37 +36,75 @@ export class ScrollBars {
     document.body.appendChild(this.horizontal)
   }
 
-  update(view, yMax) {
-    const vStart = view.left
-    const vLen = 1 / view.zoom
-    const vFullLen = window.innerWidth - 3 * this.margin - this.width
+  handlePointerEvent(e, view, yMax) {
+    let { type, pointerId, x, y, pressure } = e
+    console.log(pointerId, x, y)
 
-    Object.assign(this.vertical.style, {
-      display: (vLen == 1 ? 'none' : ''),
-      bottom: `${this.margin}px`,
-      height: `${this.width}px`,
-      left: `${this.margin + vStart * vFullLen}px`,
-      width: `${vLen * vFullLen}px`
-    })
+    if (pressure) {
+      e.preventDefault()
+      e.stopPropagation()
 
-    const aspectRatio = (innerHeight / innerWidth)
-    const hSize = Math.max(yMax, view.top + 1 / view.zoom * aspectRatio)
-    const hLen = vLen * aspectRatio / hSize
-    const hStart = view.top / hSize
-    let hFullLen = window.innerHeight - 2 * this.margin - this.margin - this.width
-    
-    let hBarHeight = hLen * hFullLen
-    if (hBarHeight < this.width) {
-      hFullLen -= this.width - hBarHeight
-      hBarHeight = this.width
+      if (!this.scrollDirection)
+        this.scrollDirection = (e.target == this.horizontal ? 'horizontal' : 'vertical')
+
+      if (this.pointers[pointerId]) {
+        const p = this.pointers[pointerId]
+        if (this.scrollDirection == 'vertical') {
+          const dy = (y - p.y) / (innerHeight - 3 * this.margin - this.width) * this.yMax
+          view.top = Math.max(0, Math.min(this.yMax - innerHeight / innerWidth / view.zoom, view.top + dy))
+        } else {
+          const dx = (x - p.x) / (innerWidth - 3 * this.margin - this.width)
+          view.left = Math.max(0, Math.min(1 - 1 / view.zoom, view.left + dx))
+        }
+      } else
+        this.yMax = Math.max(yMax, view.top + innerHeight / innerWidth / view.zoom)
+
+      this.pointers[pointerId] = { x, y }
+    } else {
+      this.pointers = []
+      delete this.yMax
+      delete this.scrollDirection
     }
-    
+  }
+
+  scrolling() {
+    return this.pointers.length > 0
+  }
+
+  update(view, yMax) {
+    if (this.yMax)
+      yMax = this.yMax
+
+    const hLen = 1 / view.zoom
+    const hStart = view.left
+    const hFullLen = window.innerWidth - 3 * this.margin - this.width
+
     Object.assign(this.horizontal.style, {
       display: (hLen == 1 ? 'none' : ''),
+      bottom: `${this.margin}px`,
+      height: `${this.width}px`,
+      left: `${this.margin + hStart * hFullLen}px`,
+      width: `${hLen * hFullLen}px`
+    })
+    
+    const aspectRatio = (innerHeight / innerWidth)
+    const vSize = Math.max(yMax, view.top + 1 / view.zoom * aspectRatio)
+    const vLen = hLen * aspectRatio / vSize
+    const vStart = view.top / vSize
+    let vFullLen = window.innerHeight - 2 * this.margin - this.margin - this.width
+    
+    this.vBarHeight = vLen * vFullLen
+    if (this.vBarHeight < this.width) {
+      vFullLen -= this.width - this.vBarHeight
+      this.vBarHeight = this.width
+    }
+    
+    Object.assign(this.vertical.style, {
+      display: (vLen == 1 ? 'none' : ''),
       right: `${this.margin}px`,
       width: `${this.width}px`,
-      top: `${this.margin + hStart * hFullLen}px`,
-      height: `${hBarHeight}px`
+      top: `${this.margin + vStart * vFullLen}px`,
+      height: `${this.vBarHeight}px`
     })
   }
 }

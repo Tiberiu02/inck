@@ -56,12 +56,12 @@ Open your browser and go to https://localhost:3000.
 * [X] Display scroll bar
 * [X] Full screen button
 * [X] Live collab
-* [ ] Interactive strollbars
+* [X] Interactive strollbars
 * [ ] Make work on Apple
 * [ ] Split initial package
 * [ ] Download notes as PNG
 * [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)
-* [ ] Pen prediction (very hard, requires neural nets)e
+* [ ] Pen prediction (very hard, requires neural nets), note: PointerEvent.getPredictedEvents() is absolute garbage
 
 ### Tech debt
 * [ ] Send live collaboration update on scroll (not just on pointer move), so that pointer appears to move when scrolling

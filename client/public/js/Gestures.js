@@ -45,15 +45,14 @@ export class ViewManager {
     this.touches = {}
 
     window.addEventListener('wheel', e => this.handleWheelEvent(e), { passive: false })
-
     this.mouse = { x: 0, y: 0 }
     window.addEventListener('mousemove', e => this.mouse = { x: e.clientX, y: e.clientY })
-    // Maybe will interfere on Apple device; Originally was just scrolling
 
-    window.addEventListener('touchstart', e => this.handleTouchEvent(e))
-    window.addEventListener('touchend', e => this.handleTouchEvent(e))
-    window.addEventListener('touchcancel', e => this.handleTouchEvent(e))
-    window.addEventListener('touchmove', e => this.handleTouchEvent(e))
+    // Maybe will interfere on Apple device; Originally was just scrolling
+    this.app.canvas.addEventListener('touchstart', e => this.handleTouchEvent(e))
+    this.app.canvas.addEventListener('touchend', e => this.handleTouchEvent(e))
+    this.app.canvas.addEventListener('touchcancel', e => this.handleTouchEvent(e))
+    this.app.canvas.addEventListener('touchmove', e => this.handleTouchEvent(e))
 
     this.inertia = new ScrollInertia(this)
   }

@@ -41,11 +41,11 @@ export default class App {
 
     // Add event listeners
     // Check Apple listeners for pen; different listeners for apple devices
-    window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
-    window.addEventListener('pointermove', e => this.handlePointerEvent(e))
-    window.addEventListener('pointerup', e => this.handlePointerEvent(e))
-    window.addEventListener('pointerleave', e => this.handlePointerEvent(e))
-    window.addEventListener('pointerout', e => this.handlePointerEvent(e))
+    window.addEventListener('pointerdown', e => this.handlePointerEvent(e), true)
+    window.addEventListener('pointermove', e => this.handlePointerEvent(e), true)
+    window.addEventListener('pointerup', e => this.handlePointerEvent(e), true)
+    window.addEventListener('pointerleave', e => this.handlePointerEvent(e), true)
+    window.addEventListener('pointerout', e => this.handlePointerEvent(e), true)
     window.addEventListener('contextmenu', e => e.preventDefault())
 
     // Start rendering loop
@@ -94,47 +94,53 @@ export default class App {
 
   // Apple
   handlePointerEvent(e) {
-    let { type, pressure, timeStamp, pointerType } = e
-    let [x, y] = this.view.mapCoords(e.x, e.y)
+    if (this.scrollBars.scrolling() || e.target == this.scrollBars.vertical || e.target == this.scrollBars.horizontal) {
+      this.scrollBars.handlePointerEvent(e, this.view, this.staticBuffers.yMax)
+      this.scheduleRender()
+    } else if (e.target == this.canvas) {
 
-    this.drawing = (pressure > 0 && pointerType != 'touch')
+      let { type, pressure, timeStamp, pointerType } = e
+      let [x, y] = this.view.mapCoords(e.x, e.y)
 
-    if (e.pointerType != 'touch') {
-      e.preventDefault()
-      e.stopPropagation()
+      this.drawing = (pressure > 0 && pointerType != 'touch')
 
-      if (pressure) { // Writing
-        if (!this.activeTool) { // New stroke
-          this.activeTool = new Pen(0.002, [0, 0, 0, 1])
-          // Long press eraser gesture
-          const d = 15
-          this.activeTool.ifLongPress(500, d / innerWidth / this.view.zoom, () => {
-            this.activeTool.delete()
-            this.activeTool = new Eraser()
-            ShowCircularWave(e.x, e.y, d, 500)
-            this.render()
-          })
+      if (pointerType != 'touch') {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (pressure) { // Writing
+          if (!this.activeTool) { // New stroke
+            this.activeTool = new Pen(0.002, [0, 0, 0, 1])
+            // Long press eraser gesture
+            const d = pointerType == 'pen' ? 15 : 1
+            this.activeTool.ifLongPress(pointerType == 'pen' ? 500 : 1000, d / innerWidth / this.view.zoom, () => {
+              this.activeTool.delete()
+              this.activeTool = new Eraser()
+              ShowCircularWave(e.x, e.y, 15, 500)
+              this.render()
+            })
+          }
+          
+          this.activeTool.update(x, y, pressure, timeStamp)
+          this.render()
+        } else if (this.activeTool) { // Finished stroke
+          this.staticBuffers.push(...this.activeTool.vectorize(false))
+          this.connector.registerStroke(this.activeTool.serialize())
+
+          this.activeTool.delete()
+          delete this.activeTool
+          delete this.lastLiveUpdate
+          
+          this.render()
         }
-        
-        this.activeTool.update(x, y, pressure, timeStamp)
-        this.render()
-      } else if (this.activeTool) { // Finished stroke
-        this.staticBuffers.push(...this.activeTool.vectorize(false))
-        this.connector.registerStroke(this.activeTool.serialize())
 
-        this.activeTool.delete()
-        delete this.activeTool
-        delete this.lastLiveUpdate
-        
-        this.render()
-      }
-
-      const FPS = this.activeTool ? 20 : 60
-      if (!this.lastLiveUpdate || this.lastLiveUpdate + 1000 / FPS < performance.now()) {
-        const pointer = (type == 'pointerleave' || type == 'pointerout') ? undefined : { x, y }
-        const activeStroke = this.activeTool ? this.activeTool.serialize() : undefined
-        this.connector.socket.emit('live update', pointer, activeStroke)
-        this.lastLiveUpdate = performance.now()
+        const FPS = this.activeTool ? 20 : 60
+        if (!this.lastLiveUpdate || this.lastLiveUpdate + 1000 / FPS < performance.now()) {
+          const pointer = (type == 'pointerleave' || type == 'pointerout') ? undefined : { x, y }
+          const activeStroke = this.activeTool ? this.activeTool.serialize() : undefined
+          this.connector.socket.emit('live update', pointer, activeStroke)
+          this.lastLiveUpdate = performance.now()
+        }
       }
     }
   }
