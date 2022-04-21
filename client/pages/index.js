@@ -1,6 +1,5 @@
 import Head from 'next/head'
-import Script from 'next/script'
-import { FaPen, FaGlobe, FaMotorcycle, FaCar, FaShippingFast, FaPlane, FaMobileAlt, FaArrowDown } from 'react-icons/fa'
+import { FaPen, FaGlobe, FaCar, FaShippingFast, FaPlane, FaMobileAlt, FaArrowDown } from 'react-icons/fa'
 import React, { useState } from 'react'
 
 function OpenNoteBtn() {
@@ -32,7 +31,7 @@ function Item({ title, text, Icon }) {
   )
 }
 
-export default function Canvas() {
+export default function LandingPage() {
   return (
     <div>
       <Head>

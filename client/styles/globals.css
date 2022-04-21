@@ -43,3 +43,28 @@ a {
     opacity: 10%;
   }
 }
+
+
+/* width */
+::-webkit-scrollbar {
+  background: transparent; 
+  width: 10px;
+  height: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent; 
+  margin: 3px;
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: rgba(175, 175, 175, 0.7); 
+  border-radius: 5px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555; 
+}
