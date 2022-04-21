@@ -8,7 +8,7 @@ export default function Canvas() {
   const { id } = router.query
 
   return (
-    <div className='touch-none'>
+    <div>
       <Head>
         <title>Inck/{id}</title>
         <meta name="description" content="The only ink that you will ever need" />

@@ -16,8 +16,8 @@ export default class App {
     // Create canvas
     this.canvas = document.createElement('canvas')
     document.body.appendChild(this.canvas)
-    document.body.style.touchAction = 'none'
     document.body.style.overflow = 'hidden'
+    document.body.style.touchAction = 'none'
 
     // Create WebGL
     this.gl = GL.initWebGL(this.canvas)
