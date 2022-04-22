@@ -48,8 +48,8 @@ a {
 /* width */
 ::-webkit-scrollbar {
   background: transparent; 
-  width: 10px;
-  height: 10px;
+  width: 5px;
+  height: 5px;
 }
 
 /* Track */
