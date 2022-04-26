@@ -83,10 +83,10 @@ export default class App {
   }
 
   resizeCanvas() {
-    this.canvas.width = Math.round(window.innerWidth * window.devicePixelRatio)
-    this.canvas.height = Math.round(window.innerHeight * window.devicePixelRatio)
     this.canvas.style.width = window.innerWidth + 'px'
     this.canvas.style.height = window.innerHeight + 'px'
+    this.canvas.width = Math.round(window.innerWidth * window.devicePixelRatio)
+    this.canvas.height = Math.round(window.innerHeight * window.devicePixelRatio)
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 
     this.scheduleRender()
@@ -122,7 +122,8 @@ export default class App {
           }
           
           this.activeTool.update(x, y, pressure, timeStamp)
-          this.render()
+          //this.render()
+          this.scheduleRender()
         } else if (this.activeTool) { // Finished stroke
           this.staticBuffers.push(...this.activeTool.vectorize(false))
           this.connector.registerStroke(this.activeTool.serialize())
@@ -131,7 +132,8 @@ export default class App {
           delete this.activeTool
           delete this.lastLiveUpdate
           
-          this.render()
+          //this.render()
+          this.scheduleRender()
         }
 
         const FPS = this.activeTool ? 20 : 60
@@ -145,7 +147,7 @@ export default class App {
     }
   }
 
-  render() {    
+  render() {
     Profiler.start('rendering')
     
     this.clearCanvas()

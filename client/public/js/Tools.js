@@ -72,7 +72,7 @@ export class Eraser extends Tool {
   }
 
   vectorize(active) {
-    const color = active ? [0.95, 0.95, 0.95, 0.5] : [1, 1, 1, 1]
+    const color = active ? [0.95, 0.95, 0.95, 1] : [1, 1, 1, 1]
 
     let vertices = []
     for (let i = 0; i < this.inputs.length; i += 4)

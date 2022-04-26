@@ -38,6 +38,9 @@ class Server {
       let canWrite = true
 
       socket.on('disconnect', () => {
+        if (!docId)
+          return
+
         for (let u of this.docs[docId].users)
           if (u != socket)
             u.emit('collaborator', userId, null, null)
@@ -48,6 +51,9 @@ class Server {
 
       socket.on('new stroke', (stroke) => {
         console.log(`[${new Date().toLocaleString()}] ${ip} is drawing on /doc/${docId}`)
+
+        if (!docId)
+          return
 
         for (let u of this.docs[docId].users)
           if (u != socket)
@@ -65,6 +71,9 @@ class Server {
       })
 
       socket.on('undo stroke', () => {
+        if (!docId)
+          return
+
         console.log(`[${new Date().toLocaleString()}] ${ip} is undoing on /doc/${docId}`)
 
         if (docId == '' || !canWrite)
