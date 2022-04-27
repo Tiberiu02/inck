@@ -1,8 +1,6 @@
 export const ELEMENTS_PER_VERTEX = 6
 
 export function desynchronizedHintAvailable() {
-  return false; // Disabled for now to fix lag on Note 10
-
   const userAgent = window.navigator.userAgent
   const chrome = userAgent.includes('Chrome')
   if (!chrome)
@@ -16,7 +14,7 @@ export function desynchronizedHintAvailable() {
 export class GL {
 
   static initWebGL(canvas) {
-    let gl = canvas.getContext('webgl', desynchronizedHintAvailable() && false ? {desynchronized: true, alpha: false} : {})
+    let gl = canvas.getContext('webgl', {desynchronized: true, alpha: false})
 
     if (!gl) {
       console.warn('WebGL not supported, falling back on experimental')

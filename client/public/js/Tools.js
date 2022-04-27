@@ -1,15 +1,17 @@
-import { StrokeToPath } from './Physics.js'
+import { ELEMENTS_PER_INPUT, StrokeToPath } from './Physics.js'
 
 export class Tool {
   constructor(inputs) {
     this.inputs = inputs
+    this.prediction = []
   }
 
-  update(x, y, pressure, timeStamp) {
+  update(x, y, pressure, timeStamp, prediction = []) {
     if (!this.startTime)
       this.startTime = timeStamp
-    
+
     this.inputs.push(x, y, pressure, timeStamp - this.startTime)
+    this.prediction = prediction
   }
 
   static deserialize(data) {

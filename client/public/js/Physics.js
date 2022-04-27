@@ -40,7 +40,7 @@ export function StrokeToPath(s, w, color, full = true) {
   let i = 0 | 0
   let [x, y, vx, vy, t] = [+s[0], +s[1], 0.0, 0.0, +s[3]]
   while (t < s.at(-1)) {
-    while (t > s[i + 7])
+    while (t >= s[i + ELEMENTS_PER_INPUT + OFFSET_INPUT.T])
       i += ELEMENTS_PER_INPUT
 
     const k = (t - s[i + OFFSET_INPUT.T]) / (s[i + ELEMENTS_PER_INPUT + OFFSET_INPUT.T] - s[i + OFFSET_INPUT.T])
@@ -50,7 +50,7 @@ export function StrokeToPath(s, w, color, full = true) {
     const v = Math.sqrt(vx * vx + vy * vy)
 
     if (v) {
-      const r = w * P
+      const r = w / 2 * (P + 0.5)
       const nx = -vy / v * r
       const ny = vx / v * r
 
@@ -91,7 +91,7 @@ export function StrokeToPath(s, w, color, full = true) {
       dist -= v
   
       if (v) {
-        const r = w * P
+        const r = w / 2 * (P + 0.5)
         const nx = -vy / v * r
         const ny = vx / v * r
         vertices.push(x + nx, y + ny, ...color)

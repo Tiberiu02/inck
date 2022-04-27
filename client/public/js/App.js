@@ -121,9 +121,13 @@ export default class App {
             })
           }
           
-          this.activeTool.update(x, y, pressure, timeStamp)
-          //this.render()
-          this.scheduleRender()
+          let prediction = []
+          if (e.getPredictedEvents)
+            prediction = [].concat(...e.getPredictedEvents().map(({x, y, pressure, timeStamp}) => [...this.view.mapCoords(x, y), pressure, timeStamp]))
+            
+          this.activeTool.update(x, y, pressure, timeStamp, prediction)
+          this.render()
+          //this.scheduleRender()
         } else if (this.activeTool) { // Finished stroke
           this.staticBuffers.push(...this.activeTool.vectorize(false))
           this.connector.registerStroke(this.activeTool.serialize())
@@ -131,9 +135,9 @@ export default class App {
           this.activeTool.delete()
           delete this.activeTool
           delete this.lastLiveUpdate
-          
-          //this.render()
-          this.scheduleRender()
+
+          this.render()
+          //this.scheduleRender()
         }
 
         const FPS = this.activeTool ? 20 : 60
@@ -148,6 +152,12 @@ export default class App {
   }
 
   render() {
+    if (this.rendering) {
+      this.scheduleRender()
+      return
+    }
+
+    this.rendering = true
     Profiler.start('rendering')
     
     this.clearCanvas()
@@ -163,6 +173,7 @@ export default class App {
     this.scrollBars.update(this.view, this.staticBuffers.yMax)
 
     Profiler.stop('rendering')
+    this.rendering = false
   }
 
   clearCanvas() {
@@ -176,6 +187,8 @@ export default class App {
     
     let [vertex, index] = this.activeTool.vectorize(true)
     
+    //console.log(vertex, index)
+
     GL.bindBuffers(this.gl, this.activeBuffers)
     GL.bufferArrays(this.gl, { vertex, index }, 'STREAM_DRAW')
     GL.setVars(this.gl, this.programs.canvas, this.view.getVars())

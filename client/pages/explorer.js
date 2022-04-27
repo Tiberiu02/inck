@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 
 import { FaAngleDown, FaAngleRight, FaPencilAlt, FaSearch, FaRegQuestionCircle, FaRegUserCircle, FaRegSun,
          FaRegClock, FaUsers, FaBookmark, FaTrash, FaBook, FaFolder, FaFolderOpen,
-         FaFolderPlus, FaFileMedical } from 'react-icons/fa'
+         FaBars } from 'react-icons/fa'
 //import { FcOpenedFolder, FcFolder, FcClock, FcGlobe, FcBookmark, FcFullTrash, FcNook } from 'react-icons/fc'
 
 let freeSelected = () => {}
@@ -35,12 +35,11 @@ function DirListing({ Symbol, symbolClassName, name, className, children, link }
 
 function Note({ title }) {
   return (
-    <button className='relative w-32 h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner  hover:scale-110 duration-100'>
-      <div className='absolute bottom-[10%] py-1 bg-slate-800 w-full text-center'>
-        <p className='text-white'>
+    <button className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner  hover:scale-110 duration-100'>
+      
+        <p className='absolute bottom-[10%] py-1 bg-slate-800 w-full text-white text-sm sm:text-lg text-center line-clamp-2'>
           { title }
         </p>
-      </div>
     </button>
   )
 }
@@ -48,15 +47,11 @@ function Note({ title }) {
 
 function Book({ title }) {
   return (
-    <button className='relative w-32 h-40 text-white hover:scale-110 duration-100'>
-      <div className='absolute top-0 bg-slate-800 h-5 w-12 rounded-t-xl -mb-2'></div>
-      <div className='absolute col-span-2 bottom-0 h-36 w-full flex flex-col p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl'>
-        <FaPencilAlt className='text-4xl mt-6' />
-        <div className='absolute bottom-[10%] py-1 -mx-2 text-center'>
-          <p className=''>
-            { title }
-          </p>
-        </div>
+    <button className='relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col'>
+      <div className='bg-slate-800 h-5 w-12 rounded-t-xl -mb-2'></div>
+      <div className='realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden'>
+        <FaPencilAlt className='text-3xl sm:text-4xl' />
+        <p className='text-sm sm:text-lg text-center line-clamp-2'> { title } </p>
       </div>
     </button>
   )
@@ -64,7 +59,7 @@ function Book({ title }) {
 
 function AddButton() {
   return <>
-    <button className='relative w-32 h-40 text-gray-200 border-2 rounded-xl text-9xl hover:scale-110 duration-100'>
+    <button className='relative w-24 h-32 sm:w-32 sm:h-40 text-gray-200 border-4 rounded-xl text-9xl hover:scale-110 duration-100'>
       +
     </button>
   </>
@@ -83,12 +78,17 @@ export default function Explorer() {
         <div className='relative flex flex-col w-[100vw] h-[100vh] font-round'>
 
           { /** Top bar */}
-          <div className='flex flex-row gap-10 justify-between h-16 items-center px-6 border-b-[1px] bg-white border-gray-300'>
-            <div className='flex flex-row gap-3 items-center text-gray-800'>
+          <div className='flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300'>
+            
+            
+            <button className='sm:hidden hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full'>
+              <FaBars className='text-3xl text-gray-500' />
+            </button>
+            <div className='hidden sm:flex flex-row gap-3 items-center text-gray-800'>
               <FaPencilAlt className='text-2xl'/>
               <p className='font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]'>Inck</p>
             </div>
-            <div className='hidden sm:flex bg-gray-100 border-[1px] border-gray-300 text-gray-500 flex-row items-center h-10 w-full max-w-xl rounded-lg'>
+            <div className='flex bg-gray-100 border-[1px] border-gray-300 text-gray-500 flex-row items-center h-10 overflow-hidden w-full max-w-xl rounded-lg'>
               <button className='group pl-2 h-10 flex items-center justify-center'>
                 <div className='group-hover:bg-gray-300 flex items-center justify-center w-8 h-8 rounded-full'>
                   <FaSearch />
@@ -96,7 +96,7 @@ export default function Explorer() {
               </button>
               <input className='pl-2 bg-transparent focus:outline-none text-gray-900 placeholder-gray-400' placeholder='Search notes' />
             </div>
-            <div className='flex flex-row gap-2 text-gray-500'>
+            <div className='hidden sm:flex flex-row gap-2 text-gray-500'>
               <button className='hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full'>
                 <FaRegQuestionCircle className='text-2xl' />
               </button>
@@ -111,7 +111,7 @@ export default function Explorer() {
 
           <div className='h-full w-full flex flex-row pt-4 overflow-hidden'>
             { /** Directory browser */}
-            <div className='h-full w-96 border-r-[1px] text-gray-500 border-gray-300 flex flex-col' style={{overflow: 'overlay'}}>
+            <div className='hidden h-full w-96 border-r-[1px] text-gray-500 border-gray-300 sm:flex flex-col' style={{overflow: 'overlay'}}>
               <div className='min-w-full w-fit'>
 
                 <DirListing Symbol={FaRegClock} symbolClassName='mt-[0.1rem]' name='Recent' link></DirListing>
@@ -163,8 +163,8 @@ export default function Explorer() {
               </div>
             </div>
 
-            <div className='relative flex flex-col w-full h-full px-10 gap-12'>
-              <div className='text-xl text-gray-700 font-bold flex flex-row items-center -ml-3 pt-3 flex-wrap'>
+            <div className='relative flex flex-col w-full h-full px-10 gap-12 py-3 overflow-scroll'>
+              <div className='text-xl text-gray-700 font-bold hidden sm:flex flex-row items-center -ml-3 flex-wrap'>
                 <div className='flex flex-row items-center gap-3 hover:bg-gray-200 px-4 py-1 rounded-full cursor-pointer'>
                   <FaBook />
                   My Notes
@@ -178,7 +178,7 @@ export default function Explorer() {
               </div>
 
               {/** Notes */}
-              <div className='flex flex-row flex-wrap gap-8'>
+              <div className='flex flex-row flex-wrap gap-4 sm:gap-8 mx-auto justify-evenly'>
 
                 <Book title='Analyse w1' />
                 <Note title='Analyse w1' />
