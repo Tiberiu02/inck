@@ -152,12 +152,13 @@ export default class App {
   }
 
   render() {
-    if (this.rendering) {
+    if (this.rendering || this.nextRender && performance.now() < this.nextRender) {
       this.scheduleRender()
       return
     }
 
     this.rendering = true
+    const renderStart = performance.now()
     Profiler.start('rendering')
     
     this.clearCanvas()
@@ -173,6 +174,7 @@ export default class App {
     this.scrollBars.update(this.view, this.staticBuffers.yMax)
 
     Profiler.stop('rendering')
+    this.nextRender = performance.now() * 2 - renderStart
     this.rendering = false
   }
 
