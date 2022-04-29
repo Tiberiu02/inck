@@ -58,7 +58,7 @@ Open your browser and go to https://localhost:3000.
 * [X] Live collab
 * [X] Interactive strollbars
 * [X] Make work on Apple
-* [ ] Fix stroke width (thins out at the end)
+* [X] Fix stroke width (thins out at the end)
 * [ ] Split initial package
 * [ ] Download notes as PNG
 * [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)

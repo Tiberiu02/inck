@@ -38,7 +38,7 @@ export class ScrollBars {
 
   handlePointerEvent(e, view, yMax) {
     let { type, pointerId, x, y, pressure } = e
-    console.log(pointerId, x, y)
+    //console.log(pointerId, x, y)
 
     if (pressure) {
       e.preventDefault()
