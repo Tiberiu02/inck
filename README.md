@@ -34,10 +34,21 @@ Open your browser and go to https://localhost:3000.
 * [X] Code
 
 ### Account system
-* [ ] Set up API
-* [ ] Design login & registration pages
-* [ ] Code pages
-* [ ] Login/register page
+* [X] Basic registration endpoint
+* [X] Basic login endpoint
+* [ ] Add email verification
+* [ ] Phone verification (SMS)
+
+### Login/Register frontend
+* [ ] Dropdown for country selection for phone number
+* [X] Secure storage of JWT on the browser (localStorage is very bad)
+* [X] Design login & registration components
+* [ ] Design Logout component (login for logged user), Dont show login/register if already auth
+* [ ] Design full login / auth page
+* [ ] reCaptcha
+* [ ] Validate fields in browser (+ visual feeback, eg password too short etc)
+* [ ] Add user agreement checkbox
+* [ ] Custom checkbox for user agreement
 
 ### Document exporer
 * [X] Design
@@ -67,6 +78,7 @@ Open your browser and go to https://localhost:3000.
 ### Tech debt
 * [ ] Send live collaboration update on scroll (not just on pointer move), so that pointer appears to move when scrolling
 * [ ] Optimize live collaboration (send only stroke modification, not entire stroke every time)
+* [ ] Careful about storing collaborators in memory in Server, probably better to use mongo when lots of users
 
 # License
 

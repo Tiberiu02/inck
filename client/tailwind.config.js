@@ -15,7 +15,7 @@ module.exports = {
       },
       backgroundImage: {
         'notes': "url('/img/notes.png')",
-      }
+      },
     },
   },
   plugins: [
