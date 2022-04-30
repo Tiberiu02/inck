@@ -1,6 +1,8 @@
 const { MongoClient } = require('mongodb')
+// Load environment variables
+require('dotenv').config();
 
-const url = "mongodb://127.0.0.1:27017/"
+const url = process.env.MONGO_URI
 
 function UpdateDB(dbName, collection, query, update) {
   MongoClient.connect(url, (err, db) => {

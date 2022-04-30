@@ -1,17 +1,26 @@
 const express = require('express')
 const http = require('http')
 const sockets = require('socket.io')
-const SocketServer = sockets.Server
-
+require('dotenv').config();
+const {register: registerFn, login: loginFn} = require("./auth")
 const { UpdateDB, QueryDB, QueryAllDB, InsertDB } = require('./Database.js')
-const path = require('path')
+const path = require('path');
+const bodyParser = require("body-parser")
+const mongoose = require("mongoose")
+const cors = require('cors');
+var cookieParser = require('cookie-parser')
+
+
+
 
 class Server {
-  contructor() { }
-  start() {
-    this.port = 8080
-    
+  constructor(port = 8080) {
+
+    const SocketServer = sockets.Server
+    this.port = port
+    mongoose.connect(process.env.MONGO_URI)
     this.app = express()
+    this.app.disable('x-powered-by');
     this.server = http.createServer(this.app)
     this.io = new SocketServer(this.server, {
       cors: {
@@ -19,8 +28,24 @@ class Server {
         methods: ["GET", "POST"]
       }
     })
+    const corsOptions ={ 
+      origin:'http://localhost:3080', 
+      credentials:true,            //access-control-allow-credentials:true
+      optionSuccessStatus: 200
+  }
+    this.app.use(cors(corsOptions));
+    this.app.use(cookieParser())
+  }
+
+  start() {
+
+    // Register auth endpoints
+    const jsonBodyParser = bodyParser.json()
+    this.app.post(process.env.REGISTER_ENDPOINT, jsonBodyParser, registerFn)
+    this.app.post(process.env.LOGIN_ENDPOINT, jsonBodyParser, loginFn)
 
     this.app.use('/', express.static('client'))
+    // TODO: remove ?
     this.app.get('/doc/:docid', (req, res) => {
       res.sendFile(path.join(path.resolve(), 'client/index.html'))
     })
@@ -29,6 +54,7 @@ class Server {
       console.log('listening on *:' + this.port)
     })
 
+    // Map userId: Int => {users: List[socket]}
     this.docs = {}
 
     this.io.on('connection', (socket) => {
