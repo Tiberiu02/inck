@@ -32,6 +32,7 @@ Open your browser and go to https://localhost:3000.
 ### Landing page
 * [X] Design
 * [X] Code
+* [ ] Text animation (can use [this](http://vara.akzhy.com/))
 
 ### Account system
 * [X] Basic registration endpoint
