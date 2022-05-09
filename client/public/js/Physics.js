@@ -22,7 +22,7 @@ function ComputeSmoothPath(s, full) {
 
   let i = 0 | 0
   let [x, y, vx, vy, t] = [+s[0], +s[1], 0.0, 0.0, +s[3]]
-  while (t < s.at(-1)) {
+  while (t < s[s.length - 1]) {
     while (t >= s[i + ELEMENTS_PER_INPUT + OFFSET_INPUT.T])
       i += ELEMENTS_PER_INPUT
 
@@ -50,8 +50,8 @@ function ComputeSmoothPath(s, full) {
 
   if (full) {
     const dt = 1
-    const X = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.X)
-    const Y = s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.Y)
+    const X = s[s.length - ELEMENTS_PER_INPUT + OFFSET_INPUT.X]
+    const Y = s[s.length - ELEMENTS_PER_INPUT + OFFSET_INPUT.Y]
     
     let dist = Math.sqrt((X - x) ** 2 + (Y - y) ** 2)
     while (dist > 0) {
@@ -124,7 +124,7 @@ export function StrokeToPath(s, w, color, full = true) {
   let vertices = []
 
   if (path.length) { // Round tip at the begining
-    const { x, y, nx, ny } = path.at(0)
+    const { x, y, nx, ny } = path[0]
     const r = GetR(s[OFFSET_INPUT.P])
     const ix = -ny
     const iy = nx
@@ -175,8 +175,8 @@ export function StrokeToPath(s, w, color, full = true) {
   }
   
   if (path.length) { // Round tip at the end
-    const { x, y, nx, ny } = path.at(-1)
-    const r = GetR(s.at(-ELEMENTS_PER_INPUT + OFFSET_INPUT.P))
+    const { x, y, nx, ny } = path[path.length - 1]
+    const r = GetR(s[s.length - ELEMENTS_PER_INPUT + OFFSET_INPUT.P])
     const ix = ny
     const iy = -nx
     for (let a = Math.PI / 2 - A_STEP; a >= 0; a -= A_STEP) {

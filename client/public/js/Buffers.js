@@ -1,6 +1,6 @@
 import { GL, ELEMENTS_PER_VERTEX } from "./GL.js"
 
-const INDEX_LIMIT = 1e5
+const INDEX_LIMIT = 1e4
 
 export default class Buffers {
   constructor(gl, drawType) {
@@ -22,14 +22,14 @@ export default class Buffers {
   }
 
   push(vertex, index) {
-    if (this.list.at(-1).arrays.index.length + index.length > INDEX_LIMIT)
+    if (this.list[this.list.length - 1].arrays.index.length + index.length > INDEX_LIMIT)
       this.list.push(this.newBuffer())
     
       //console.log(this.yMax, vertex)
     for (let i = 0; i < vertex.length; i += ELEMENTS_PER_VERTEX)
       this.yMax = Math.max(this.yMax, vertex[i + 1])
-    GL.appendArray(this.list.at(-1).arrays, vertex, index)
-    this.list.at(-1).synced = false
+    GL.appendArray(this.list[this.list.length - 1].arrays, vertex, index)
+    this.list[this.list.length - 1].synced = false
   }
 
   draw(preDraw) {

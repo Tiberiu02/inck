@@ -5,28 +5,31 @@ import React, { useState } from 'react'
 function OpenNoteBtn() {
   const [noteId, setNoteId] = useState('')
   return (
-    <form onSubmit={(e) => {e.preventDefault(); if(noteId) window.location = '/note/' + noteId}} className='flex flex-row gap-4 items-center ins border-2 border-primary bg-white rounded-xl overflow-hidden'>
-      <input required name='code' className='placeholder-gray-400 text-gray-700 mx-3 w-20 sm:w-52' placeholder='Code' onChange={e => setNoteId(e.target.value)} />
-      <button className='flex flex-row gap-4 items-center bg-primary hover:bg-primary-dark duration-200 px-5 h-full py-[0.55rem] border-0'>Open note</button>
+    <form onSubmit={(e) => {e.preventDefault(); if(noteId) window.location = '/note/' + noteId}} className='flex flex-row gap-4 items-center justify-between ins border-2 border-primary bg-white rounded-xl overflow-hidden w-full'>
+      <input required name='code' className='placeholder-gray-400 text-gray-700 mx-3 w-full' placeholder='Code' onChange={e => setNoteId(e.target.value)} />
+      <button className='flex flex-row gap-4 items-center bg-primary hover:bg-primary-dark duration-200 px-5 h-full py-[0.55rem] border-0 w-full justify-center'>Open note</button>
     </form>
   )
 }
 
-function CreateNoteBtn() {
+function CreateNoteBtn({ className }) {
   const chars = "abcdefghijklmnopqrstufwxyzABCDEFGHIJKLMNOPQRSTUFWXYZ1234567890"
   const len = 6
   const id = Array(6).fill(0).map(x => chars[Math.floor(Math.random() * chars.length)]).join('')
   return (
-    <button onClick={() => window.location = '/note/' + id} className='flex flex-row gap-6 items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl'>Create new note<FaPen className='mx-1'/></button>
+    <button onClick={() => window.location = '/note/' + id} className={`${className} flex flex-row items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl w-full`}>
+      Create new note
+      <FaPen className='mr-1 ml-7'/>
+    </button>
   )
 }
 
 function Item({ title, text, Icon }) {
   return (
-    <div className='flex flex-col items-center gap-4'>
+    <div className='flex flex-col items-center'>
       <Icon className='text-6xl text-primary' />
-      <h2 className='text-xl font-bold'>{ title }</h2>
-      <p className='w-56 text-center'>{ text }</p>
+      <h2 className='text-xl font-bold pt-4 text-center'>{ title }</h2>
+      <p className='w-56 text-center pt-4'>{ text }</p>
     </div>
   )
 }
@@ -50,11 +53,11 @@ export default function LandingPage() {
             <div className='h-2 w-20 bg-primary rounded-xl my-10' />
             <div className='relative max-w-fit'>
               <div className='absolute -inset-2 bg-white blur-md'></div>
-              <p className='text-4xl sm:text-5xl font-cursive italic blur-0'>the only ink you&apos;ll ever&nbsp;need</p>
+              <p className='text-4xl sm:text-5xl font-cursive italic blur-0'>the only ink you&apos;ll ever&nbsp;need&nbsp;&nbsp;</p>
             </div>
-            <div className='flex flex-col lg:flex-row mt-20 gap-5 text-lg sm:text-3xl font-round text-white'>
+            <div className='flex flex-col lg:flex-row mt-20 text-lg sm:text-3xl font-round text-white max-w-fit'>
               <OpenNoteBtn />
-              <CreateNoteBtn />
+              <CreateNoteBtn className='mt-4 lg:mt-0 lg:ml-4' />
             </div>
           </div>
         </div>
