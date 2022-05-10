@@ -123,7 +123,7 @@ export default function Register({
           <div
             className="text-justify text-gray-500 font-bold text-sm"
             onClick={toggleTerms}
-          >I have read and accept Inck's terms of service</div>
+          >I have read and accept Inck&apos;s terms of service</div>
         </div>
 
         <div
@@ -136,7 +136,7 @@ export default function Register({
             onChange={toggleUpdates}
             checked={subscribeUpdates}
           />
-          <div>I want to be updated about Inck's new features</div>
+          <div>I want to be updated about Inck&apos;s new features</div>
         </div>
 
         <button
