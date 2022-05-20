@@ -71,6 +71,7 @@ Open your browser and go to https://localhost:3000.
 * [X] Interactive strollbars
 * [X] Make work on Apple
 * [X] Fix stroke width (thins out at the end)
+* [ ] Use TRIANGLE_STRIP with double buffer size (+50% performance boost)
 * [ ] Split initial package
 * [ ] Download notes as PNG
 * [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)

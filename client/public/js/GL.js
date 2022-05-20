@@ -13,7 +13,7 @@ export function desynchronizedHintAvailable() {
 
 export class GL {
 
-  static initWebGL(canvas) {
+  static initWebGL(canvas) { // add back
     let gl = canvas.getContext('webgl', {desynchronized: true, alpha: false})
 
     if (!gl) {

@@ -4,6 +4,8 @@ import React, { useState } from 'react'
 import Register from '../components/auth/register'
 import Login from '../components/auth/login'
 
+// "@next/swc-win32-x64-msvc": "^12.1.5",
+
 export default function AuthPage() {
     const [displayLogin, setDisplayLogin] = useState(true)
 
@@ -14,8 +16,8 @@ export default function AuthPage() {
         : <Register toLoginCallback={toggleDisplay} />
 
     return (
-        <div className="flex flex-row justify-between px-96 py-24 min-h-[100vh] h-full bg-gray-100">
-            <div className="flex flex-col gap-y-10 w-80">
+        <div className="flex flex-row justify-around px-96 pb-20 min-h-screen h-full font-round bg-gray-100 items-center">
+            <div className="hidden flex flex-col gap-y-10 w-80">
 
                 <div className="w-32 h-32 bg-blue-800 rounded-full">
 
@@ -31,7 +33,7 @@ export default function AuthPage() {
                     Don’t want to miss any update ? Want to get in touch ? See our Twitter account!
                 </div>
             </div>
-            <div className="flex justify-center w-1/2">
+            <div className="flex justify-center">
                 {leftComponent}
             </div>
 

@@ -5,9 +5,9 @@ import React, { useState } from 'react'
 function OpenNoteBtn() {
   const [noteId, setNoteId] = useState('')
   return (
-    <form onSubmit={(e) => {e.preventDefault(); if(noteId) window.location = '/note/' + noteId}} className='flex flex-row gap-4 items-center justify-between ins border-2 border-primary bg-white rounded-xl overflow-hidden w-full'>
+    <form onSubmit={(e) => {e.preventDefault(); if(noteId) window.location = '/note/' + noteId}} className='flex flex-row gap-4 items-center justify-between border-2 border-primary bg-white rounded-xl w-full'>
       <input required name='code' className='placeholder-gray-400 text-gray-700 mx-3 w-full' placeholder='Code' onChange={e => setNoteId(e.target.value)} />
-      <button className='flex flex-row gap-4 items-center bg-primary hover:bg-primary-dark duration-200 px-5 h-full py-[0.55rem] border-0 w-full justify-center'>Open note</button>
+      <button className='flex flex-row items-center bg-primary hover:bg-primary-dark duration-200 px-5 h-full py-[0.55rem] border-0 w-full justify-center -mr-1 -my-[2px] rounded-r-xl'>Open&nbsp;note</button>
     </form>
   )
 }
@@ -44,8 +44,8 @@ export default function LandingPage() {
       </Head>
       
       <main>
-        <div className='w-full flex flex-col items-center min-h-[100vh] px-0 py-20 justify-center bg-notes bg-cover'>
-          <div className='lg:max-w-4xl xl:max-w-6xl 2xl:max-w-7xl lg:w-full'>
+        <div className='w-full flex flex-col items-center min-h-[100vh] px-10 py-20 justify-center bg-notes bg-cover'>
+          <div className='lg:max-w-4xl xl:max-w-6xl 2xl:max-w-7xl w-full'>
             <div className='relative max-w-fit'>
               <div className='absolute -inset-4 bg-white blur-lg'></div>
               <p className='text-6xl sm:text-8xl font-cursive blur-0 font-bold'>Welcome to Inck!</p>
@@ -79,7 +79,7 @@ export default function LandingPage() {
             <p className='text-2xl mt-4 text-gray-900 italic mb-2'>Still not convinced?</p>
             <h1 className='text-6xl text-center'>Try it out</h1>
             <FaArrowDown className='text-5xl text-primary mt-12 mb-4' />
-            <iframe className='w-full aspect-square sm:aspect-video rounded-xl shadow-lg' src='/note/demo' />
+            <iframe className='w-full h-[80vw] sm:h-[50vw] rounded-xl shadow-lg' src='/note/demo' />
           </div>
 
           <p className='mt-20 -mb-20 py-5'>© Inck team 2022</p>

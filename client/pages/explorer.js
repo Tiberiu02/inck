@@ -35,9 +35,9 @@ function DirListing({ Symbol, symbolClassName, name, className, children, link }
 
 function Note({ title }) {
   return (
-    <button className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner  hover:scale-110 duration-100'>
+    <button className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100'>
       
-        <p className='absolute bottom-[10%] py-1 bg-slate-800 w-full text-white text-sm sm:text-lg text-center line-clamp-2'>
+        <p className='absolute bottom-[10%] py-1 -mx-[2px] border-slate-800 bg-slate-800 w-[calc(100%+4px)] text-white text-sm sm:text-lg text-center line-clamp-2'>
           { title }
         </p>
     </button>
@@ -65,6 +65,97 @@ function AddButton() {
   </>
 }
 
+function MobileMenu() {
+  let [open, setOpen] = useState(false)
+
+  function toggleOpen() {
+    if (!open) { // disable scrolling
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${window.scrollY}px`;
+    } else { // enable scrolling
+      document.body.style.position = '';
+      document.body.style.top = '';
+            
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+    
+    setOpen(!open)
+  }
+
+  return (
+    <>
+      <button className='sm:hidden flex items-center justify-center w-10 h-10 rounded-full' onClick={toggleOpen}>
+        <FaBars className='text-3xl text-gray-500' />
+      </button>
+      <div className={`fixed h-screen w-screen bg-black z-10 ${open ? 'opacity-50' : 'opacity-0 pointer-events-none'} transition-all duration-200 top-0 left-0`} onClick={toggleOpen}>
+
+      </div>
+      <div className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${open ? 'translate-x-0' : '-translate-x-full'} transition-all duration-200 top-0 left-0 overflow-scroll`}>
+        <FileTree className='pt-10 pb-52 w-full' />
+      </div>
+    </>
+  )
+}
+
+function FileTree({ className }) {
+  return (
+    <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{overflow: 'overlay'}}>
+      <div className='min-w-full w-fit'>
+
+        <DirListing Symbol={FaRegClock} symbolClassName='mt-[0.1rem]' name='Recent' link></DirListing>
+        <DirListing Symbol={FaUsers} symbolClassName='mt-[0.1rem]' name='Shared with me' link></DirListing>
+        <DirListing Symbol={FaBookmark} name='Homework' link></DirListing>
+        <DirListing Symbol={FaTrash} name='Trash' link></DirListing>
+
+        <DirListing Symbol={FaBook} className='mt-10' name='My Notes'>
+          <DirListing name='Epfl' className='pl-12'>
+            <DirListing name='Analyse' className='pl-20'>
+              <DirListing name='w1' className='pl-28'></DirListing>
+              <DirListing name='w2' className='pl-28'></DirListing>
+              <DirListing name='w3' className='pl-28'></DirListing>
+              <DirListing name='w4' className='pl-28'></DirListing>
+              <DirListing name='w5' className='pl-28'></DirListing>
+              <DirListing name='w6' className='pl-28'></DirListing>
+              <DirListing name='w7' className='pl-28'></DirListing>
+            </DirListing>
+            <DirListing name='AICC 2' className='pl-20'>
+              <DirListing name='w1' className='pl-28'></DirListing>
+              <DirListing name='w2' className='pl-28'></DirListing>
+              <DirListing name='w3' className='pl-28'></DirListing>
+              <DirListing name='w4' className='pl-28'></DirListing>
+              <DirListing name='w5' className='pl-28'></DirListing>
+              <DirListing name='w6' className='pl-28'></DirListing>
+              <DirListing name='w7' className='pl-28'></DirListing>
+            </DirListing>
+            <DirListing name='Pratique de la programation orientée objet' className='pl-20'>
+              <DirListing name='w1' className='pl-28'></DirListing>
+              <DirListing name='w2' className='pl-28'></DirListing>
+              <DirListing name='w3' className='pl-28'></DirListing>
+              <DirListing name='w4' className='pl-28'></DirListing>
+              <DirListing name='w5' className='pl-28'></DirListing>
+              <DirListing name='w6' className='pl-28'></DirListing>
+              <DirListing name='w7' className='pl-28'></DirListing>
+            </DirListing>
+            <DirListing name='Digital system design' className='pl-20'>
+              <DirListing name='w1' className='pl-28'></DirListing>
+              <DirListing name='w2' className='pl-28'></DirListing>
+              <DirListing name='w3' className='pl-28'></DirListing>
+              <DirListing name='w4' className='pl-28'></DirListing>
+              <DirListing name='w5' className='pl-28'></DirListing>
+              <DirListing name='w6' className='pl-28'></DirListing>
+              <DirListing name='w7' className='pl-28'></DirListing>
+            </DirListing>
+          </DirListing>
+        </DirListing>
+      
+      </div>
+    </div>
+  )
+}
+
 export default function Explorer() {
   return (
     <div>
@@ -79,11 +170,7 @@ export default function Explorer() {
 
           { /** Top bar */}
           <div className='flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300'>
-            
-            
-            <button className='sm:hidden hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full'>
-              <FaBars className='text-3xl text-gray-500' />
-            </button>
+            <MobileMenu />
             <div className='hidden sm:flex flex-row gap-3 items-center text-gray-800'>
               <FaPencilAlt className='text-2xl'/>
               <p className='font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]'>Inck</p>
@@ -110,58 +197,7 @@ export default function Explorer() {
           </div>
 
           <div className='h-full w-full flex flex-row pt-4 overflow-hidden'>
-            { /** Directory browser */}
-            <div className='hidden h-full w-96 border-r-[1px] text-gray-500 border-gray-300 sm:flex flex-col' style={{overflow: 'overlay'}}>
-              <div className='min-w-full w-fit'>
-
-                <DirListing Symbol={FaRegClock} symbolClassName='mt-[0.1rem]' name='Recent' link></DirListing>
-                <DirListing Symbol={FaUsers} symbolClassName='mt-[0.1rem]' name='Shared with me' link></DirListing>
-                <DirListing Symbol={FaBookmark} name='Homework' link></DirListing>
-                <DirListing Symbol={FaTrash} name='Trash' link></DirListing>
-
-                <DirListing Symbol={FaBook} className='mt-10' name='My Notes'>
-                  <DirListing name='Epfl' className='pl-12'>
-                    <DirListing name='Analyse' className='pl-20'>
-                      <DirListing name='w1' className='pl-28'></DirListing>
-                      <DirListing name='w2' className='pl-28'></DirListing>
-                      <DirListing name='w3' className='pl-28'></DirListing>
-                      <DirListing name='w4' className='pl-28'></DirListing>
-                      <DirListing name='w5' className='pl-28'></DirListing>
-                      <DirListing name='w6' className='pl-28'></DirListing>
-                      <DirListing name='w7' className='pl-28'></DirListing>
-                    </DirListing>
-                    <DirListing name='AICC 2' className='pl-20'>
-                      <DirListing name='w1' className='pl-28'></DirListing>
-                      <DirListing name='w2' className='pl-28'></DirListing>
-                      <DirListing name='w3' className='pl-28'></DirListing>
-                      <DirListing name='w4' className='pl-28'></DirListing>
-                      <DirListing name='w5' className='pl-28'></DirListing>
-                      <DirListing name='w6' className='pl-28'></DirListing>
-                      <DirListing name='w7' className='pl-28'></DirListing>
-                    </DirListing>
-                    <DirListing name='Pratique de la programation orientée objet' className='pl-20'>
-                      <DirListing name='w1' className='pl-28'></DirListing>
-                      <DirListing name='w2' className='pl-28'></DirListing>
-                      <DirListing name='w3' className='pl-28'></DirListing>
-                      <DirListing name='w4' className='pl-28'></DirListing>
-                      <DirListing name='w5' className='pl-28'></DirListing>
-                      <DirListing name='w6' className='pl-28'></DirListing>
-                      <DirListing name='w7' className='pl-28'></DirListing>
-                    </DirListing>
-                    <DirListing name='Digital system design' className='pl-20'>
-                      <DirListing name='w1' className='pl-28'></DirListing>
-                      <DirListing name='w2' className='pl-28'></DirListing>
-                      <DirListing name='w3' className='pl-28'></DirListing>
-                      <DirListing name='w4' className='pl-28'></DirListing>
-                      <DirListing name='w5' className='pl-28'></DirListing>
-                      <DirListing name='w6' className='pl-28'></DirListing>
-                      <DirListing name='w7' className='pl-28'></DirListing>
-                    </DirListing>
-                  </DirListing>
-                </DirListing>
-              
-              </div>
-            </div>
+            <FileTree className='hidden sm:visible w-96 border-r-[1px] border-gray-300' />
 
             <div className='relative flex flex-col w-full h-full px-10 gap-12 py-3 overflow-scroll'>
               <div className='text-xl text-gray-700 font-bold hidden sm:flex flex-row items-center -ml-3 flex-wrap'>

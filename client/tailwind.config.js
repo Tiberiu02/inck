@@ -7,7 +7,8 @@ module.exports = {
     extend: {
       colors: {
         'primary': '#3fbd15',
-        'primary-dark': '#3a991a'
+        'primary-dark': '#3a991a',
+        'primary-light': '#47d119'
       },
       fontFamily: {
         'cursive': ['"Shadows Into Light Two"', 'cursive'],
