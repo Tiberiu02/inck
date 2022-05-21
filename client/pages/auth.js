@@ -33,6 +33,7 @@ export default function AuthPage() {
                     Don’t want to miss any update ? Want to get in touch ? See our Twitter account!
                 </div>
             </div>
+            
             <div className="flex justify-center">
                 {leftComponent}
             </div>
