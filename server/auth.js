@@ -78,7 +78,7 @@ async function login(req, res){
     }
 
     if (!validateEmail(email)) {
-        return res.status(400).send({error: "invalid email"})
+      return res.status(400).send({error: "invalid email"})
     }
 
     const user = await UserModel.findOne({ email });

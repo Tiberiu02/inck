@@ -5,8 +5,6 @@ import Cookies from 'universal-cookie'
 import { authCookieName } from '../../../utils'
 
 
-
-
 export default function Register({ toLoginCallback }) {
 
   const [firstName, setFirstName] = useState("")
@@ -63,11 +61,9 @@ export default function Register({ toLoginCallback }) {
         }, // Allows the cookie to be accessible on all pages of the domain
       )
     } else {
-      setError(jsonResponse["error"])
+      setError('Could not register: ' + jsonResponse["error"])
     }
   }
-
-  //const textFieldStyle = "bg-gray-200 placeholder-gray-400 text-gray-900 h-10 rounded-md px-3 font-bold focus:outline-none focus:ring-4 focus:ring-gray-300"
   
   const textFieldStyle = "bg-white placeholder-gray-400 text-gray-900 h-10 rounded-md shadow-md px-3 font-bold1 focus:outline-none focus:ring-4 focus:ring-gray-300"
   const buttonStyle = "bg-primary hover:bg-primary-light hover:shadow-sm duration-100 text-white w-full h-10 rounded-md shadow-lg font-bold tracking-wider text-sm"
@@ -118,7 +114,7 @@ export default function Register({ toLoginCallback }) {
 
         <div className='flex flex-col text-gray-600 text-sm'>
           <div className="flex items-center">
-            <input type="checkbox" onClick={toggleTerms} className="accent-primary h-10 mr-3" checked={acceptTerms}/>
+            <input type="checkbox" onClick={toggleTerms} className="accent-primary mr-3" checked={acceptTerms}/>
             <div onClick={toggleTerms}>I have read and accepted Inck&apos;s</div>
             <a target='_blank' href='/tos' className={undelineStyle}>terms of service</a>
             &nbsp;and
