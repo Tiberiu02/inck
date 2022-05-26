@@ -14,6 +14,8 @@ body {
   -ms-user-select: none;      /* IE 10+ */
   user-select: none;          /* Likely future */
 
+  -webkit-touch-callout: none;
+
   overflow-x: hidden;
 }
 
