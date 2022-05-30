@@ -1,0 +1,120 @@
+svg > * {
+    cursor: pointer;
+}
+
+/** Settings, Undo, Redo, Paste buttons */
+
+.option_button {
+    fill: rgba(230, 230, 230, 1);
+}
+
+.option_button > circle {
+    transition: 150ms;
+}
+
+.option_button:hover > circle {
+    fill: rgba(215, 215, 215, 1);
+}
+
+.option_button > image {
+    pointer-events: none;
+    transition: 150ms;
+    opacity: 0.8;
+}
+
+.option_button:hover > image {
+    opacity: 1;
+}
+
+
+/** Tool buttons */ 
+
+.tool_button {
+    fill: rgba(230, 230, 230, 1);
+    transition: 300ms;
+    transform-origin: 50% 50%;
+}
+
+.tool_button:hover {
+    transform: scale(1.03);
+    fill: rgba(215, 215, 215, 1);
+}
+
+/** Close button (X) */
+
+.close_button > circle {
+    fill: rgba(150, 0, 0, 1);
+    opacity: 0;
+    transform-origin: 50% 50%;
+    transition: 300ms;
+}
+
+.close_button:hover > circle {
+    opacity: 0.05;
+}
+
+.close_button > path {
+    fill: rgba(255, 0, 0, 1);
+    opacity: 0.7;
+    transition: 300ms;
+    transform-origin: 50% 50%;
+}
+
+.close_button:hover > path {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/** Slice grow on hover animation */
+
+.color_slice {
+    transition: 300ms;
+    transform-origin: 50% 50%;
+}
+
+.color_slice:hover {
+    transform: scale(1.03);
+}
+
+/** Highlighter & shapes buttons */
+
+.button_group > path {
+    fill: rgba(240, 240, 240, 1);
+}
+
+.button_group:hover > path {
+    fill: rgba(220, 220, 220, 1);
+}
+
+.button_group > image {
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+.button_group:hover > image {
+    opacity: 1;
+}
+
+.color_slice > .button_group {
+    display:  none;
+}
+
+.color_slice:hover > .button_group {
+    display:  block;
+}
+
+/** Pen buttons */
+
+.pen > image {
+    opacity: 0;
+    filter: drop-shadow(1px 2px 3px rgba(255, 255, 255, 0.75));
+    pointer-events: none;
+}
+
+.color_slice:hover > .pen > image {
+    opacity: .8;
+}
+
+.pen:hover > image {
+    opacity: 1 !important;
+}
