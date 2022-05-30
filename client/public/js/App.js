@@ -102,8 +102,6 @@ export default class App {
       let { type, pressure, timeStamp, pointerType } = e
       let [x, y] = this.view.mapCoords(e.x, e.y)
 
-      pointerType = 'pen'
-
       this.drawing = (pressure > 0 && pointerType != 'touch')
 
       if (pointerType != 'touch') {
