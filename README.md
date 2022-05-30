@@ -53,8 +53,9 @@ Open your browser and go to https://localhost:3000.
 
 ### Document exporer
 * [X] Design
-* [ ] Implement front-end
+* [X] Implement front-end
 * [ ] Link with backend
+* [ ] Document rights
 
 ### Drawing
 * [X] Set up WebGL pipeline
