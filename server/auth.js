@@ -49,11 +49,11 @@ async function register(req, res){
     );
     
     user.token = token;
-    res.status(201).send({ email, token });
+    return res.status(201).send({ email, token });
 
   } catch (err) {
     console.log(err);
-    res.status(400).send({error: "internal error"})
+    return res.status(400).send({error: "internal error"})
   }
 }
 
@@ -63,7 +63,7 @@ async function login(req, res){
     email = email.trim().toLowerCase();
 
     if (!(email && password))
-      res.status(400).send({error: "missing fields"});
+      return res.status(400).send({error: "missing fields"});
 
     if (!validateEmail(email))
       return res.status(400).send({error: "invalid email"})
@@ -85,7 +85,7 @@ async function login(req, res){
 
   } catch (err) {
     console.log(err);
-    res.status(400).send({error: "internal error"})
+    return res.status(400).send({error: "internal error"})
   }
 }
 

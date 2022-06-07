@@ -4,11 +4,13 @@ export class Tool {
   constructor(inputs) {
     this.inputs = inputs
     this.prediction = []
+    this.callback = () => {}
   }
 
   update(x, y, pressure, timeStamp, prediction = []) {
     if (!this.startTime)
       this.startTime = timeStamp
+    this.endTime = timeStamp
 
     this.inputs.push(x, y, pressure, timeStamp - this.startTime)
     this.prediction = prediction
@@ -35,6 +37,15 @@ export class Tool {
       if (xMax - xMin < maxDist && yMax - yMin < maxDist)
         callback()
     }, duration)
+  }
+
+  ifQuickRelease(duration, fn) {
+    const cb = this.callback
+    this.callback = () => {
+      if (this.startTime && this.endTime - this.startTime < duration)
+        fn();
+      cb();
+    }
   }
 
   delete() {

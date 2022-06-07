@@ -16,8 +16,8 @@ export default function AuthPage() {
         : <Register toLoginCallback={toggleDisplay} />
 
     return (
-        <div className="flex flex-row justify-around px-96 pb-20 min-h-screen h-full font-round bg-gray-100 items-center">
-            <div className="hidden flex flex-col gap-y-10 w-80">
+        <div className="flex flex-row justify-around pt-10 pb-20 min-h-screen h-full font-round bg-gray-100 items-center">
+            <div className="hidden flex flex-col gap-y-10">
 
                 <div className="w-32 h-32 bg-blue-800 rounded-full">
 

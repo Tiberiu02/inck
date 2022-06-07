@@ -40,7 +40,6 @@ export default function Register({ toLoginCallback }) {
         headers: {
           "Content-type": "application/json;charset=UTF-8"
         },
-        credentials: 'include',
       }
     )
     const jsonResponse = await response.json()
@@ -75,7 +74,7 @@ export default function Register({ toLoginCallback }) {
       <h3 className="text-lg mb-8">Create an Inck account</h3>
       {/* Main pane */}
       <div className="flex flex-col rounded-xl py-5 px-10 space-y-6">
-        <div className="flex flex-row justify-between gap-6">
+        <div className="flex flex-col sm:flex-row justify-between gap-6">
           <input
             className={textFieldStyle}
             placeholder="First Name"
@@ -112,13 +111,13 @@ export default function Register({ toLoginCallback }) {
           onChange={(e) => setRepeatedPass(e.target.value)}
         />
 
-        <div className='flex flex-col text-gray-600 text-sm'>
+        <div className='flex flex-col text-gray-600 text-sm gap-2'>
           <div className="flex items-center">
             <input type="checkbox" onClick={toggleTerms} className="accent-primary mr-3" checked={acceptTerms}/>
-            <div onClick={toggleTerms}>I have read and accepted Inck&apos;s</div>
+            <div onClick={toggleTerms}>I have read and accepted Inck&apos;s
             <a target='_blank' href='/tos' className={undelineStyle}>terms of service</a>
             &nbsp;and
-            <a target='_blank' href='/privacy' className={undelineStyle}>privacy policy</a>
+            <a target='_blank' href='/privacy' className={undelineStyle}>privacy policy</a></div>
           </div>
 
           <div className="flex items-center" onClick={toggleUpdates} >

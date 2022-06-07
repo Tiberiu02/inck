@@ -106,7 +106,7 @@ export function StrokeToPath(s, w, color, full = true) {
 
   Profiler.start('physics')
 
-  const GetR = p => w * p
+  const GetR = p => w * (p + 1) / 3
 
   let path = ComputeSmoothPath(s, full)
 

@@ -29,10 +29,10 @@ class Server {
       }
     })
     const corsOptions ={ 
-      origin:'http://localhost:3080', 
-      credentials:true,            //access-control-allow-credentials:true
+      origin: '*', 
+      credentials: true,            //access-control-allow-credentials:true
       optionSuccessStatus: 200
-  }
+    }
     this.app.use(cors(corsOptions));
     this.app.use(cookieParser())
   }

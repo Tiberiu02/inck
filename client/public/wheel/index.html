@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html, body {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="/js/UI.js"></script>
+    <script type="module">
+      import ToolWheel from '/js/ToolWheel.js';
+
+      //window.wheel = new ToolWheel();
+      //setTimeout(() => wheel.show(), 1000);
+
+      ToolWheel.addStyleSheets();
+      document.body.appendChild(ToolWheel.buildWidthsWheel(350))
+    </script>
+
+  </body>
+</html>

@@ -2,9 +2,9 @@ import Profiler from './Profiler.js'
 import { GL, ELEMENTS_PER_VERTEX } from './GL.js'
 import { ViewManager } from './Gestures.js'
 import Connector from './Connector.js'
-import { Pen, Eraser } from './Tools.js'
 import { ShowCircularWave, ScrollBars } from './UI.js'
 import Buffers from './Buffers.js'
+import ToolWheel from '/js/ToolWheel.js'
 
 export default class App {
 
@@ -17,6 +17,8 @@ export default class App {
     this.canvas = document.createElement('canvas')
     document.body.appendChild(this.canvas)
     document.body.style.overflow = 'hidden'
+    document.body.style.width = '100vw'
+    document.body.style.height = '100vh'
     document.body.style.touchAction = 'none'
 
     // Create WebGL
@@ -47,6 +49,13 @@ export default class App {
     window.addEventListener('pointerleave', e => this.handlePointerEvent(e), true)
     window.addEventListener('pointerout', e => this.handlePointerEvent(e), true)
     window.addEventListener('contextmenu', e => e.preventDefault())
+
+    // Create tool wheel
+    this.wheel = new ToolWheel(this, {
+      undo: () => console.log('Undo'),
+      redo: () => console.log('Redo'),
+      settings: () => console.log('settings'),
+    })
 
     // Start rendering loop
     requestAnimationFrame(() => this.renderLoop())
@@ -94,10 +103,20 @@ export default class App {
 
   // Apple
   handlePointerEvent(e) {
+
     if (this.scrollBars.scrolling() || e.target == this.scrollBars.vertical || e.target == this.scrollBars.horizontal) {
       this.scrollBars.handlePointerEvent(e, this.view, this.staticBuffers.yMax)
       this.scheduleRender()
     } else if (e.target == this.canvas) {
+      
+      if (e.pressure && this.wheel.isVisible() && this.openingWheel)
+        return
+
+      if (e.pressure && this.wheel.isVisible() && !this.openingWheel)
+        this.wheel.hide()
+
+      if (!e.pressure && this.openingWheel)
+        this.openingWheel = false
 
       let { type, pressure, timeStamp, pointerType } = e
       let [x, y] = this.view.mapCoords(e.x, e.y)
@@ -110,14 +129,23 @@ export default class App {
 
         if (pressure) { // Writing
           if (!this.activeTool) { // New stroke
-            this.activeTool = new Pen(0.002, [0, 0, 0, 1])
+            this.activeTool = this.wheel.NewTool()
+            console.log('new tool')
             // Long press eraser gesture
             const d = pointerType == 'pen' ? 15 : 1
             this.activeTool.ifLongPress(pointerType == 'pen' ? 500 : 1000, d / innerWidth / this.view.zoom, () => {
               this.activeTool.delete()
-              this.activeTool = new Eraser()
-              ShowCircularWave(e.x, e.y, 15, 500)
+              this.openingWheel = true
+              this.activeTool = undefined
+              this.wheel.hide()
+              this.wheel.show(e.x, e.y)
+              console.log(e.x, e.y)
               this.render()
+              
+              //console.log(e.pointerId)
+              //this.wheel.wheel.setPointerCapture(e.pointerId)
+              //this.canvas.style.pointerEvents = 'none'
+              //setTimeout(200, this.canvas.style.pointerEvents = 'all')
             })
           }
           

@@ -1,5 +1,20 @@
-svg > * {
+.wheel > * {
     cursor: pointer;
+}
+
+.wheel-active > * {
+    pointer-events: all;
+}
+
+.wheel {
+    pointer-events: none;
+    transition: transform 500ms;
+    filter: drop-shadow(0 7px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 3px 5px rgb(0 0 0 / 0.25));
+}
+
+.wheel-hidden {
+    transform: scale(0, 0) !important;
+    transition: 0ms;
 }
 
 /** Settings, Undo, Redo, Paste buttons */
@@ -27,10 +42,11 @@ svg > * {
 }
 
 
-/** Tool buttons */ 
+/** Tool buttons (eraser & select) */ 
 
 .tool_button {
     fill: rgba(230, 230, 230, 1);
+    stroke: rgba(230, 230, 230, 1);
     transition: 300ms;
     transform-origin: 50% 50%;
 }
@@ -38,19 +54,21 @@ svg > * {
 .tool_button:hover {
     transform: scale(1.03);
     fill: rgba(215, 215, 215, 1);
+    stroke: rgba(215, 215, 215, 1);
 }
 
 /** Close button (X) */
 
 .close_button > circle {
-    fill: rgba(150, 0, 0, 1);
-    opacity: 0;
+    fill: rgb(255, 255, 255);
     transform-origin: 50% 50%;
     transition: 300ms;
+    filter: drop-shadow(0 0 13px rgb(0 0 0 / 0.1)) drop-shadow(0 0 5px rgb(0 0 0 / 0.2));
 }
 
 .close_button:hover > circle {
-    opacity: 0.05;
+    fill: rgb(255, 235, 235);
+    transform: scale(1.1);
 }
 
 .close_button > path {
@@ -76,10 +94,12 @@ svg > * {
     transform: scale(1.03);
 }
 
-/** Highlighter & shapes buttons */
+/** Highlighter & shapes buttons & withs slices */
 
 .button_group > path {
     fill: rgba(240, 240, 240, 1);
+    stroke: rgba(220, 220, 220, 1);
+    stroke-width: 2px;
 }
 
 .button_group:hover > path {

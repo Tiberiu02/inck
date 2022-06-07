@@ -1,16 +1,11 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Radial Menu</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <body>
+    <script type="module">
+      import ToolWheel from '/js/ToolWheel.js';
 
-        <!-- Include CSS file -->
-        <link rel="stylesheet" href="radial_menu.css">
-
-
-    </head>
-    <body>
-        <script src="radial_menu.js"></script>
-    </body>
+      ToolWheel.addStyleSheets();
+      document.body.append(ToolWheel.build());
+    </script>
+  </body>
 </html>

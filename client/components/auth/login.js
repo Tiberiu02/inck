@@ -24,6 +24,7 @@ export default function Login({
     setError("")
 
     const endpoint = `${window.location.protocol}//${window.location.hostname}:8080/api/auth/login`
+    console.log(endpoint);
   
     const credentials = {
       email: email,
@@ -69,7 +70,7 @@ export default function Login({
   const undelineStyle = "pl-1 underline decoration-gray-500 decoration underline-offset-2 decoration-[2px] hover:text-gray-800 hover:decoration-gray-800 cursor-pointer"
 
   return (
-    <div className="flex flex-col items-center mx-5 w-72">
+    <div className="flex flex-col items-center mx-5 max-w-72">
       <h2 className="font-semibold text-4xl mb-4">Sign in</h2>
       <h3 className="text-lg mb-8">Connect to your Inck account</h3>
       {/* Main pane

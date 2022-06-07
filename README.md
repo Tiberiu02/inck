@@ -72,6 +72,15 @@ Open your browser and go to https://localhost:3000.
 * [X] Interactive strollbars
 * [X] Make work on Apple
 * [X] Fix stroke width (thins out at the end)
+* [X] Fix widths wheel bug on Samsung
+* [ ] New strokes algorithm
+  * [ ] TRIANGLE_STRIP
+  * [ ] Strokes grouped in buffers by Y-coordinate to optimize rendering
+  * [ ] Highlighter strokes at the back
+  * [ ] Ability to delete/undo strokes
+  * [ ] Finding strokes that intersect a given line
+* [ ] Wheel opening gesture
+* [ ] Double press gesture
 * [ ] Use TRIANGLE_STRIP with double buffer size (+50% performance boost)
 * [ ] Split initial package
 * [ ] Download notes as PNG
