@@ -1,8 +1,7 @@
-import Head from 'next/head'
-import Script from 'next/script'
+import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import Cookies from 'universal-cookie'
-import { authCookieName } from '../../../utils'
+import { SetAuthToken } from '../AuthToken'
+import GetApiPath from '../GetApiPath'
 
 
 export default function Register({ toLoginCallback }) {
@@ -16,6 +15,8 @@ export default function Register({ toLoginCallback }) {
   const [subscribeUpdates, setSubscribeUpdates] = useState(false)
   const toggleTerms = () => setAcceptTerms(!acceptTerms)
   const toggleUpdates = () => setSubscribeUpdates(!subscribeUpdates)
+
+  const router = useRouter()
   
   const [error, setError] = useState("")
 
@@ -33,7 +34,7 @@ export default function Register({ toLoginCallback }) {
     }
 
     const response = await fetch(
-      `${window.location.protocol}//${window.location.hostname}:8080/api/auth/register`,
+      GetApiPath('/api/auth/register'),
       {
         method: "post",
         body: JSON.stringify(inputs),
@@ -45,20 +46,8 @@ export default function Register({ toLoginCallback }) {
     const jsonResponse = await response.json()
 
     if (response.status == 201) {
-      alert("Account created")
-      const cookies = new Cookies()
-      const authContent = {
-        email: jsonResponse.email,
-        token: jsonResponse.token
-      }
-      cookies.set(
-        authCookieName,
-        authContent,
-        {
-          path: "/",
-          withCredentials: true,
-        }, // Allows the cookie to be accessible on all pages of the domain
-      )
+      SetAuthToken(jsonResponse.token)
+      router.push("/explorer")
     } else {
       setError('Could not register: ' + jsonResponse["error"])
     }

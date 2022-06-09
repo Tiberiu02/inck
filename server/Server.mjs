@@ -1,14 +1,17 @@
-const express = require('express')
-const http = require('http')
-const sockets = require('socket.io')
-require('dotenv').config();
-const {register: registerFn, login: loginFn} = require("./auth")
-const { UpdateDB, QueryDB, QueryAllDB, InsertDB } = require('./Database.js')
-const path = require('path');
-const bodyParser = require("body-parser")
-const mongoose = require("mongoose")
-const cors = require('cors');
-var cookieParser = require('cookie-parser')
+import express from 'express'
+import { createServer } from 'http'
+import cors from 'cors'
+import bodyParser from "body-parser"
+import cookieParser from 'cookie-parser'
+import { Server as SocketServer } from 'socket.io'
+import mongoose from "mongoose"
+
+import dotend from 'dotenv'
+dotend.config()
+
+import { UpdateDB, QueryDB, QueryAllDB, InsertDB } from './Database.mjs'
+import { register as registerFn, login as loginFn } from "./Authentication.mjs"
+import { createFileFn, getFilesFn } from './FileExplorer.mjs'
 
 
 
@@ -16,12 +19,12 @@ var cookieParser = require('cookie-parser')
 class Server {
   constructor(port = 8080) {
 
-    const SocketServer = sockets.Server
-    this.port = port
     mongoose.connect(process.env.MONGO_URI)
+
+    this.port = port
     this.app = express()
     this.app.disable('x-powered-by');
-    this.server = http.createServer(this.app)
+    this.server = createServer(this.app)
     this.io = new SocketServer(this.server, {
       cors: {
         origin: "*",
@@ -38,21 +41,23 @@ class Server {
   }
 
   start() {
-
-    // Register auth endpoints
-    const jsonBodyParser = bodyParser.json()
-    this.app.post(process.env.REGISTER_ENDPOINT, jsonBodyParser, registerFn)
-    this.app.post(process.env.LOGIN_ENDPOINT, jsonBodyParser, loginFn)
-
-    this.app.use('/', express.static('client'))
-    // TODO: remove ?
-    this.app.get('/doc/:docid', (req, res) => {
-      res.sendFile(path.join(path.resolve(), 'client/index.html'))
-    })
-
     this.server.listen(this.port, () => {
       console.log('listening on *:' + this.port)
     })
+
+    this.registerEndpoints()
+    this.startSocketServer()
+  }
+
+  registerEndpoints() {
+    const jsonBodyParser = bodyParser.json()
+    this.app.post('/api/auth/register', jsonBodyParser, registerFn)
+    this.app.post('/api/auth/login', jsonBodyParser, loginFn)
+    this.app.post('/api/explorer/getfiles', jsonBodyParser, getFilesFn)
+    this.app.post('/api/explorer/addfile', jsonBodyParser, createFileFn)
+  }
+
+  startSocketServer() {
 
     // Map userId: Int => {users: List[socket]}
     this.docs = {}
@@ -150,4 +155,4 @@ class Server {
   }
 }
 
-module.exports = Server
+export default Server

@@ -1,10 +1,11 @@
-const { MongoClient } = require('mongodb')
-// Load environment variables
-require('dotenv').config();
+import { MongoClient } from 'mongodb';
+
+import dotend from 'dotenv'
+dotend.config()
 
 const url = process.env.MONGO_URI
 
-function UpdateDB(dbName, collection, query, update) {
+export function UpdateDB(dbName, collection, query, update) {
   MongoClient.connect(url, (err, db) => {
     if (err) throw err
     
@@ -15,7 +16,7 @@ function UpdateDB(dbName, collection, query, update) {
   })
 }
 
-function QueryDB(dbName, collection, query, cb) {
+export function QueryDB(dbName, collection, query, cb) {
   MongoClient.connect(url, (err, db) => {
     if (err) throw err
 
@@ -27,7 +28,7 @@ function QueryDB(dbName, collection, query, cb) {
   })
 }
 
-function QueryAllDB(dbName, collection, query, mask, cb) {
+export function QueryAllDB(dbName, collection, query, mask, cb) {
   MongoClient.connect(url, (err, db) => {
     if (err) throw err
     db.db(dbName).collection(collection).find(query, { projection: mask }).toArray((err, result) => {
@@ -38,7 +39,7 @@ function QueryAllDB(dbName, collection, query, mask, cb) {
   })
 }
 
-function InsertDB(dbName, collection, obj) {
+export function InsertDB(dbName, collection, obj) {
   MongoClient.connect(url, (err, db) => {
     if (err) throw err
     db.db(dbName).collection(collection).insertOne(obj, (err, result) => {
@@ -46,11 +47,4 @@ function InsertDB(dbName, collection, obj) {
       db.close()
     })
   })
-}
-
-module.exports = {
-  UpdateDB,
-  QueryDB,
-  QueryAllDB,
-  InsertDB
 }

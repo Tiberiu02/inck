@@ -4,10 +4,10 @@
   "private": true,
   "proxy": "http://localhost:443",
   "scripts": {
-    "dev": "concurrently \"cd client && next dev -- -p 3080\" \"node server/index.js\"",
-    "dev-ubt": "concurrently \"cd client && next dev -- -p 3080\" \"sudo node server/index.js\"",
+    "dev": "concurrently \"cd client && next dev -- -p 3080\" \"node server/index.mjs\"",
+    "dev-ubt": "concurrently \"cd client && next dev -- -p 3080\" \"sudo node server/index.mjs\"",
     "build": "cd client && next build",
-    "start": "concurrently \"cd client && next start -- -p 3080\" \"sudo node server/index.js\"",
+    "start": "concurrently \"cd client && next start -- -p 3080\" \"sudo node server/index.mjs\"",
     "lint": "next lint"
   },
   "dependencies": {

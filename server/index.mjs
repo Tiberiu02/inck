@@ -1,4 +1,4 @@
-var Server = require('./Server.js')
+import Server from './Server.mjs'
 
 let server = new Server()
 server.start()

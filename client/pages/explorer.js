@@ -1,18 +1,22 @@
-import { faClock } from '@fortawesome/free-solid-svg-icons'
 import Head from 'next/head'
-import Script from 'next/script'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { FaAngleDown, FaAngleRight, FaPencilAlt, FaSearch, FaRegQuestionCircle, FaRegUserCircle, FaRegSun,
          FaRegClock, FaUsers, FaBookmark, FaTrash, FaBook, FaFolder, FaFolderOpen,
          FaBars } from 'react-icons/fa'
+import Cookies from 'universal-cookie'
+import { authCookieName, GetAuthToken } from '../components/AuthToken.js'
+import GetApiPath from '../components/GetApiPath'
 //import { FcOpenedFolder, FcFolder, FcClock, FcGlobe, FcBookmark, FcFullTrash, FcNook } from 'react-icons/fc'
 
 let freeSelected = () => {}
 
-function DirListing({ Symbol, symbolClassName, name, className, children, link }) {
+function DirListing({ Symbol, symbolClassName, name, className, userPath, dirPath, style, onClick, children, link }) {
   let [open, setOpen] = useState(false)
-  let [selected, setSelected] = useState(false)
+  const selected = userPath && dirPath && userPath.toString() == dirPath.toString()
+  if (!open && userPath && dirPath && userPath.length > dirPath.length && userPath.slice(0, dirPath.length).toString() == dirPath.toString())
+    setOpen(true)
+
   const Caret = open ? FaAngleDown : FaAngleRight
   if (!Symbol)
     Symbol = open ? FaFolderOpen : FaFolder
@@ -20,8 +24,8 @@ function DirListing({ Symbol, symbolClassName, name, className, children, link }
     open = false
   return (
     <div className='min-w-full w-fit'>
-      <button className={'flex flex-row items-center gap-2 px-4 py-2 outline-none min-w-full w-fit ' + (selected ? 'bg-gray-200 ' : 'hover:bg-gray-100 ') + (selected || open ? 'text-black ':'') + className}
-      onClick={() => {setOpen(!open); freeSelected(); setSelected(true); freeSelected = () => setSelected(false)}}>
+      <button style={style} className={'flex flex-row items-center gap-2 px-4 py-2 outline-none min-w-full w-fit ' + (selected ? 'bg-gray-200 ' : 'hover:bg-gray-100 ') + (selected || open ? 'text-black ':'') + className}
+      onClick={() => {setOpen(!open || !selected); onClick()}}>
         <Caret className={(open ? 'text-black' : 'text-gray-400') + (link ? ' opacity-0' : '')} />
         <Symbol className={symbolClassName + ' text-2xl mr-1'} />
         <p className={'whitespace-nowrap mt-[0.15rem] font-bold ' + (open ? '' : '')}>{ name }</p>
@@ -33,10 +37,9 @@ function DirListing({ Symbol, symbolClassName, name, className, children, link }
   )
 }
 
-function Note({ title }) {
+function Note({ title, onClick }) {
   return (
-    <button className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100'>
-      
+    <button onClick={onClick} className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100'>
         <p className='absolute bottom-[10%] py-1 -mx-[2px] border-slate-800 bg-slate-800 w-[calc(100%+4px)] text-white text-sm sm:text-lg text-center line-clamp-2'>
           { title }
         </p>
@@ -45,9 +48,9 @@ function Note({ title }) {
 }
 
 
-function Book({ title }) {
+function Book({ title, onClick }) {
   return (
-    <button className='relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col'>
+    <button onClick={onClick} className='relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col'>
       <div className='bg-slate-800 h-5 w-12 rounded-t-xl -mb-2'></div>
       <div className='realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden'>
         <FaPencilAlt className='text-3xl sm:text-4xl' />
@@ -57,9 +60,9 @@ function Book({ title }) {
   )
 }
 
-function AddButton() {
+function AddButton({ onClick }) {
   return <>
-    <button className='relative w-24 h-32 sm:w-32 sm:h-40 text-gray-200 border-4 rounded-xl text-9xl hover:scale-110 duration-100'>
+    <button onClick={onClick} className='relative w-24 h-32 sm:w-32 sm:h-40 text-gray-200 border-4 rounded-xl text-9xl hover:scale-110 duration-100'>
       +
     </button>
   </>
@@ -100,7 +103,24 @@ function MobileMenu() {
   )
 }
 
-function FileTree({ className }) {
+function FileTree({ className, files, path, setPath }) {
+  const symbols = {
+    'f/notes': FaBook
+  }
+
+  const buildDirListing = (dir, dirPath) => {
+    const symbol = (dir == '')
+    console.log(path)
+    return (
+      <DirListing Symbol={symbols[dir._id]} name={dir.name} userPath={path} dirPath={dirPath}
+        style={{ paddingLeft: `${dirPath.length}rem` }} onClick={() => setPath(dirPath)}>
+        {
+          dir.children.filter(f => f.type == 'folder').map(f => buildDirListing(f, dirPath.concat(f._id)))
+        }
+      </DirListing>
+    )
+  }
+
   return (
     <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{overflow: 'overlay'}}>
       <div className='min-w-full w-fit'>
@@ -110,53 +130,165 @@ function FileTree({ className }) {
         <DirListing Symbol={FaBookmark} name='Homework' link></DirListing>
         <DirListing Symbol={FaTrash} name='Trash' link></DirListing>
 
-        <DirListing Symbol={FaBook} className='mt-10' name='My Notes'>
-          <DirListing name='Epfl' className='pl-12'>
-            <DirListing name='Analyse' className='pl-20'>
-              <DirListing name='w1' className='pl-28'></DirListing>
-              <DirListing name='w2' className='pl-28'></DirListing>
-              <DirListing name='w3' className='pl-28'></DirListing>
-              <DirListing name='w4' className='pl-28'></DirListing>
-              <DirListing name='w5' className='pl-28'></DirListing>
-              <DirListing name='w6' className='pl-28'></DirListing>
-              <DirListing name='w7' className='pl-28'></DirListing>
-            </DirListing>
-            <DirListing name='AICC 2' className='pl-20'>
-              <DirListing name='w1' className='pl-28'></DirListing>
-              <DirListing name='w2' className='pl-28'></DirListing>
-              <DirListing name='w3' className='pl-28'></DirListing>
-              <DirListing name='w4' className='pl-28'></DirListing>
-              <DirListing name='w5' className='pl-28'></DirListing>
-              <DirListing name='w6' className='pl-28'></DirListing>
-              <DirListing name='w7' className='pl-28'></DirListing>
-            </DirListing>
-            <DirListing name='Pratique de la programation orientée objet' className='pl-20'>
-              <DirListing name='w1' className='pl-28'></DirListing>
-              <DirListing name='w2' className='pl-28'></DirListing>
-              <DirListing name='w3' className='pl-28'></DirListing>
-              <DirListing name='w4' className='pl-28'></DirListing>
-              <DirListing name='w5' className='pl-28'></DirListing>
-              <DirListing name='w6' className='pl-28'></DirListing>
-              <DirListing name='w7' className='pl-28'></DirListing>
-            </DirListing>
-            <DirListing name='Digital system design' className='pl-20'>
-              <DirListing name='w1' className='pl-28'></DirListing>
-              <DirListing name='w2' className='pl-28'></DirListing>
-              <DirListing name='w3' className='pl-28'></DirListing>
-              <DirListing name='w4' className='pl-28'></DirListing>
-              <DirListing name='w5' className='pl-28'></DirListing>
-              <DirListing name='w6' className='pl-28'></DirListing>
-              <DirListing name='w7' className='pl-28'></DirListing>
-            </DirListing>
-          </DirListing>
-        </DirListing>
+        <div className='mt-5'></div>
+
+        {
+          files && buildDirListing(files['f/notes'], ['f/notes'])
+        }
       
       </div>
     </div>
   )
 }
 
+function PathNavigator({ files, path, setPath }) {
+  let p = [];
+
+  p.push(
+    <div onClick={() => setPath(path.slice(0, 1))} className='flex flex-row items-center gap-3 hover:bg-gray-200 -ml-4 px-4 py-1 rounded-full cursor-pointer'>
+      <FaBook />
+      {files && files[path[0]].name}
+    </div>
+  )
+
+  for (let i = 1; i < path.length; i++) {
+    p.push(
+      <FaAngleRight className='sm:mx-4' />
+    )
+    p.push(
+      <p onClick={() => setPath(path.slice(0, i + 1))} className='hover:bg-gray-200 px-2 sm:px-4 py-1 rounded-full cursor-pointer'>{files[path[i]].name}</p>
+    )
+  }
+
+  return (
+    <div className='text-md sm:text-xl text-gray-700 font-bold flex flex-row items-center -ml-3 flex-wrap'>
+      {p}
+    </div>
+  )
+}
+
+function CreateFileModal({ visible, setVisible, path, reloadFiles }) {
+  const [menu, setMenu] = useState('note')
+  const [noteName, setNoteName] = useState('')
+  const [notePublicAccess, setNotePublicAccess] = useState('view')
+  const [folderName, setFolderName] = useState('')
+
+  const submit = () => {
+    if (menu == 'note')
+      AddFile(noteName, menu, path.at(-1), {
+        publicAccess: notePublicAccess
+      })
+    else
+      AddFile(folderName, menu, path.at(-1))
+
+    setMenu('note')
+    setNoteName('')
+    setNotePublicAccess('view')
+    setFolderName('')
+
+    setVisible(false)
+    reloadFiles()
+  }
+
+  return (
+    <div className={(!visible ? 'hidden' : '') + ' absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center'}>
+      <div onClick={() => setVisible(false)} className='absolute inset-0'></div>
+      <div className='relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between'>
+        <div className='grid grid-cols-2 w-full gap-4'>
+            <button onClick={() => setMenu('note')} className={'w-full rounded-full flex justify-center p-1 gap-2 ' + (menu == 'note' ? 'bg-gray-200' : 'hover:bg-gray-200')}><FaBook className='text-sm mt-2'/> New note</button>
+            <button onClick={() => setMenu('folder')} className={'w-full rounded-full flex justify-center p-1 gap-2 ' + (menu == 'folder' ? 'bg-gray-200' : 'hover:bg-gray-200')}><FaFolder className='text-sm mt-2'/> New folder</button>
+        </div>
+        <div className={(menu == 'note' ? 'flex' : 'hidden') + ' flex-col gap-6'}>
+          <div className='flex gap-4'>
+            Name
+            <input value={noteName} onChange={e => setNoteName(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md' />
+          </div>
+          <div className='flex gap-4'>
+            Public&nbsp;access
+            <select value={notePublicAccess} onChange={e => setNotePublicAccess(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md'>
+              <option value='edit'>View &amp; edit</option>
+              <option value='view'>View only</option>
+              <option value='none'>None</option>
+            </select>
+          </div>
+        </div>
+        <div className={(menu == 'folder' ? 'flex' : 'hidden') + ' flex-col gap-6'}>
+          <div className='flex gap-4'>
+            Name
+            <input value={folderName} onChange={e => setFolderName(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md' />
+          </div>
+        </div>
+        <button onClick={submit} className='bg-slate-800 hover:bg-black text-white w-fit px-4 py-1 rounded-full self-center'>Create {menu}</button>
+      </div>
+    </div>
+  )
+}
+
+async function LoadFiles(callback) {
+
+  const response = await fetch(GetApiPath('/api/explorer/getfiles'), {
+    method: 'post',
+    body: JSON.stringify({ token: GetAuthToken() }),
+    headers: {
+      "Content-type": "application/json;charset=UTF-8"
+    },
+  });
+  const json = await response.json();
+
+  const fileList = json.files;
+
+  const fileDict = {};
+  for (const f of fileList) {
+    fileDict[f._id] = f;
+    if (f.type == 'folder')
+      fileDict[f._id].children = [];
+  }
+  fileDict['f/notes'] = { name: 'My Notes', children: [] };
+  fileDict['f/trash'] = { name: 'Trash', children: [] };
+  
+  for (const f of fileList)
+    fileDict[f.parentDir].children.push(fileDict[f._id]);
+
+  for (const f of Object.values(fileDict))
+    if (f.children) {
+      f.children.sort((a, b) => {
+        if (a.type != b.type)
+          return a.type == 'folder' ? -1 : 1
+        if (a.name != b.name)
+          return a.name < b.name ? -1 : 1
+        return 0
+      })
+    }
+
+  console.log(fileDict);
+  callback(fileDict);
+}
+
+async function AddFile(name, type, parentDir, options = {}) {
+  await fetch(GetApiPath('/api/explorer/addfile'), {
+    method: 'post',
+    body: JSON.stringify({ token: GetAuthToken(), name, type, parentDir, options }),
+    headers: {
+      "Content-type": "application/json;charset=UTF-8"
+    },
+  });
+
+  console.log('Created file!');
+}
+
 export default function Explorer() {
+  const [files, setFiles] = useState(null);
+  const [path, setPath] = useState(['f/notes']);
+  const [createFileModal, setCreateFileModal] = useState(false)
+
+  console.log(path, path.at(-1))
+
+  const reloadFiles = () => LoadFiles(setFiles);
+
+  useEffect(() => {
+    reloadFiles();
+  }, []);
+
   return (
     <div>
       <Head>
@@ -165,8 +297,8 @@ export default function Explorer() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <main>
-        <div className='relative flex flex-col w-[100vw] h-[100vh] font-round'>
+      <main className='font-round'>
+        <div className='relative flex flex-col w-[100vw] h-[100vh]'>
 
           { /** Top bar */}
           <div className='flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300'>
@@ -197,40 +329,36 @@ export default function Explorer() {
           </div>
 
           <div className='h-full w-full flex flex-row pt-4 overflow-hidden'>
-            <FileTree className='hidden sm:visible w-96 border-r-[1px] border-gray-300' />
+            <FileTree files={files} path={path} setPath={setPath}
+              className='hidden sm:flex pb-10 w-96 border-r-[1px] border-gray-300' />
 
             <div className='relative flex flex-col w-full h-full px-10 gap-12 py-3 overflow-scroll'>
-              <div className='text-xl text-gray-700 font-bold hidden sm:flex flex-row items-center -ml-3 flex-wrap'>
-                <div className='flex flex-row items-center gap-3 hover:bg-gray-200 px-4 py-1 rounded-full cursor-pointer'>
-                  <FaBook />
-                  My Notes
-                </div>
-                <FaAngleRight className='mx-4' />
-                <p className='hover:bg-gray-200 px-4 py-1 rounded-full cursor-pointer'>Epfl</p>
-                <FaAngleRight className='mx-4' />
-                <p className='hover:bg-gray-200 px-4 py-1 rounded-full cursor-pointer'>Digital system design</p>
-                <FaAngleRight className='mx-4' />
-                <p className='hover:bg-gray-200 px-4 py-1 rounded-full cursor-pointer'>w1</p>
-              </div>
+              <PathNavigator files={files} path={path} setPath={setPath} />
 
               {/** Notes */}
-              <div className='flex flex-row flex-wrap gap-4 sm:gap-8 mx-auto justify-evenly'>
+              <div className='flex flex-row flex-wrap gap-4 sm:gap-8 m-auto pb-40 justify-evenly'>
 
-                <Book title='Analyse w1' />
-                <Note title='Analyse w1' />
-                <Note title='Analyse w1' />
-                <Note title='Analyse w1' />
-                <Note title='Analyse w1' />
-                <Note title='Analyse w1' />
-                <Note title='Analyse w1' />
+                {
+                  files && files[path.at(-1)].children.map(f => 
+                    f.type == 'folder' ?
+                      <Book title={f.name} onClick={() => setPath(path.concat([f._id]))} /> :
+                      <Note title={f.name} onClick={() => window.open("/note/" + f.fileId, "_blank")} />
+                  )
+                }
 
-                <AddButton />
+                <AddButton onClick={() => { 
+                  setCreateFileModal(true);
+                  reloadFiles();
+                }} />
 
               </div>
 
             </div>
           </div>
         </div>
+
+        {/** Create file modal */}
+        <CreateFileModal visible={createFileModal} setVisible={setCreateFileModal} path={path} reloadFiles={reloadFiles} />
       </main>
     </div>
   )

@@ -1,9 +1,7 @@
-import Head from 'next/head'
 import { useRouter } from 'next/router'
-import Script from 'next/script'
 import React, { useState } from 'react'
-import Cookies from 'universal-cookie'
-import { authCookieName } from '../../../utils'
+import { SetAuthToken } from '../AuthToken.js'
+import GetApiPath from '../GetApiPath'
 
 
 
@@ -23,7 +21,7 @@ export default function Login({
   const login = async () => {
     setError("")
 
-    const endpoint = `${window.location.protocol}//${window.location.hostname}:8080/api/auth/login`
+    const endpoint = GetApiPath('/api/auth/login')
     console.log(endpoint);
   
     const credentials = {
@@ -46,19 +44,7 @@ export default function Login({
 
   
     if (response.status == 200) {
-      const cookies = new Cookies()
-      const authContent = {
-        email: jsonResponse.email,
-        token: jsonResponse.token
-      }
-      cookies.set(
-        authCookieName,
-        authContent,
-        {
-          path: "/",
-          withCredentials: true,
-        }, // Allows the cookie to be accessible on all pages of the domain
-      )
+      SetAuthToken(jsonResponse.token)
       router.push("/explorer")
     } else {
       setError('Could not log in: ' + jsonResponse["error"])
