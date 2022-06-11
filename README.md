@@ -54,8 +54,26 @@ Open your browser and go to https://localhost:3000.
 ### Document exporer
 * [X] Design
 * [X] Implement front-end
-* [ ] Link with backend
-* [ ] Document rights
+* [X] Link with backend
+* [X] File browsing
+* [X] File creation
+* [ ] Document rights / priveleges
+* [ ] File menu (to edit name/delete/share)
+* [ ] Moving files to subfolter
+* [ ] File sharing
+* [ ] File searching
+* [ ] Trash
+* [ ] Bookmarks
+* [ ] Recent tab
+* [ ] Share with me
+* [ ] Note thumbnails
+
+### User settings
+
+### User profile page
+
+### Help
+
 
 ### Drawing
 * [X] Set up WebGL pipeline
@@ -73,6 +91,7 @@ Open your browser and go to https://localhost:3000.
 * [X] Make work on Apple
 * [X] Fix stroke width (thins out at the end)
 * [X] Fix widths wheel bug on Samsung
+* [ ] Replace pointer events by mouse/touch events
 * [ ] New strokes algorithm
   * [ ] TRIANGLE_STRIP
   * [ ] Strokes grouped in buffers by Y-coordinate to optimize rendering
