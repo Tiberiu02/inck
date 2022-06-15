@@ -98,6 +98,7 @@ Open your browser and go to https://localhost:3000.
   * [ ] Highlighter strokes at the back
   * [ ] Ability to delete/undo strokes
   * [ ] Finding strokes that intersect a given line
+* [ ] Improve stroke triangularization
 * [ ] Wheel opening gesture
 * [ ] Double press gesture
 * [ ] Use TRIANGLE_STRIP with double buffer size (+50% performance boost)
