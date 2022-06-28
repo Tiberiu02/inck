@@ -48,6 +48,18 @@ export default class Connector {
     this.socket.on('load strokes', data => this.loadData(data))
 
     this.collabs = {}
+    this.collabsContainer = document.createElement('div')
+    Object.assign(this.collabsContainer.style, {
+      'width': '100vw',
+      'height': '100vh',
+      'overflow': 'none',
+      'pointer-events': 'none',
+
+      'position' : 'absolute',
+      'top': '0px',
+      'left': 'opx'
+    })
+    document.body.appendChild(this.collabsContainer)
     this.socket.on('collaborator', (id, pointer, activeStroke) => {
       if (!this.collabs[id])
         this.collabs[id] = {}
@@ -74,17 +86,23 @@ export default class Connector {
           display: 'none',
           position: 'absolute',
         })
-        document.body.appendChild(c.el)
+        this.collabsContainer.appendChild(c.el)
       }
 
-      if (c.pointer)
-        Object.assign(c.el.style, {
-          top: `${(c.pointer.y - view.top) * view.zoom * innerWidth}px`,
-          left: `${(c.pointer.x - view.left) * view.zoom * innerWidth}px`,
-          display: 'block'
-        })
-      else
-        c.el.style.display = 'none'
+      
+      c.el.style.display = 'none'
+      
+      if (c.pointer) {
+        const x = (c.pointer.x - view.left) * view.zoom * innerWidth
+        const y = (c.pointer.y - view.top) * view.zoom * innerWidth
+
+        if (x >= 0 && x < innerWidth - 15 && y >= 0 && y < innerHeight - 21)
+          Object.assign(c.el.style, {
+            top: `${y}px`,
+            left: `${x}px`,
+            display: 'block'
+          })
+      }
       
       if (c.vector)
         drawFn(c.vector)

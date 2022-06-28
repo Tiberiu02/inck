@@ -16,10 +16,21 @@ export default class App {
     // Create canvas
     this.canvas = document.createElement('canvas')
     document.body.appendChild(this.canvas)
-    document.body.style.overflow = 'hidden'
-    document.body.style.width = '100vw'
-    document.body.style.height = '100vh'
-    document.body.style.touchAction = 'none'
+    //document.body.style.overflow = 'hidden'
+    Object.assign(document.body.style, {
+      'width': '100vw',
+      'height': '100vh',
+      'touch-action': 'none',
+
+      '-webkit-user-select': 'none',  /* Chrome all / Safari all */
+      '-moz-user-select': 'none',     /* Firefox all */
+      '-ms-user-select': 'none',      /* IE 10+ */
+      'user-select': 'none',          /* Likely future */
+    
+      '-webkit-touch-callout': 'none',
+    
+      'overflow': 'hidden',
+    })
 
     // Create WebGL
     this.gl = GL.initWebGL(this.canvas)
@@ -43,11 +54,24 @@ export default class App {
 
     // Add event listeners
     // Check Apple listeners for pen; different listeners for apple devices
-    window.addEventListener('pointerdown', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointermove', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointerup', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointerleave', e => this.handlePointerEvent(e), true)
-    window.addEventListener('pointerout', e => this.handlePointerEvent(e), true)
+    /*window.addEventListener('mousedown', e => this.handleMouseEvent(e), true)
+    window.addEventListener('mousemove', e => this.handleMouseEvent(e), true)
+    window.addEventListener('mouseup', e => this.handleMouseEvent(e), true)
+    
+    window.addEventListener('touchdown', e => this.handleTouchEvent(e), true)
+    window.addEventListener('touchmove', e => this.handleTouchEvent(e), true)
+    window.addEventListener('touchup', e => this.handleTouchEvent(e), true)
+    */
+    window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
+    window.addEventListener('pointermove', e => this.handlePointerEvent(e))
+    window.addEventListener('pointerup', e => this.handlePointerEvent(e))
+    window.addEventListener('pointerleave', e => this.handlePointerEvent(e))
+    window.addEventListener('pointerout', e => this.handlePointerEvent(e))
+    
+    window.addEventListener('touchdown', e => e.preventDefault())
+    window.addEventListener('touchmove', e => e.preventDefault())
+    window.addEventListener('touchup', e => e.preventDefault())
+
     window.addEventListener('contextmenu', e => e.preventDefault())
 
     // Create tool wheel
@@ -101,8 +125,26 @@ export default class App {
     this.scheduleRender()
   }
 
-  // Apple
+  // to remove
+  handleMouseEvent(e) {
+    let pointerEvent = {
+      x: e.x,
+      y: e.y,
+      pressure: e.buttons ? 0.5 : 0,
+      timeStamp: performance.now(),
+      target: e.target,
+      type: "mouse",
+      preventDefault: () => e.preventDefault()
+    }
+    this.handlePointerEvent(pointerEvent)
+  }
+
+  handleTouchEvent(e) {
+    console.log(e, e.touches[0].radiusX)
+  }
+
   handlePointerEvent(e) {
+    //console.log("pointer", e)
 
     if (this.scrollBars.scrolling() || e.target == this.scrollBars.vertical || e.target == this.scrollBars.horizontal) {
       this.scrollBars.handlePointerEvent(e, this.view, this.staticBuffers.yMax)
@@ -124,9 +166,6 @@ export default class App {
       this.drawing = (pressure > 0 && pointerType != 'touch')
 
       if (pointerType != 'touch') {
-        e.preventDefault()
-        e.stopPropagation()
-
         if (pressure) { // Writing
           if (!this.activeTool) { // New stroke
             this.activeTool = this.wheel.NewTool()
