@@ -57,20 +57,62 @@ Open your browser and go to https://localhost:3000.
 * [X] Link with backend
 * [X] File browsing
 * [X] File creation
-* [ ] Document rights / priveleges
-* [ ] File menu (to edit name/delete/share)
-* [ ] Moving files to subfolter
-* [ ] File sharing
-* [ ] File searching
-* [ ] Trash
-* [ ] Bookmarks
-* [ ] Recent tab
-* [ ] Share with me
+Must have:
+* [ ] Redirect to /auth if not logged in - 10m
+* [ ] Document rights / priveleges - 1h
+* [ ] File menu (to edit rename/delete/share) - 3h
+    - hover over a file with the pen and 3 dots appear in to top right corner
+    - or long press with finger (might interfere with drag an drop, postpone until after that is implemnted)
+* [ ] Moving files to subfolter - 2h
+    - drag & drop directly (like the mouse in desktop OS)
+* [ ] File sharing (private access rights) - 4h
+* [ ] File searching (search the entire thing, don't bother with searching in folder for now) - 1h
+* [ ] Trash (deleteig files shold move them to this folder) - 1h
+* [ ] Shared with me tab (see all notes shared with me) - 2h
+Nice to have:
+* [ ] Quick access folders / bookmarks (add left menu shortcuts to any folder)
+    - long press to open menu with remove option
+    - drag & drop to reorder
+* [ ] Recent notes tab
 * [ ] Note thumbnails
 
 ### User settings
+* [ ] Settings popup - 1h
+* [ ] Frontend UI - 1h
+  - First, last name
+  - Change password (send email that contains link to reset password)
+* [ ] Connect with backend
+  * [ ] API to change first & last name - 3h
+  * [ ] API to send password reset email - 10h
+    * [ ] Set up SMTP server
+    * [ ] Tokens database
+    * [ ] Add forgot password to auth menu
 
 ### User profile page
+
+### Left ide menu
+* [ ] Left menu
+* [ ] Note name & ID
+* [ ] Note public access
+* [ ] Note private access
+* [ ] Enable lecture mode (for professors)
+* [ ] Connect to lecture (for students)
+
+### Lecture mode
+* [ ] Option to create "Lecture notes" from note creation menu (only for professors) - 1h
+When student opens lecture notes:
+* [ ] Speed selector - 3h
+* [ ] Question selector + cancel button (questions are rectangles!) - 8h
+* [ ] Copy selector - 3h
+* [ ] Follow professor button (similar to Google Maps navication) - 3h
+When student opens student notes:
+* [ ] Ability to connect to professor notes from left menu - 1h
+* [ ] Picture-in-picture of professor's notes - 5h
+* [ ] Ability to maximize professor notes - 5h
+When professor opens lecture notes:
+* [ ] Speed indicator - 5h
+* [ ] Highlight selected questions (gradient from 2 students ... MAX students on one question) - 8h
+
 
 ### Help
 
@@ -91,13 +133,14 @@ Open your browser and go to https://localhost:3000.
 * [X] Make work on Apple
 * [X] Fix stroke width (thins out at the end)
 * [X] Fix widths wheel bug on Samsung
-* [ ] Replace pointer events by mouse/touch events
+* [ ] iOS bug
 * [ ] New strokes algorithm
-  * [ ] TRIANGLE_STRIP
-  * [ ] Strokes grouped in buffers by Y-coordinate to optimize rendering
-  * [ ] Highlighter strokes at the back
-  * [ ] Ability to delete/undo strokes
-  * [ ] Finding strokes that intersect a given line
+  * [ ] TRIANGLE_STRIP - 1h
+  * [ ] Strokes grouped in buffers by Y-coordinate to optimize rendering - 2h
+  * [ ] Highlighter strokes at the back => 2 sets of buffers: pen & highlighter - 1h
+  * [ ] Ability to delete/undo strokes => stroke ID - 2h
+  * [ ] Finding strokes that intersect a given line - 3h
+  * [ ] Open wheel on triple tap - 2h
 * [ ] Improve stroke triangularization
 * [ ] Wheel opening gesture
 * [ ] Double press gesture
@@ -106,6 +149,21 @@ Open your browser and go to https://localhost:3000.
 * [ ] Download notes as PNG
 * [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)
 * [ ] Pen prediction (very hard, requires neural nets), note: PointerEvent.getPredictedEvents() is absolute garbage
+
+### Selection
+* [ ] Ability to select
+  * [ ] Draw selection lasso
+  * [ ] Find selected strokes on release
+  * [ ] Highlight selected strokes
+  * [ ] Draw boundry box
+* [ ] Ability to move
+  * [ ] Detect drag
+  * [ ] Move selection
+* [ ] Ability to transform
+  * [ ] Draw control points
+  * [ ] Draw rotation point
+  * [ ] Detect drag on control points
+  * [ ] Update selection
 
 ### Tech debt
 * [ ] Send live collaboration update on scroll (not just on pointer move), so that pointer appears to move when scrolling
