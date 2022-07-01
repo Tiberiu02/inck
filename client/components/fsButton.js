@@ -28,7 +28,7 @@ function toggleFullscreen() {
 export function FullScreenButton() {
   const [mode, setMode] = useState(0)
   return (
-    <div className='cursor-pointer z-50 duration-200 hover:scale-125 hover:translate-x-[12.5%] hover:translate-y-[12.5%] absolute top-0 left-0 w-14 h-14 rounded-br-xl drop-shadow-md bg-primary'
+    <div className='cursor-pointer opacity-80 z-50 duration-200 hover:scale-125 hover:translate-x-[12.5%] hover:translate-y-[12.5%] absolute top-0 left-0 w-14 h-14 rounded-br-xl drop-shadow-md bg-primary'
     onClick={() => setMode(toggleFullscreen(mode))}>
       { mode ? <FaCompress color='#FFF' className='text-4xl mx-2 my-2' /> : <FaExpand color='#FFF' className='text-4xl mx-2 my-2' /> }
     </div>
