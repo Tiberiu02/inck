@@ -37,12 +37,10 @@ export class ScrollBars {
   }
 
   handlePointerEvent(e, view, yMax) {
-    let { type, pointerId, x, y, pressure } = e
-    //console.log(pointerId, x, y)
+    let { pointerId, x, y, pressure } = e
 
     if (pressure) {
       e.preventDefault()
-      e.stopPropagation()
 
       if (!this.scrollDirection)
         this.scrollDirection = (e.target == this.horizontal ? 'horizontal' : 'vertical')

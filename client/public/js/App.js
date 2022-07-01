@@ -53,25 +53,24 @@ export default class App {
     this.resizeCanvas()
 
     // Add event listeners
-    // Check Apple listeners for pen; different listeners for apple devices
-    /*window.addEventListener('mousedown', e => this.handleMouseEvent(e), true)
-    window.addEventListener('mousemove', e => this.handleMouseEvent(e), true)
-    window.addEventListener('mouseup', e => this.handleMouseEvent(e), true)
+    // Different listeners for Apple devices
+    // because pointer events API is broken in Safari (yay!)
+    if (navigator.vendor == 'Apple Computer, Inc.') {
+      window.addEventListener('mousedown', e => this.handleMouseEvent(e), false)
+      window.addEventListener('mousemove', e => this.handleMouseEvent(e), false)
+      window.addEventListener('mouseup', e => this.handleMouseEvent(e), false)
+      
+      window.addEventListener('touchdown', e => this.handleTouchEvent(e), false)
+      window.addEventListener('touchmove', e => this.handleTouchEvent(e), false)
+      window.addEventListener('touchend', e => this.handleTouchEvent(e), false)
+    } else {
+      window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
+      window.addEventListener('pointermove', e => this.handlePointerEvent(e))
+      window.addEventListener('pointerup', e => this.handlePointerEvent(e))
+      window.addEventListener('pointerleave', e => this.handlePointerEvent(e))
+      window.addEventListener('pointerout', e => this.handlePointerEvent(e))
+    }
     
-    window.addEventListener('touchdown', e => this.handleTouchEvent(e), true)
-    window.addEventListener('touchmove', e => this.handleTouchEvent(e), true)
-    window.addEventListener('touchup', e => this.handleTouchEvent(e), true)
-    */
-    window.addEventListener('pointerdown', e => this.handlePointerEvent(e))
-    window.addEventListener('pointermove', e => this.handlePointerEvent(e))
-    window.addEventListener('pointerup', e => this.handlePointerEvent(e))
-    window.addEventListener('pointerleave', e => this.handlePointerEvent(e))
-    window.addEventListener('pointerout', e => this.handlePointerEvent(e))
-    
-    window.addEventListener('touchdown', e => e.preventDefault())
-    window.addEventListener('touchmove', e => e.preventDefault())
-    window.addEventListener('touchup', e => e.preventDefault())
-
     window.addEventListener('contextmenu', e => e.preventDefault())
 
     // Create tool wheel
@@ -127,30 +126,48 @@ export default class App {
 
   // to remove
   handleMouseEvent(e) {
+    e.preventDefault()
     let pointerEvent = {
       x: e.x,
       y: e.y,
       pressure: e.buttons ? 0.5 : 0,
       timeStamp: performance.now(),
       target: e.target,
-      type: "mouse",
+      pointerType: "mouse",
       preventDefault: () => e.preventDefault()
     }
     this.handlePointerEvent(pointerEvent)
   }
 
-  handleTouchEvent(e) {
-    console.log(e, e.touches[0].radiusX)
+  handleTouchEvent(e) {    
+    const t = e.changedTouches[0];
+    const pointerEvent = {
+      x: t.clientX,
+      y: t.clientY,
+      pressure: e.type == 'touchend' ? 0 : t.touchType == 'stylus' ? t.force : 0.5,
+      timeStamp: performance.now(),
+      target: t.target,
+      pointerType: "pen",
+      id: t.identifier,
+      preventDefault: () => e.preventDefault()
+    }
+
+    if (t.touchType === 'stylus') { // stylus
+      this.handlePointerEvent(pointerEvent)
+    } else if (this.scrollBars.scrolling() || t.target == this.scrollBars.vertical || t.target == this.scrollBars.horizontal) { // scrollbar
+      this.scrollBars.handlePointerEvent(pointerEvent, this.view, this.staticBuffers.yMax)
+      this.scheduleRender()
+    } else // gesture
+      this.view.handleTouchEvent(e)
   }
 
   handlePointerEvent(e) {
-    //console.log("pointer", e)
-
     if (this.scrollBars.scrolling() || e.target == this.scrollBars.vertical || e.target == this.scrollBars.horizontal) {
       this.scrollBars.handlePointerEvent(e, this.view, this.staticBuffers.yMax)
       this.scheduleRender()
     } else if (e.target == this.canvas) {
-      
+      e.preventDefault();
+
       if (e.pressure && this.wheel.isVisible() && this.openingWheel)
         return
 
