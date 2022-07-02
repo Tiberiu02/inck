@@ -114,8 +114,8 @@ export default class ToolWheel {
       for (const wheel of Object.values(this.widthsWheels)) {
         wheel.style.display = 'none';
         wheel.style.position = 'absolute';
-        wheel.style.left = x1 - this.R;
-        wheel.style.top = y1 - this.R;
+        wheel.style.left = `${x1 - this.R}px`;
+        wheel.style.top = `${y1 - this.R}px`;
       }
     }
 
