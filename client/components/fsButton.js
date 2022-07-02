@@ -1,6 +1,5 @@
 import { FaExpand, FaCompress } from 'react-icons/fa'
 import React, { useState, useEffect } from 'react'
-import { OsTypes, useDeviceData } from 'react-device-detect'
 
 function toggleFullscreen() {
   if ((document.fullScreenElement && document.fullScreenElement !== null) || (!document.mozFullScreen && !document.webkitIsFullScreen)) {
@@ -31,11 +30,10 @@ export function FullScreenButton() {
   const [showing, setShowing] = useState(true)
 
   useEffect(() => {
-    const device = useDeviceData();
     //window.alert(JSON.stringify(device))
-    if (device.os.name == OsTypes.IOS || device.os.name == OsTypes.MAC_OS)
+    if (showing && navigator.vendor == 'Apple Computer, Inc.')
       setShowing(false)
-  })
+  }, [showing])
     
   return (
     <div className={`cursor-pointer opacity-80 z-50 duration-200 hover:scale-125 hover:translate-x-[12.5%]
