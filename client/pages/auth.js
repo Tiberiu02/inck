@@ -1,8 +1,11 @@
 import Head from 'next/head'
 import Script from 'next/script'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Register from '../components/auth/register'
 import Login from '../components/auth/login'
+import { useRouter } from 'next/router'
+import { getAuthToken } from '../components/AuthToken'
+
 
 // "@next/swc-win32-x64-msvc": "^12.1.5",
 

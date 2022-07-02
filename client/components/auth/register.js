@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { SetAuthToken } from '../AuthToken'
+import { setAuthToken } from '../AuthToken'
 import GetApiPath from '../GetApiPath'
 
 
@@ -46,7 +46,7 @@ export default function Register({ toLoginCallback }) {
     const jsonResponse = await response.json()
 
     if (response.status == 201) {
-      SetAuthToken(jsonResponse.token)
+      setAuthToken(jsonResponse.token)
       router.push("/explorer")
     } else {
       setError('Could not register: ' + jsonResponse["error"])

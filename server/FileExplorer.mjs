@@ -18,7 +18,7 @@ export async function getFilesFn(req, res) {
 
   } catch (err) {
     console.log(err);
-    res.status(400).send({error: "internal error"})
+    res.status(400).send({error: "Unable to fetch files"})
   }
 }
 

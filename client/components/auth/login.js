@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { SetAuthToken } from '../AuthToken.js'
+import { setAuthToken } from '../AuthToken.js'
 import GetApiPath from '../GetApiPath'
 
 
@@ -44,7 +44,7 @@ export default function Login({
 
   
     if (response.status == 200) {
-      SetAuthToken(jsonResponse.token)
+      setAuthToken(jsonResponse.token)
       router.push("/explorer")
     } else {
       setError('Could not log in: ' + jsonResponse["error"])
