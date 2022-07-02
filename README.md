@@ -50,6 +50,7 @@ Open your browser and go to https://localhost:3000.
 * [ ] Validate fields in browser (+ visual feeback, eg password too short etc)
 * [ ] Add user agreement checkbox
 * [ ] Custom checkbox for user agreement
+* [ ] Register / Login on "Enter" press
 
 ### Document exporer
 * [X] Design
@@ -58,7 +59,7 @@ Open your browser and go to https://localhost:3000.
 * [X] File browsing
 * [X] File creation
 Must have:
-* [ ] Redirect to /auth if not logged in - 10m
+* [X] Redirect to /auth if not logged in - 10m
 * [ ] Document rights / priveleges - 1h
 * [ ] File menu (to edit rename/delete/share) - 3h
     - hover over a file with the pen and 3 dots appear in to top right corner

@@ -5,9 +5,11 @@ import { FaAngleDown, FaAngleRight, FaPencilAlt, FaSearch, FaRegQuestionCircle, 
          FaRegClock, FaUsers, FaBookmark, FaTrash, FaBook, FaFolder, FaFolderOpen,
          FaBars } from 'react-icons/fa'
 import Cookies from 'universal-cookie'
-import { authCookieName, GetAuthToken } from '../components/AuthToken.js'
+import { authCookieName, getAuthToken, setAuthToken, disconnect } from '../components/AuthToken.js'
 import GetApiPath from '../components/GetApiPath'
 //import { FcOpenedFolder, FcFolder, FcClock, FcGlobe, FcBookmark, FcFullTrash, FcNook } from 'react-icons/fc'
+import { NextResponse, NextRequest } from 'next/server'
+
 
 let freeSelected = () => {}
 
@@ -22,10 +24,17 @@ function DirListing({ Symbol, symbolClassName, name, className, userPath, dirPat
     Symbol = open ? FaFolderOpen : FaFolder
   if (link)
     open = false
+
+  const onClickCallback = () => {
+    setOpen(!open || !selected);
+    if (onClick !== undefined) {
+      onClick()
+    }
+  }
   return (
     <div className='min-w-full w-fit'>
       <button style={style} className={'flex flex-row items-center gap-2 px-4 py-2 outline-none min-w-full w-fit ' + (selected ? 'bg-gray-200 ' : 'hover:bg-gray-100 ') + (selected || open ? 'text-black ':'') + className}
-      onClick={() => {setOpen(!open || !selected); onClick()}}>
+      onClick={onClickCallback}>
         <Caret className={(open ? 'text-black' : 'text-gray-400') + (link ? ' opacity-0' : '')} />
         <Symbol className={symbolClassName + ' text-2xl mr-1'} />
         <p className={'whitespace-nowrap mt-[0.15rem] font-bold ' + (open ? '' : '')}>{ name }</p>
@@ -145,7 +154,7 @@ function PathNavigator({ files, path, setPath }) {
   let p = [];
 
   p.push(
-    <div onClick={() => setPath(path.slice(0, 1))} className='flex flex-row items-center gap-3 hover:bg-gray-200 -ml-4 px-4 py-1 rounded-full cursor-pointer'>
+    <div key={p.length} onClick={() => setPath(path.slice(0, 1))} className='flex flex-row items-center gap-3 hover:bg-gray-200 -ml-4 px-4 py-1 rounded-full cursor-pointer'>
       <FaBook />
       {files && files[path[0]].name}
     </div>
@@ -153,10 +162,10 @@ function PathNavigator({ files, path, setPath }) {
 
   for (let i = 1; i < path.length; i++) {
     p.push(
-      <FaAngleRight className='sm:mx-4' />
+      <FaAngleRight key={p.length} className='sm:mx-4' />
     )
     p.push(
-      <p onClick={() => setPath(path.slice(0, i + 1))} className='hover:bg-gray-200 px-2 sm:px-4 py-1 rounded-full cursor-pointer'>{files[path[i]].name}</p>
+      <p key={p.length} onClick={() => setPath(path.slice(0, i + 1))} className='hover:bg-gray-200 px-2 sm:px-4 py-1 rounded-full cursor-pointer'>{files[path[i]].name}</p>
     )
   }
 
@@ -228,7 +237,7 @@ async function LoadFiles(callback) {
 
   const response = await fetch(GetApiPath('/api/explorer/getfiles'), {
     method: 'post',
-    body: JSON.stringify({ token: GetAuthToken() }),
+    body: JSON.stringify({ token: getAuthToken() }),
     headers: {
       "Content-type": "application/json;charset=UTF-8"
     },
@@ -267,7 +276,7 @@ async function LoadFiles(callback) {
 async function AddFile(name, type, parentDir, options = {}) {
   await fetch(GetApiPath('/api/explorer/addfile'), {
     method: 'post',
-    body: JSON.stringify({ token: GetAuthToken(), name, type, parentDir, options }),
+    body: JSON.stringify({ token: getAuthToken(), name, type, parentDir, options }),
     headers: {
       "Content-type": "application/json;charset=UTF-8"
     },
@@ -282,6 +291,7 @@ export default function Explorer() {
   const [createFileModal, setCreateFileModal] = useState(false)
 
   console.log(path, path.at(-1))
+  console.log(getAuthToken())
 
   const reloadFiles = () => LoadFiles(setFiles);
 
@@ -316,6 +326,9 @@ export default function Explorer() {
               <input className='pl-2 bg-transparent focus:outline-none text-gray-900 placeholder-gray-400' placeholder='Search notes' />
             </div>
             <div className='hidden sm:flex flex-row gap-2 text-gray-500'>
+            <button onClick={disconnect} className='text-xl font-medium hover:text-gray-600 hover:bg-gray-300 flex items-center justify-center rounded-md px-3'>
+                Disconnect
+              </button>
               <button className='hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full'>
                 <FaRegQuestionCircle className='text-2xl' />
               </button>
