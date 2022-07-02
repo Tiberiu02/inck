@@ -8,7 +8,7 @@
 
 .wheel {
     pointer-events: none;
-    transition: transform 500ms;
+    transition: transform 200ms;
     filter: drop-shadow(0 7px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 3px 5px rgb(0 0 0 / 0.25));
 }
 
@@ -24,7 +24,7 @@
 }
 
 .option_button > circle {
-    transition: 150ms;
+    transition: 100ms;
 }
 
 .option_button:hover > circle {
@@ -33,7 +33,7 @@
 
 .option_button > image {
     pointer-events: none;
-    transition: 150ms;
+    transition: 100ms;
     opacity: 0.8;
 }
 
