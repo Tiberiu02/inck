@@ -143,6 +143,7 @@ When professor opens lecture notes:
   * [ ] Finding strokes that intersect a given line - 3h
   * [ ] Open wheel on triple tap - 2h
 * [ ] Improve stroke triangularization
+* [ ] Preserve scroll on refresh
 * [ ] Wheel opening gesture
 * [ ] Double press gesture
 * [ ] Use TRIANGLE_STRIP with double buffer size (+50% performance boost)

@@ -7,8 +7,6 @@ import { FaAngleDown, FaAngleRight, FaPencilAlt, FaSearch, FaRegQuestionCircle, 
 import Cookies from 'universal-cookie'
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from '../components/AuthToken.js'
 import GetApiPath from '../components/GetApiPath'
-//import { FcOpenedFolder, FcFolder, FcClock, FcGlobe, FcBookmark, FcFullTrash, FcNook } from 'react-icons/fc'
-import { NextResponse, NextRequest } from 'next/server'
 
 
 let freeSelected = () => {}

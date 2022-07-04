@@ -1,9 +1,10 @@
 import Head from 'next/head'
 import Script from 'next/script'
-import { FullScreenButton } from '/components/fsButton'
+import { FullScreenButton } from '../../components/FullScreenButton'
 import { useRouter } from 'next/router'
+import Canvas from '../../components/Canvas'
 
-export default function Canvas() {
+export default function Note() {
   const router = useRouter()
   const { id } = router.query
 
@@ -15,7 +16,7 @@ export default function Canvas() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <Script type='module' src='/js/index.js' />
+      <Canvas />
       <FullScreenButton />
     </div>
   )
