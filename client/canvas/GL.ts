@@ -31,7 +31,7 @@ export class GL {
     return gl;
   }
 
-  static createProgram(gl) {
+  static createProgram(gl: WebGL2RenderingContext): WebGLProgram {
     // Create Shaders
     let vertexShader = gl.createShader(gl.VERTEX_SHADER);
     let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -52,7 +52,7 @@ export class GL {
     }
 
     // Create Program
-    let program = gl.createProgram();
+    const program = gl.createProgram();
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
@@ -78,12 +78,12 @@ export class GL {
 
   static bindBuffers(gl, { vertex, index }) {
     gl.bindBuffer(gl.ARRAY_BUFFER, vertex);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index);
+    //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index);
   }
 
   static bufferArrays(gl, { vertex, index }, drawType = "STREAM_DRAW") {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertex), gl[drawType]);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(index), gl[drawType]);
+    //gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(index), gl[drawType]);
   }
 
   static setAttribute(gl, program, name, size, offset) {
@@ -104,15 +104,14 @@ export class GL {
     gl.uniform1f(location, val);
   }
 
-  static setVars(gl, program, uniforms) {
+  static setProgram(gl: WebGL2RenderingContext, program: WebGLProgram, uniforms: object) {
+    gl.useProgram(program);
+
     GL.setAttribute(gl, program, "a_Position", 2, 0);
     GL.setAttribute(gl, program, "a_Color", 4, 2);
 
-    for (let name in uniforms) GL.setUniform1f(gl, program, name, uniforms[name]);
-  }
-
-  static appendArray({ vertex, index }, vertexNew, indexNew) {
-    index.push(...indexNew.map((i) => i + vertex.length / ELEMENTS_PER_VERTEX));
-    vertex.push(...vertexNew);
+    for (let name in uniforms) {
+      GL.setUniform1f(gl, program, name, uniforms[name]);
+    }
   }
 }

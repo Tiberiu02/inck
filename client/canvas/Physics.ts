@@ -95,11 +95,11 @@ function interpolate(x1, y1, x2, y2, x) {
  * Turns a series of input points into drawable elements (WebGL vertices & indices), using a spring-base physics simulation.
  * @param {number[]} s Float array of length 4*N containing the X, Y, Pressure, TimeStamp of all N input points
  * @param {number} w Stroke width as a fraction of screen width
- * @param {number} color RGBA color of stroke as an array of 4 floats
+ * @param {number[]} color RGBA color of stroke as an array of 4 floats
  * @param {boolean} full True if the path should connect to last input point
  * @returns Vertices array and indices array, as two elements of a single list.
  */
-export function StrokeToPath(s, w, color, full = true): [number[], number[]] {
+export function StrokeToPath(s: number[], w: number, color: number[], full: boolean = true): number[] {
   Profiler.start("physics");
 
   const GetR = (p) => (w * (p + 1)) / 3;
@@ -128,7 +128,7 @@ export function StrokeToPath(s, w, color, full = true): [number[], number[]] {
     const ix = -ny;
     const iy = nx;
     vertices.push(x + r * ix, y + r * iy, ...color);
-    for (let a = A_STEP; a < Math.PI / 2; a += A_STEP) {
+    for (let a = 0; a < Math.PI / 2; a += A_STEP) {
       const [sin, cos] = [Math.sin(a), Math.cos(a)];
       vertices.push(x + r * ix * cos + r * nx * sin, y + r * iy * cos + r * ny * sin, ...color);
       vertices.push(x + r * ix * cos - r * nx * sin, y + r * iy * cos - r * ny * sin, ...color);
@@ -186,7 +186,7 @@ export function StrokeToPath(s, w, color, full = true): [number[], number[]] {
     const r = GetR(s[s.length - ELEMENTS_PER_INPUT + OFFSET_INPUT.P]);
     const ix = ny;
     const iy = -nx;
-    for (let a = Math.PI / 2 - A_STEP; a >= 0; a -= A_STEP) {
+    for (let a = Math.floor(Math.PI / 2 / A_STEP) * A_STEP; a >= 0; a -= A_STEP) {
       const [sin, cos] = [Math.sin(a), Math.cos(a)];
       vertices.push(x + r * ix * cos + r * nx * sin, y + r * iy * cos + r * ny * sin, ...color);
       vertices.push(x + r * ix * cos - r * nx * sin, y + r * iy * cos - r * ny * sin, ...color);
@@ -194,20 +194,21 @@ export function StrokeToPath(s, w, color, full = true): [number[], number[]] {
     vertices.push(x + r * ix, y + r * iy, ...color);
   }
 
-  let indices = [];
-  for (let i = 2; i * ELEMENTS_PER_VERTEX < vertices.length; i++) indices.push(i - 2, i - 1, i);
-
   Profiler.stop("physics");
 
-  return [vertices, indices];
+  return vertices;
 }
 
-export function FillPath(path, color) {
+export function FillPath(path: number[], color: number[]): number[] {
   let vertices = [];
-  for (let i = 0; i < path.length; i += 2) vertices.push(path[i], path[i + 1], ...color);
+  let i = 0;
+  let j = 0;
+  do {
+    vertices.push(path[i], path[i + 1], ...color);
+    vertices.push(path[j], path[j + 1], ...color);
+    i += 2;
+    j = (j - 2 + path.length) % path.length;
+  } while (i <= j);
 
-  let indices = [];
-  for (let i = 1; i * 2 < path.length; i++) indices.push(0, i - 1, i);
-
-  return [vertices, indices];
+  return vertices;
 }

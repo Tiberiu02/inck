@@ -1,13 +1,16 @@
 import { io } from "socket.io-client";
+import { CanvasManager } from "./CanvasManager";
+import { ViewManager } from "./Gestures";
 import { StrokeToPath, FillPath } from "./Physics";
-import { Tool, Eraser, Pen } from "./Tools";
+import { Tool, Eraser, Pen, Highlighter } from "./Tools";
+import { Vector2D } from "./types";
 
 function hexToRgb(hex) {
   const normal = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-  if (normal) return normal.slice(1).map((e) => parseInt(e, 16));
+  if (normal) return normal.slice(1).map(e => parseInt(e, 16));
 
   const shorthand = hex.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
-  if (shorthand) return shorthand.slice(1).map((e) => 0x11 * parseInt(e, 16));
+  if (shorthand) return shorthand.slice(1).map(e => 0x11 * parseInt(e, 16));
 
   return null;
 }
@@ -31,16 +34,16 @@ const SERVER_PORT = 8080;
  * The client can append any object to the list of strokes by emitting 'new stroke'.
  */
 export default class Connector {
-  buffers: any;
+  canvasManager: CanvasManager;
   render: any;
   socket: any;
   docId: string;
-  collabs: { [id: number]: { pointer: any; activeStroke: any; vector: any; el?: HTMLElement } };
+  collabs: { [id: number]: { pointer: Vector2D; activeStroke: Tool; el?: HTMLElement } };
   collabsContainer: HTMLDivElement;
   decodeCoordLegacy: (n: any) => number[];
 
-  constructor(buffers, renderFn) {
-    this.buffers = buffers;
+  constructor(canvasManager: CanvasManager, renderFn: () => void) {
+    this.canvasManager = canvasManager;
     this.render = renderFn;
     this.socket = io(`${window.location.host.split(":")[0]}:${SERVER_PORT}`);
 
@@ -51,7 +54,7 @@ export default class Connector {
       this.socket.emit("request document", this.docId);
     });
 
-    this.socket.on("load strokes", (data) => this.loadData(data));
+    this.socket.on("load strokes", data => this.loadData(data));
 
     this.collabs = {};
     this.collabsContainer = document.createElement("div");
@@ -66,21 +69,19 @@ export default class Connector {
       left: "opx",
     });
     document.body.appendChild(this.collabsContainer);
-    this.socket.on("collaborator", (id, pointer, activeStroke) => {
+
+    this.socket.on("collaborator", (id: number, pointer: Vector2D, activeStroke: object) => {
       this.collabs[id] = {
         pointer: pointer,
-        activeStroke: activeStroke,
-        vector: activeStroke && Tool.deserialize(activeStroke).vectorize(true),
+        activeStroke: activeStroke && Tool.deserialize(activeStroke),
         el: this.collabs[id] ? this.collabs[id].el : undefined,
       };
+      console.log(id, this.collabs[id]);
       this.render();
     });
-
-    // Backwards compatibility
-    this.decodeCoordLegacy = (n) => [(n & 4095) / 4096, (n >> 12) / 4095];
   }
 
-  drawCollabs(view, drawFn) {
+  drawCollabs(view: ViewManager, callback: (vertex: Tool) => void) {
     for (let [id, c] of Object.entries(this.collabs)) {
       if (!c.el) {
         c.el = document.createElement("div");
@@ -90,7 +91,7 @@ export default class Connector {
           borderTop: "15px solid transparent",
           borderBottom: "6px solid transparent",
           borderLeft: `15px solid rgb(${hsl2rgb(+id * 360, 1, 0.5)
-            .map((x) => x * 255)
+            .map(x => x * 255)
             .join(",")})`,
           display: "none",
           position: "absolute",
@@ -112,7 +113,9 @@ export default class Connector {
           });
       }
 
-      if (c.vector) drawFn(c.vector);
+      if (c.activeStroke) {
+        callback(c.activeStroke);
+      }
     }
   }
 
@@ -121,29 +124,14 @@ export default class Connector {
     for (let s of data) {
       if (!s) continue;
 
-      if (!s.type || s.type == "pen") {
-        let path = [];
-        for (const i in s.path) path.push(...this.decodeCoordLegacy(s.path[i]), 0.5, 10 * +i);
-
-        const color = hexToRgb(s.color || "#000").concat(1);
-        const [vertex, index] = StrokeToPath(path, s.width, color, true);
-        this.buffers.push(vertex, index);
-      } else if (s.type == "eraser") {
-        const [vertex, index] = FillPath([].concat(...s.path.map(this.decodeCoordLegacy)), [1, 1, 1, 1]);
-        this.buffers.push(vertex, index);
-      } else if (s.type == "p") {
-        const [vertex, index] = Pen.deserialize(s).vectorize();
-        this.buffers.push(vertex, index);
-      } else if (s.type == "e") {
-        const [vertex, index] = Eraser.deserialize(s).vectorize();
-        this.buffers.push(vertex, index);
-      }
+      const stroke = Tool.deserialize(s);
+      this.canvasManager.addStroke(stroke);
     }
 
     this.render();
   }
 
-  registerStroke(stroke) {
+  registerStroke(stroke: object) {
     this.socket.emit("new stroke", stroke);
   }
 }

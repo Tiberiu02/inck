@@ -33,6 +33,8 @@
  * The view has the same aspect ratio as the screen.
  */
 
+import { Rectangle } from "./types";
+
 export class ViewManager {
   app: any;
   top: number;
@@ -54,14 +56,14 @@ export class ViewManager {
     this.touches = [];
 
     this.mouse = { x: 0, y: 0 };
-    app.addEventListener(window, "wheel", (e) => this.handleWheelEvent(e), { passive: false });
-    app.addEventListener(window, "mousemove", (e) => (this.mouse = { x: e.clientX, y: e.clientY }));
+    app.addEventListener(window, "wheel", e => this.handleWheelEvent(e), { passive: false });
+    app.addEventListener(window, "mousemove", e => (this.mouse = { x: e.clientX, y: e.clientY }));
 
     if (navigator.vendor != "Apple Computer, Inc.") {
-      app.addEventListener(app.canvas, "touchstart", (e) => this.handleTouchEvent(e));
-      app.addEventListener(app.canvas, "touchend", (e) => this.handleTouchEvent(e));
-      app.addEventListener(app.canvas, "touchcancel", (e) => this.handleTouchEvent(e));
-      app.addEventListener(app.canvas, "touchmove", (e) => this.handleTouchEvent(e));
+      app.addEventListener(app.canvas, "touchstart", e => this.handleTouchEvent(e));
+      app.addEventListener(app.canvas, "touchend", e => this.handleTouchEvent(e));
+      app.addEventListener(app.canvas, "touchcancel", e => this.handleTouchEvent(e));
+      app.addEventListener(app.canvas, "touchmove", e => this.handleTouchEvent(e));
     } // else triggered from main touch listener
 
     this.inertia = new ScrollInertia(this);
@@ -77,9 +79,9 @@ export class ViewManager {
     document.body.style.overscrollBehavior = "none";
   }
 
-  getVars() {
+  getUniforms() {
     return {
-      u_AspectRatio: window.innerWidth / window.innerHeight,
+      u_AspectRatio: document.documentElement.clientWidth / document.documentElement.clientHeight,
       u_Left: this.left,
       u_Top: this.top,
       u_Zoom: this.zoom,
@@ -115,8 +117,8 @@ export class ViewManager {
 
   // Map screen coordinates to canvas coordinates
   mapCoords(x, y) {
-    x /= window.innerWidth * this.zoom;
-    y /= window.innerWidth * this.zoom;
+    x /= document.documentElement.clientWidth * this.zoom;
+    y /= document.documentElement.clientWidth * this.zoom;
     x += this.left;
     y += this.top;
     return [x, y];
@@ -157,8 +159,8 @@ export class ViewManager {
       const [x1, y1, r1] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
 
       // Scroll
-      const dx = (x0 - x1) / (window.innerWidth * this.zoom);
-      const dy = (y0 - y1) / (window.innerWidth * this.zoom);
+      const dx = (x0 - x1) / (document.documentElement.clientWidth * this.zoom);
+      const dy = (y0 - y1) / (document.documentElement.clientWidth * this.zoom);
       this.left += dx;
       this.top += dy;
       this.inertia.update(dx, dy, timeStamp);
@@ -181,8 +183,8 @@ export class ViewManager {
     let { deltaX, deltaY, deltaMode } = e;
 
     if (deltaMode == WheelEvent.DOM_DELTA_PIXEL) {
-      deltaX /= window.innerWidth * this.zoom;
-      deltaY /= window.innerWidth * this.zoom;
+      deltaX /= document.documentElement.clientWidth * this.zoom;
+      deltaY /= document.documentElement.clientWidth * this.zoom;
     }
 
     if (e.ctrlKey) {
@@ -197,6 +199,18 @@ export class ViewManager {
     }
 
     this.app.scheduleRender();
+  }
+
+  getVisibleRegion(): Rectangle {
+    const width = 1 / this.zoom;
+    const height = (width / document.documentElement.clientWidth) * document.documentElement.clientHeight;
+
+    return {
+      xMin: this.left,
+      yMin: this.top,
+      xMax: this.left + width,
+      yMax: this.top + height,
+    };
   }
 }
 

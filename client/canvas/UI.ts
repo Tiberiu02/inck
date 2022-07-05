@@ -81,7 +81,7 @@ export class ScrollBars {
 
     const hLen = 1 / view.zoom;
     const hStart = view.left;
-    const hFullLen = window.innerWidth - 3 * this.margin - this.width;
+    const hFullLen = document.documentElement.clientWidth - 3 * this.margin - this.width;
 
     Object.assign(this.horizontal.style, {
       display: hLen == 1 ? "none" : "",
@@ -95,7 +95,7 @@ export class ScrollBars {
     const vSize = Math.max(yMax, view.top + (1 / view.zoom) * aspectRatio);
     const vLen = (hLen * aspectRatio) / vSize;
     const vStart = view.top / vSize;
-    let vFullLen = window.innerHeight - 2 * this.margin - this.margin - this.width;
+    let vFullLen = document.documentElement.clientHeight - 2 * this.margin - this.margin - this.width;
 
     this.vBarHeight = vLen * vFullLen;
     if (this.vBarHeight < this.width) {

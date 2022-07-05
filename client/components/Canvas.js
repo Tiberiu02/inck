@@ -6,8 +6,9 @@ export default function Canvas(props) {
 
   useEffect(() => {
     console.log(canvasRef.current);
-    const main = new Main(canvasRef.current);
-    return () => main.detach();
+    if (window.app) return;
+    window.app = new Main(canvasRef.current);
+    //return () => main.detach();
   }, [canvasRef]);
 
   return <canvas ref={canvasRef} />;

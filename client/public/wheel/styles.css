@@ -125,9 +125,12 @@
 
 /** Pen buttons */
 
+.pen-img {
+    filter: drop-shadow(1px 2px 3px rgba(255, 255, 255, 0.75));
+}
+
 .pen > image {
     opacity: 0;
-    filter: drop-shadow(1px 2px 3px rgba(255, 255, 255, 0.75));
     pointer-events: none;
 }
 

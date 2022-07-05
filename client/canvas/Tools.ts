@@ -1,31 +1,53 @@
-import { ELEMENTS_PER_INPUT, StrokeToPath } from "./Physics";
+import { ELEMENTS_PER_INPUT, FillPath, StrokeToPath } from "./Physics";
+import { Rectangle } from "./types";
 
 export class Tool {
   inputs: any;
-  prediction: any[];
+  width: number;
+  id: string;
+  zIndex: number;
   callback: () => void;
   startTime: any;
   endTime: any;
   longPressTimeout: number;
-  vectorize?(active?: boolean): [number[], number[]];
+  vectorize?(active?: boolean): number[];
   serialize?(): object;
+  boundingBox: Rectangle;
 
-  constructor(inputs) {
+  constructor(inputs: number[], width: number = 0) {
     this.inputs = inputs;
-    this.prediction = [];
+    this.width = width;
+    this.id = Math.random().toString(36).slice(2);
+    this.zIndex = 1;
     this.callback = () => {};
+
+    const xValues = inputs.filter((_, i) => i % 4 == 0);
+    const yValues = inputs.filter((_, i) => i % 4 == 1);
+    this.boundingBox = {
+      xMin: Math.min(...xValues) - width,
+      xMax: Math.max(...xValues) + width,
+      yMin: Math.min(...yValues) - width,
+      yMax: Math.max(...yValues) + width,
+    };
   }
 
-  update(x, y, pressure, timeStamp, prediction = []) {
+  update(x: number, y: number, pressure: number, timeStamp: number): void {
     if (!this.startTime) this.startTime = timeStamp;
     this.endTime = timeStamp;
 
     this.inputs.push(x, y, pressure, timeStamp - this.startTime);
-    this.prediction = prediction;
+
+    this.boundingBox = {
+      xMin: Math.min(this.boundingBox.xMin, x - this.width),
+      xMax: Math.max(this.boundingBox.xMax, x + this.width),
+      yMin: Math.min(this.boundingBox.yMin, y - this.width),
+      yMax: Math.max(this.boundingBox.yMax, y + this.width),
+    };
   }
 
   static deserialize(data) {
     if (data.type == "p") return Pen.deserialize(data);
+    else if (data.type == "h") return Highlighter.deserialize(data);
     else if (data.type == "e") return Eraser.deserialize(data);
   }
 
@@ -58,15 +80,13 @@ export class Tool {
 }
 
 export class Pen extends Tool {
-  width: any;
-  color: any;
-  constructor(width, color, inputs = []) {
-    super(inputs);
-    this.width = width;
+  color: number[];
+  constructor(width: number, color: number[], inputs = []) {
+    super(inputs, width);
     this.color = color;
   }
 
-  vectorize(active: boolean = false): [number[], number[]] {
+  vectorize(active: boolean = false): number[] {
     return StrokeToPath(this.inputs, this.width, this.color);
   }
 
@@ -84,21 +104,39 @@ export class Pen extends Tool {
   }
 }
 
+export class Highlighter extends Pen {
+  color: number[];
+  constructor(width: number, color: number[], inputs = []) {
+    super(width, color, inputs);
+    this.zIndex = 0;
+  }
+
+  serialize() {
+    return {
+      type: "h",
+      width: this.width,
+      color: this.color,
+      path: this.inputs,
+    };
+  }
+
+  static deserialize(s) {
+    return new Highlighter(s.width, s.color, s.path);
+  }
+}
+
 export class Eraser extends Tool {
   constructor(inputs = []) {
     super(inputs);
   }
 
-  vectorize(active: boolean = false): [number[], number[]] {
+  vectorize(active: boolean = false): number[] {
     const color = active ? [0.95, 0.95, 0.95, 1] : [1, 1, 1, 1];
 
-    let vertices = [];
-    for (let i = 0; i < this.inputs.length; i += 4) vertices.push(this.inputs[i], this.inputs[i + 1], ...color);
-
-    let indices = [];
-    for (let i = 1; i * 4 < this.inputs.length; i++) indices.push(0, i - 1, i);
-
-    return [vertices, indices];
+    return FillPath(
+      this.inputs.filter((i, ix) => ix % 4 < 2),
+      color
+    );
   }
 
   serialize() {

@@ -1,39 +1,41 @@
 export default class Profiler {
-  static getProfiler(): object {
-    if (!window["profiler"]) window["profiler"] = {};
-    return window["profiler"];
+  measures: { [name: string]: { startTime?: number; sum: number; cnt: number } };
+
+  static getProfiler(): Profiler {
+    if (!window.profiler) {
+      window.profiler = new Profiler();
+      window.profiler.measures = {};
+    }
+    return window.profiler;
   }
 
   static start(name: string): void {
-    if (!this.getProfiler()[name]) {
-      this.getProfiler()[name] = {
+    if (!(name in Profiler.getProfiler().measures)) {
+      Profiler.getProfiler().measures[name] = {
         sum: 0,
         cnt: 0,
       };
     }
 
-    if (this.getProfiler()[name].startTime)
-      throw new Error("Measurement already started: " + name);
+    if (Profiler.getProfiler().measures[name].startTime) throw new Error("Measurement already started: " + name);
 
-    this.getProfiler()[name].startTime = performance.now();
+    Profiler.getProfiler().measures[name].startTime = performance.now();
   }
 
   static stop(name: string) {
-    const t = performance.now() - this.getProfiler()[name].startTime;
+    const t = performance.now() - Profiler.getProfiler().measures[name].startTime;
 
-    if (!this.getProfiler()[name].startTime)
-      throw new Error("Measurement not started: " + name);
+    if (!Profiler.getProfiler().measures[name].startTime) throw new Error("Measurement not started: " + name);
 
-    this.getProfiler()[name].sum += t;
-    this.getProfiler()[name].cnt += 1;
-    this.getProfiler()[name].startTime = undefined;
+    Profiler.getProfiler().measures[name].sum += t;
+    Profiler.getProfiler().measures[name].cnt += 1;
+    Profiler.getProfiler().measures[name].startTime = undefined;
   }
 
-  static performance(name: string) {
-    if (!this.getProfiler()[name] || !this.getProfiler()[name].cnt)
-      throw new Error("No measurements ever made: " + name);
+  performance(name: string) {
+    if (!Profiler.getProfiler().measures[name] || !Profiler.getProfiler().measures[name].cnt) throw new Error("No measurements ever made: " + name);
 
-    return this.getProfiler()[name].sum / this.getProfiler()[name].cnt;
+    return Profiler.getProfiler().measures[name].sum / Profiler.getProfiler().measures[name].cnt;
   }
 
   static measure(f: () => any) {
@@ -43,6 +45,6 @@ export default class Profiler {
   }
 
   static reset(name: string) {
-    delete this.getProfiler()[name];
+    delete Profiler.getProfiler().measures[name];
   }
 }

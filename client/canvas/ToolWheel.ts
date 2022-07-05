@@ -1,9 +1,10 @@
-import { Pen, Eraser } from "./Tools";
+import { Pen, Eraser, Highlighter } from "./Tools";
 
 const RES_ROOT = "/wheel/";
 
 const COLORS_NAMES = ["Black", "Red", "Orange", "Yellow", "Green", "Blue", "Purple"];
-const COLORS_HEX = ["#000000", "#ff0000", "#f8972c", "#fcfc00", "#149618", "#353eff", "#dd09bf"];
+const COLORS_PEN_HEX = ["#000000", "#ff0000", "#f8972c", "#fcfc00", "#149618", "#353eff", "#dd09bf"];
+const COLORS_HIGHLIGHTER_HEX = ["#000000", "#ff0000", "#f8972c", "#fcfc00", "#149618", "#353eff", "#dd09bf"];
 
 const SHAPES = ["Circle", "Arrow", "Triangle", "Rectangle"];
 
@@ -48,9 +49,9 @@ export default class ToolWheel {
 
     //*
     this.widthsWheels = {
-      pen: ToolWheel.buildWidthsWheel(this.R, "pen", (w) => (this.width.pen = w)),
-      highlighter: ToolWheel.buildWidthsWheel(this.R, "highlighter", (w) => (this.width.highlighter = w)),
-      shapes: ToolWheel.buildWidthsWheel(this.R, "shapes", (w) => (this.width.shapes = w)),
+      pen: ToolWheel.buildWidthsWheel(this.R, "pen", w => (this.width.pen = w)),
+      highlighter: ToolWheel.buildWidthsWheel(this.R, "highlighter", w => (this.width.highlighter = w)),
+      shapes: ToolWheel.buildWidthsWheel(this.R, "shapes", w => (this.width.shapes = w)),
     };
     this.widthsContainer = document.createElement("div");
     Object.assign(this.widthsContainer.style, {
@@ -79,12 +80,12 @@ export default class ToolWheel {
     const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i
       .exec(this.color)
       .slice(1)
-      .map((v) => parseInt(v, 16) / 255);
+      .map(v => parseInt(v, 16) / 255);
 
     if (this.tool == "pen") {
       return new Pen((window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom, [...rgb, 1]);
     } else if (this.tool == "highlighter") {
-      return new Pen((window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom, [...rgb, 0.2]);
+      return new Highlighter((window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom, [...rgb, 0.2]);
     } else if (this.tool == "eraser") {
       return new Eraser();
     } else if (this.tool == "shapes") {
@@ -153,28 +154,30 @@ export default class ToolWheel {
   }
 
   static build(R, actions) {
+    const apple = navigator.vendor == "Apple Computer, Inc.";
+
     const spin = (r, a, d = 0) => [R - r * Math.cos(a + d / r), R - r * Math.sin(a + d / r)];
     const spinO = (r, a, d = 0) => ({ x: R - r * Math.cos(a + d / r), y: R - r * Math.sin(a + d / r) });
 
     const r1 = R / 5;
     const r2 = (R / 3) * 2;
-    const r3 = (R / 3) * 2.55;
-    const r4 = (R / 3) * 2.9;
+    const r3 = (R / 3) * 2.7; // 2.55
+    const r4 = (R / 3) * 2.7; // 2.9
 
     let menu = createElement("svg", { width: 2 * R, height: 2 * R, class: "wheel" });
 
     // Colors
     for (let i = 0; i < N; i++) {
-      let part = createElement("g", { class: "color_slice" });
+      let part = createElement("g", { class: apple ? "" : "color_slice" });
 
       // Main color slice
       const a1 = SLICE_ANGLE * i + COLORS_START_ANGLE;
       const a2 = SLICE_ANGLE * (i + 1) + COLORS_START_ANGLE;
       const a = (a1 + a2) / 2;
 
-      let pen = createElement("g", { class: "pen" });
-      pen.addEventListener("pointerdown", (e) => {
-        actions.setColor(COLORS_HEX[i]);
+      let pen = createElement("g", { class: apple ? "" : "pen" });
+      pen.addEventListener("pointerdown", e => {
+        actions.setColor(COLORS_PEN_HEX[i]);
         actions.setTool("pen");
         actions.hide();
         actions.showWidths(a1, "pen");
@@ -189,24 +192,26 @@ export default class ToolWheel {
         A ${r2} ${r2} 0 0 1 ${spin(r2, a2)}
         L ${spin(r1, a2)}
       `;
-      pen.appendChild(createElement("path", { class: "", d: path1, fill: COLORS_HEX[i], stroke: COLORS_HEX[i] }));
+      pen.appendChild(createElement("path", { class: "", d: path1, fill: COLORS_PEN_HEX[i], stroke: COLORS_PEN_HEX[i] }));
 
       // Pen icon
       const iconSize = R / 6;
       const ai = a + 0.03;
+      const r = apple ? r1 * 0.3 + r2 * 0.7 : (r1 + r2) / 2;
       pen.appendChild(
         createElement("image", {
+          class: "pen-img",
           href: RES_ROOT + `Tool_Pen_${COLORS_NAMES[i]}.png`,
-          transform: `rotate(${30 + (ai / Math.PI) * 180} ${spin((r1 + r2) / 2, ai)}) translate(${-iconSize / 2}, ${-iconSize / 2})`,
+          transform: `rotate(${30 + (ai / Math.PI) * 180} ${spin(r, ai)}) translate(${-iconSize / 2}, ${-iconSize / 2})`,
           height: iconSize,
           width: iconSize,
-          ...spinO((r1 + r2) / 2, ai),
+          ...spinO(r, ai),
         })
       );
 
       let highlighter = createElement("g", { class: "button_group" });
-      highlighter.addEventListener("pointerdown", (e) => {
-        actions.setColor(COLORS_HEX[i]);
+      highlighter.addEventListener("pointerdown", e => {
+        actions.setColor(COLORS_HIGHLIGHTER_HEX[i]);
         actions.setTool("highlighter");
         actions.hide();
         actions.showWidths(a1, "highlighter");
@@ -221,7 +226,7 @@ export default class ToolWheel {
         A ${r3} ${r3} 0 0 1 ${spin(r3, a2)}
         L ${spin(r2, a2)}
       `;
-      highlighter.appendChild(createElement("path", { class: "button", d: path2 }));
+      highlighter.appendChild(createElement("path", { class: "button", d: path2, fill: "rgba(230, 230, 230, 1)" }));
 
       // Highlighter icon
       highlighter.appendChild(
@@ -241,8 +246,8 @@ export default class ToolWheel {
         const ang = a1 + (SLICE_ANGLE / N_SHAPES) * (j + 0.5);
 
         let g = createElement("g", { class: "button_group" });
-        g.addEventListener("pointerdown", (e) => {
-          actions.setColor(COLORS_HEX[i]);
+        g.addEventListener("pointerdown", e => {
+          actions.setColor(COLORS_PEN_HEX[i]);
           actions.setTool("shapes");
           actions.setShape(SHAPES[j].toLowerCase());
           actions.hide();
@@ -270,7 +275,8 @@ export default class ToolWheel {
           })
         );
 
-        part.appendChild(g);
+        // Shapes disabled for now
+        //part.appendChild(g);
       }
 
       part.appendChild(pen);
@@ -485,12 +491,12 @@ export default class ToolWheel {
     };
 
     menu.addEventListener("pointerleave", () => (menu.style.display = "none"));
-    menu.addEventListener("pointerup", (e) => {
+    menu.addEventListener("pointerup", e => {
       const w = getHoverW(e.x, e.y);
       if (w >= 0 && w < N_WIDTHS) setW(w);
       menu.style.display = "none";
     });
-    menu.addEventListener("pointermove", (e) => {
+    menu.addEventListener("pointermove", e => {
       const w = getHoverW(e.x, e.y);
       for (let i = 0; i < menu.children.length; i++)
         menu.children[i].children[0].style.fill = i == w ? "rgba(220, 220, 220, 1)" : "rgba(240, 240, 240, 1)";
