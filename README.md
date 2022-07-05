@@ -134,11 +134,11 @@ When professor opens lecture notes:
 * [X] Make work on Apple
 * [X] Fix stroke width (thins out at the end)
 * [X] Fix widths wheel bug on Samsung
-* [ ] iOS bug
-* [ ] New strokes algorithm
-  * [ ] TRIANGLE_STRIP - 1h
-  * [ ] Strokes grouped in buffers by Y-coordinate to optimize rendering - 2h
-  * [ ] Highlighter strokes at the back => 2 sets of buffers: pen & highlighter - 1h
+* [X] iOS bug
+* [X] New strokes algorithm
+  * [X] TRIANGLE_STRIP - 1h
+  * [-] Strokes grouped in buffers by Y-coordinate to optimize rendering - 2h (UNFEASABLE)
+  * [X] Highlighter strokes at the back => 2 sets of buffers: pen & highlighter - 1h
   * [ ] Ability to delete/undo strokes => stroke ID - 2h
   * [ ] Finding strokes that intersect a given line - 3h
   * [ ] Open wheel on triple tap - 2h
