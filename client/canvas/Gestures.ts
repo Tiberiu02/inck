@@ -56,14 +56,14 @@ export class ViewManager {
     this.touches = [];
 
     this.mouse = { x: 0, y: 0 };
-    app.addEventListener(window, "wheel", e => this.handleWheelEvent(e), { passive: false });
-    app.addEventListener(window, "mousemove", e => (this.mouse = { x: e.clientX, y: e.clientY }));
+    window.addEventListener("wheel", e => this.handleWheelEvent(e), { passive: false });
+    window.addEventListener("mousemove", e => (this.mouse = { x: e.clientX, y: e.clientY }));
 
     if (navigator.vendor != "Apple Computer, Inc.") {
-      app.addEventListener(app.canvas, "touchstart", e => this.handleTouchEvent(e));
-      app.addEventListener(app.canvas, "touchend", e => this.handleTouchEvent(e));
-      app.addEventListener(app.canvas, "touchcancel", e => this.handleTouchEvent(e));
-      app.addEventListener(app.canvas, "touchmove", e => this.handleTouchEvent(e));
+      app.canvas.addEventListener("touchstart", e => this.handleTouchEvent(e));
+      app.canvas.addEventListener("touchend", e => this.handleTouchEvent(e));
+      app.canvas.addEventListener("touchcancel", e => this.handleTouchEvent(e));
+      app.canvas.addEventListener("touchmove", e => this.handleTouchEvent(e));
     } // else triggered from main touch listener
 
     this.inertia = new ScrollInertia(this);
@@ -177,8 +177,10 @@ export class ViewManager {
       this.inertia.release();
   }
 
-  handleWheelEvent(e) {
+  handleWheelEvent(e: WheelEvent) {
     e.preventDefault();
+
+    console.log(e);
 
     let { deltaX, deltaY, deltaMode } = e;
 
@@ -193,6 +195,9 @@ export class ViewManager {
       this.clip();
     } else {
       // scroll
+      if (e.shiftKey) {
+        [deltaX, deltaY] = [deltaY, deltaX];
+      }
       this.top += deltaY;
       this.left += deltaX;
       this.clip();

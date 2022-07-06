@@ -1,5 +1,13 @@
-import { ELEMENTS_PER_INPUT, FillPath, StrokeToPath } from "./Physics";
 import { Rectangle } from "./types";
+import { DynamicStroke, FillPath } from "./Vectorization";
+
+export const ELEMENTS_PER_INPUT = 4;
+export const OFFSET_INPUT = {
+  X: 0,
+  Y: 1,
+  P: 2,
+  T: 3,
+};
 
 export class Tool {
   inputs: any;
@@ -47,7 +55,7 @@ export class Tool {
 
   static deserialize(data) {
     if (data.type == "p") return Pen.deserialize(data);
-    else if (data.type == "h") return Highlighter.deserialize(data);
+    else if (data.type == "h") return HighlighterPen.deserialize(data);
     else if (data.type == "e") return Eraser.deserialize(data);
   }
 
@@ -80,14 +88,40 @@ export class Tool {
 }
 
 export class Pen extends Tool {
+  startTime: any;
+  endTime: number;
+  boundingBox: { xMin: number; xMax: number; yMin: number; yMax: number };
+  longPressTimeout: number;
+  zIndex: number;
+  id: string;
+  vectorizer: DynamicStroke;
+  callback: () => void;
   color: number[];
+
   constructor(width: number, color: number[], inputs = []) {
     super(inputs, width);
+
+    this.vectorizer = new DynamicStroke(width, color, inputs);
     this.color = color;
   }
 
+  update(x: number, y: number, pressure: number, timeStamp: number): void {
+    super.update(x, y, pressure, timeStamp);
+    this.vectorizer.addInput(x, y, pressure, timeStamp);
+  }
+
+  ifLongPress(duration, maxDist, callback) {
+    this.longPressTimeout = window.setTimeout(() => {
+      let { xMin, yMin, xMax, yMax } = this.boundingBox;
+
+      if (xMax - xMin < maxDist + this.width * 2 && yMax - yMin < maxDist + this.width * 2) {
+        callback();
+      }
+    }, duration);
+  }
+
   vectorize(active: boolean = false): number[] {
-    return StrokeToPath(this.inputs, this.width, this.color);
+    return this.vectorizer.getArray();
   }
 
   serialize() {
@@ -104,8 +138,7 @@ export class Pen extends Tool {
   }
 }
 
-export class Highlighter extends Pen {
-  color: number[];
+export class HighlighterPen extends Pen {
   constructor(width: number, color: number[], inputs = []) {
     super(width, color, inputs);
     this.zIndex = 0;
@@ -121,7 +154,7 @@ export class Highlighter extends Pen {
   }
 
   static deserialize(s) {
-    return new Highlighter(s.width, s.color, s.path);
+    return new HighlighterPen(s.width, s.color, s.path);
   }
 }
 
@@ -134,7 +167,7 @@ export class Eraser extends Tool {
     const color = active ? [0.95, 0.95, 0.95, 1] : [1, 1, 1, 1];
 
     return FillPath(
-      this.inputs.filter((i, ix) => ix % 4 < 2),
+      this.inputs.filter((_, ix) => ix % 4 < 2),
       color
     );
   }

@@ -1,12 +1,9 @@
-import cluster from "cluster";
+import { ViewManager } from "./Gestures";
 import { ELEMENTS_PER_VERTEX, GL } from "./GL";
 import { Tool } from "./Tools";
-import { Rectangle } from "./types";
 
 const BUFFER_SIZE = 5e4;
-
 const NUM_LAYERS = 2;
-const PAGE_HEIGHT = 1;
 
 class StrokeBuffer {
   private gl: WebGL2RenderingContext;
@@ -112,26 +109,29 @@ class StrokeCluster {
 }
 
 export class CanvasManager {
-  private canvas: HTMLCanvasElement;
   private gl: WebGL2RenderingContext;
   private layers: StrokeCluster[];
   private buffer: WebGLBuffer;
-  private getUniforms: () => object;
-  private defaultProgram: WebGLProgram;
+  private program: WebGLProgram;
   private activeStrokes: Tool[];
 
-  constructor(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext, program: WebGLProgram, getUniforms: () => object) {
-    this.canvas = canvas;
-    this.gl = gl;
-    this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(gl, program, getUniforms));
-    this.buffer = gl.createBuffer();
-    this.getUniforms = getUniforms;
-    this.defaultProgram = program;
+  protected view: ViewManager;
+
+  public yMax: number;
+
+  constructor(canvas: HTMLCanvasElement, view: ViewManager) {
+    this.gl = GL.initWebGL(canvas);
+    this.program = GL.createProgram(this.gl);
+    this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(this.gl, this.program, () => view.getUniforms()));
+    this.buffer = this.gl.createBuffer();
+    this.view = view;
     this.activeStrokes = [];
+    this.yMax = 0;
   }
 
   addStroke(stroke: Tool): void {
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
+    this.yMax = Math.max(this.yMax, stroke.boundingBox.yMax);
   }
 
   removeStroke(stroke: Tool): void {
@@ -143,6 +143,7 @@ export class CanvasManager {
   }
 
   render(): void {
+    this.clearCanvas();
     this.layers.forEach((layer, ix) => {
       layer.render();
       this.activeStrokes.filter(stroke => stroke.zIndex == ix).forEach(stroke => this.renderStroke(stroke.vectorize(true)));
@@ -153,11 +154,15 @@ export class CanvasManager {
   renderStroke(array: number[], program?: WebGLProgram): void {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(array), this.gl.STREAM_DRAW);
-    GL.setProgram(this.gl, program ?? this.defaultProgram, this.getUniforms());
+    GL.setProgram(this.gl, program ?? this.program, this.view.getUniforms());
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
   }
 
-  clearCanvas() {
+  viewport(x, y, width, height) {
+    this.gl.viewport(x, y, width, height);
+  }
+
+  private clearCanvas() {
     this.gl.clearColor(1, 1, 1, 1);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   }

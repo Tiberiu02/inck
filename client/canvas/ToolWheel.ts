@@ -1,10 +1,10 @@
-import { Pen, Eraser, Highlighter } from "./Tools";
+import { Pen, Eraser, HighlighterPen } from "./Tools";
 
 const RES_ROOT = "/wheel/";
 
 const COLORS_NAMES = ["Black", "Red", "Orange", "Yellow", "Green", "Blue", "Purple"];
 const COLORS_PEN_HEX = ["#000000", "#ff0000", "#f8972c", "#fcfc00", "#149618", "#353eff", "#dd09bf"];
-const COLORS_HIGHLIGHTER_HEX = ["#000000", "#ff0000", "#f8972c", "#fcfc00", "#149618", "#353eff", "#dd09bf"];
+const COLORS_HIGHLIGHTER_HEX = ["#b9b9b9", "#ffa3a3", "#fdca91", "#ffff94", "#9df19f", "#bdc0ff", "#f797e9"];
 
 const SHAPES = ["Circle", "Arrow", "Triangle", "Rectangle"];
 
@@ -85,7 +85,7 @@ export default class ToolWheel {
     if (this.tool == "pen") {
       return new Pen((window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom, [...rgb, 1]);
     } else if (this.tool == "highlighter") {
-      return new Highlighter((window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom, [...rgb, 0.2]);
+      return new HighlighterPen((window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom, [...rgb, 0.2]);
     } else if (this.tool == "eraser") {
       return new Eraser();
     } else if (this.tool == "shapes") {
