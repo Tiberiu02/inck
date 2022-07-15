@@ -1,5 +1,6 @@
 import { ViewManager } from "./Gestures";
 import { ELEMENTS_PER_VERTEX, GL } from "./GL";
+import Profiler from "./Profiler";
 import { Tool } from "./Tools";
 
 const BUFFER_SIZE = 5e4;
@@ -14,9 +15,9 @@ class StrokeBuffer {
   program: WebGLProgram;
   getUniforms: () => object;
 
-  constructor(gl: WebGL2RenderingContext, program: WebGLProgram, getUniforms: () => object, array: number[] = []) {
+  constructor(gl: WebGL2RenderingContext, program: WebGLProgram, getUniforms: () => object) {
     this.gl = gl;
-    this.array = array;
+    this.array = [];
     this.buffer = gl.createBuffer();
     this.synced = false;
     this.strokes = [];
@@ -49,6 +50,8 @@ class StrokeBuffer {
     this.array.splice(start, this.strokes[index].size);
     this.strokes.splice(index, 1);
     this.synced = false;
+
+    return true;
   }
 
   render(): void {
@@ -87,18 +90,23 @@ class StrokeCluster {
       buffer.add(id, array);
       this.strokeLocation[id] = buffer;
     } else {
-      const buffer = new StrokeBuffer(this.gl, this.program, this.getUniforms, array);
+      const buffer = new StrokeBuffer(this.gl, this.program, this.getUniforms);
+      buffer.add(id, array);
       this.buffers.push(buffer);
       this.strokeLocation[id] = buffer;
     }
   }
 
-  removeStroke(id: string) {
+  removeStroke(id: string): boolean {
     const buffer = this.strokeLocation[id];
-    buffer.remove(id);
+
+    if (!buffer) return false;
+
+    const status = buffer.remove(id);
     if (buffer.isEmpty()) {
       this.buffers = this.buffers.filter(b => b != buffer);
     }
+    return status;
   }
 
   render() {
@@ -114,6 +122,7 @@ export class CanvasManager {
   private buffer: WebGLBuffer;
   private program: WebGLProgram;
   private activeStrokes: Tool[];
+  private zIndex: { [id: string]: number };
 
   protected view: ViewManager;
 
@@ -127,15 +136,20 @@ export class CanvasManager {
     this.view = view;
     this.activeStrokes = [];
     this.yMax = 0;
+    this.zIndex = {};
   }
 
   addStroke(stroke: Tool): void {
+    this.zIndex[stroke.id] = stroke.zIndex;
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
     this.yMax = Math.max(this.yMax, stroke.boundingBox.yMax);
   }
 
-  removeStroke(stroke: Tool): void {
-    this.layers[stroke.zIndex].removeStroke(stroke.id);
+  removeStroke(id: string): boolean {
+    if (this.zIndex[id] == undefined) {
+      return false;
+    }
+    return this.layers[this.zIndex[id]].removeStroke(id);
   }
 
   addActiveStroke(stroke: Tool) {
@@ -146,16 +160,36 @@ export class CanvasManager {
     this.clearCanvas();
     this.layers.forEach((layer, ix) => {
       layer.render();
-      this.activeStrokes.filter(stroke => stroke.zIndex == ix).forEach(stroke => this.renderStroke(stroke.vectorize(true)));
+      this.activeStrokes
+        .filter(stroke => stroke.zIndex == ix)
+        .forEach(stroke => {
+          Profiler.start("vectorization");
+          const array = stroke.vectorize(true);
+          Profiler.stop("vectorization");
+          Profiler.start("active rendering");
+          this.renderStroke(array);
+          Profiler.stop("active rendering");
+        });
     });
     this.activeStrokes = [];
   }
 
   renderStroke(array: number[], program?: WebGLProgram): void {
+    Profiler.start("binding");
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+    Profiler.stop("binding");
+
+    Profiler.start("buffering"); // Takes 90% of time
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(array), this.gl.STREAM_DRAW);
+    Profiler.stop("buffering");
+
+    Profiler.start("program");
     GL.setProgram(this.gl, program ?? this.program, this.view.getUniforms());
+    Profiler.stop("program");
+
+    Profiler.start("drawing");
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
+    Profiler.stop("drawing");
   }
 
   viewport(x, y, width, height) {
