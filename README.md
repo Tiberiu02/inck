@@ -142,6 +142,7 @@ When professor opens lecture notes:
   * [ ] Ability to delete/undo strokes => stroke ID - 2h
   * [ ] Finding strokes that intersect a given line - 3h
   * [ ] Open wheel on triple tap - 2h
+  * [ ] Optimize active stroke rendering using partial buffering - 1h
 * [ ] Improve stroke triangularization
 * [ ] Preserve scroll on refresh
 * [ ] Wheel opening gesture

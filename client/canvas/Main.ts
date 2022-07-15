@@ -1,12 +1,12 @@
 import Profiler from "./Profiler";
-import { GL, ELEMENTS_PER_VERTEX } from "./GL";
 import { ViewManager } from "./Gestures";
 import { ScrollBars, ComputeDPI } from "./UI";
 import ToolWheel from "./ToolWheel";
-import { NetworkCanvasManager } from "./NetworkCanvasManager";
+import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
 import { Tool } from "./Tools";
-import { Network } from "./Network";
+import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
+import { ActionStack } from "./ActionsStack";
 
 export default class App {
   canvas: HTMLCanvasElement;
@@ -23,7 +23,8 @@ export default class App {
   activeTool?: Tool;
   rendering: boolean;
   nextRender: number;
-  network: Network;
+  network: NetworkConnection;
+  actions: ActionStack;
 
   constructor(canvas) {
     ComputeDPI();
@@ -48,7 +49,7 @@ export default class App {
     this.view = new ViewManager(this);
     this.view.disableWindowOverscrolling();
 
-    this.network = new Network(() => this.scheduleRender());
+    this.network = new NetworkConnection(() => this.scheduleRender());
 
     // Create canvas manager
     this.canvasManager = new NetworkCanvasManager(this.canvas, this.view, this.network);
@@ -82,10 +83,18 @@ export default class App {
 
     // Create tool wheel
     this.wheel = new ToolWheel(this, {
-      undo: () => console.log("Undo"),
-      redo: () => console.log("Redo"),
+      undo: () => {
+        this.actions.undo();
+        this.render();
+      },
+      redo: () => {
+        this.actions.redo();
+        this.render();
+      },
       settings: () => console.log("settings"),
     });
+
+    this.actions = new ActionStack();
 
     requestAnimationFrame(() => this.renderLoop());
   }
@@ -158,7 +167,11 @@ export default class App {
     if (t.touchType === "stylus") {
       // stylus
       this.handlePointerEvent(pointerEvent);
-    } else if (this.scrollBars.scrolling() || t.target == this.scrollBars.vertical || t.target == this.scrollBars.horizontal) {
+    } else if (
+      this.scrollBars.scrolling() ||
+      t.target == this.scrollBars.vertical ||
+      t.target == this.scrollBars.horizontal
+    ) {
       // scrollbar
       this.scrollBars.handlePointerEvent(pointerEvent, this.view, this.canvasManager.yMax);
       this.scheduleRender();
@@ -211,10 +224,16 @@ export default class App {
           this.render();
         } else if (this.activeTool) {
           // Finished stroke
-          this.canvasManager.addStroke(this.activeTool);
+          const stroke = this.activeTool;
+          this.canvasManager.addStroke(stroke);
+          console.log(stroke.zIndex, stroke.id);
+          this.actions.push({
+            undo: () => this.canvasManager.removeStroke(stroke.id),
+            redo: () => this.canvasManager.addStroke(stroke),
+          });
 
           this.activeTool.delete();
-          delete this.activeTool;
+          this.activeTool = undefined;
           this.network.updateTool(undefined);
 
           this.render();
@@ -235,16 +254,14 @@ export default class App {
     this.rendering = true;
     const renderStart = performance.now();
 
-    Profiler.start("rendering");
-
     if (this.activeTool) {
+      Profiler.start("active stroke");
       this.canvasManager.addActiveStroke(this.activeTool);
+      Profiler.stop("active stroke");
     }
     this.canvasManager.render();
 
     this.scrollBars.update(this.view, this.canvasManager.yMax);
-
-    Profiler.stop("rendering");
 
     this.nextRender = performance.now() * 2 - renderStart;
     this.rendering = false;

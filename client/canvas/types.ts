@@ -19,3 +19,8 @@ export interface PathPoint {
   r: number;
   angleStep: number;
 }
+
+export interface Action {
+  undo: () => boolean;
+  redo: () => void;
+}

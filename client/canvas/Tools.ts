@@ -1,5 +1,6 @@
 import { Rectangle } from "./types";
 import { DynamicStroke, FillPath } from "./Vectorization";
+import { getAuthToken } from "../components/AuthToken";
 
 export const ELEMENTS_PER_INPUT = 4;
 export const OFFSET_INPUT = {
@@ -22,10 +23,10 @@ export class Tool {
   serialize?(): object;
   boundingBox: Rectangle;
 
-  constructor(inputs: number[], width: number = 0) {
+  constructor(inputs: number[], width: number, id?: string) {
     this.inputs = inputs;
     this.width = width;
-    this.id = Math.random().toString(36).slice(2);
+    this.id = id ?? window.userId + "-" + Date.now();
     this.zIndex = 1;
     this.callback = () => {};
 
@@ -98,8 +99,8 @@ export class Pen extends Tool {
   callback: () => void;
   color: number[];
 
-  constructor(width: number, color: number[], inputs = []) {
-    super(inputs, width);
+  constructor(width: number, color: number[], inputs = [], id?: string) {
+    super(inputs, width, id);
 
     this.vectorizer = new DynamicStroke(width, color, inputs);
     this.color = color;
@@ -108,16 +109,6 @@ export class Pen extends Tool {
   update(x: number, y: number, pressure: number, timeStamp: number): void {
     super.update(x, y, pressure, timeStamp);
     this.vectorizer.addInput(x, y, pressure, timeStamp);
-  }
-
-  ifLongPress(duration, maxDist, callback) {
-    this.longPressTimeout = window.setTimeout(() => {
-      let { xMin, yMin, xMax, yMax } = this.boundingBox;
-
-      if (xMax - xMin < maxDist + this.width * 2 && yMax - yMin < maxDist + this.width * 2) {
-        callback();
-      }
-    }, duration);
   }
 
   vectorize(active: boolean = false): number[] {
@@ -130,17 +121,18 @@ export class Pen extends Tool {
       width: this.width,
       color: this.color,
       path: this.inputs,
+      id: this.id,
     };
   }
 
   static deserialize(s) {
-    return new Pen(s.width, s.color, s.path);
+    return new Pen(s.width, s.color, s.path, s.id);
   }
 }
 
 export class HighlighterPen extends Pen {
-  constructor(width: number, color: number[], inputs = []) {
-    super(width, color, inputs);
+  constructor(width: number, color: number[], inputs = [], id?: string) {
+    super(width, color, inputs, id);
     this.zIndex = 0;
   }
 
@@ -150,17 +142,18 @@ export class HighlighterPen extends Pen {
       width: this.width,
       color: this.color,
       path: this.inputs,
+      id: this.id,
     };
   }
 
   static deserialize(s) {
-    return new HighlighterPen(s.width, s.color, s.path);
+    return new HighlighterPen(s.width, s.color, s.path, s.id);
   }
 }
 
 export class Eraser extends Tool {
-  constructor(inputs = []) {
-    super(inputs);
+  constructor(inputs = [], id?: string) {
+    super(inputs, 0, id);
   }
 
   vectorize(active: boolean = false): number[] {

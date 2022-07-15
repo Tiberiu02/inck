@@ -1,14 +1,13 @@
 import { io } from "socket.io-client";
-import { Tool } from "./Tools";
-import { Vector2D } from "./types";
+import { Tool } from "../Tools";
+import { Vector2D } from "../types";
 
 const SERVER_PORT = 8080;
 
 type Collaborator = { pointer?: Vector2D; activeStroke?: Tool; el?: HTMLElement; id: string };
 
-export class Network {
+export class NetworkConnection {
   private socket: any;
-  private docId: string;
   private collabs: { [id: number]: Collaborator };
   private requestRerender: () => void;
   private onConnect: () => void;

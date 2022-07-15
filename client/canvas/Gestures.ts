@@ -180,8 +180,6 @@ export class ViewManager {
   handleWheelEvent(e: WheelEvent) {
     e.preventDefault();
 
-    console.log(e);
-
     let { deltaX, deltaY, deltaMode } = e;
 
     if (deltaMode == WheelEvent.DOM_DELTA_PIXEL) {
@@ -195,11 +193,12 @@ export class ViewManager {
       this.clip();
     } else {
       // scroll
-      if (e.shiftKey) {
-        [deltaX, deltaY] = [deltaY, deltaX];
+      if (e.shiftKey && !deltaX) {
+        this.left += deltaY;
+      } else {
+        this.top += deltaY;
+        this.left += deltaX;
       }
-      this.top += deltaY;
-      this.left += deltaX;
       this.clip();
     }
 

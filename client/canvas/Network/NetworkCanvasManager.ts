@@ -1,7 +1,7 @@
-import { CanvasManager } from "./CanvasManager";
-import { ViewManager } from "./Gestures";
-import { Network } from "./Network";
-import { Tool } from "./Tools";
+import { CanvasManager } from "../CanvasManager";
+import { ViewManager } from "../Gestures";
+import { NetworkConnection } from "./NetworkConnection";
+import { Tool } from "../Tools";
 
 // input: h as an angle in [0,360] and s,l in [0,1] - output: r,g,b in [0,1]
 function hsl2rgb(h, s, l) {
@@ -11,10 +11,10 @@ function hsl2rgb(h, s, l) {
 }
 
 export class NetworkCanvasManager extends CanvasManager {
-  private network: Network;
+  private network: NetworkConnection;
   private collabsContainer: HTMLDivElement;
 
-  constructor(canvas: HTMLCanvasElement, view: ViewManager, network: Network) {
+  constructor(canvas: HTMLCanvasElement, view: ViewManager, network: NetworkConnection) {
     super(canvas, view);
 
     this.network = network;
@@ -24,8 +24,10 @@ export class NetworkCanvasManager extends CanvasManager {
 
     network.emit("request document", docId);
 
-    network.on("load strokes", (data: object[]) => {
-      console.log("loaded strokes", data);
+    network.on("load strokes", (data: object[], userId: string) => {
+      console.log("loaded strokes", data, userId);
+
+      window.userId = userId;
 
       for (let s of data) {
         if (!s) continue;
@@ -59,9 +61,9 @@ export class NetworkCanvasManager extends CanvasManager {
     this.network.emit("new stroke", stroke.serialize());
   }
 
-  removeStroke(stroke: Tool): void {
-    super.removeStroke(stroke);
-    this.network.emit("remove stroke", stroke.serialize());
+  removeStroke(id: string): boolean {
+    this.network.emit("remove stroke", id);
+    return super.removeStroke(id);
   }
 
   render(): void {
@@ -73,7 +75,7 @@ export class NetworkCanvasManager extends CanvasManager {
           height: "0px",
           borderTop: "15px solid transparent",
           borderBottom: "6px solid transparent",
-          borderLeft: `15px solid rgb(${hsl2rgb(+c.id * 360, 1, 0.5)
+          borderLeft: `15px solid rgb(${hsl2rgb(parseInt(c.id, 36), 1, 0.5)
             .map(x => x * 255)
             .join(",")})`,
           display: "none",

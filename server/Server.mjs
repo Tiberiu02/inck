@@ -59,7 +59,7 @@ class Server {
 
     this.io.on("connection", socket => {
       let ip = socket.conn.remoteAddress.replace("::ffff:", "");
-      let userId = Math.random();
+      let userId = Math.random().toString(36).slice(2);
       let docId;
       let canWrite = true;
 
@@ -145,9 +145,9 @@ class Server {
 
         QueryAllDB("data", "notes", { id: docId }, {}, result => {
           if (!result.length) {
-            socket.emit("load strokes", []);
+            socket.emit("load strokes", [], userId);
           } else {
-            socket.emit("load strokes", result[0].strokes);
+            socket.emit("load strokes", result[0].strokes, userId);
           }
         });
       });

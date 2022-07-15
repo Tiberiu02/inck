@@ -8,6 +8,7 @@ declare global {
     DPI: number;
     profiler?: Profiler;
     app?: App;
+    userId?: string;
   }
 }
 
