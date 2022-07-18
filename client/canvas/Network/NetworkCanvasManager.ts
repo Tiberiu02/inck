@@ -41,6 +41,11 @@ export class NetworkCanvasManager extends CanvasManager {
       this.render();
     });
 
+    network.on("unload strokes", (ids: string[]) => {
+      ids.forEach(id => super.removeStroke(id));
+      this.render();
+    });
+
     this.collabsContainer = document.createElement("div");
 
     Object.assign(this.collabsContainer.style, {

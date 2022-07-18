@@ -20,7 +20,9 @@ export interface PathPoint {
   angleStep: number;
 }
 
-export interface Action {
-  undo: () => boolean;
-  redo: () => void;
+export interface LineSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 }

@@ -72,7 +72,7 @@ class StrokeBuffer {
 class StrokeCluster {
   private gl: WebGL2RenderingContext;
   private buffers: StrokeBuffer[];
-  private strokeLocation: object;
+  private strokeLocation: { [id: string]: StrokeBuffer };
   program: WebGLProgram;
   getUniforms: () => object;
 
@@ -122,7 +122,7 @@ export class CanvasManager {
   private buffer: WebGLBuffer;
   private program: WebGLProgram;
   private activeStrokes: Tool[];
-  private zIndex: { [id: string]: number };
+  private strokes: { [id: string]: Tool };
 
   protected view: ViewManager;
 
@@ -136,20 +136,26 @@ export class CanvasManager {
     this.view = view;
     this.activeStrokes = [];
     this.yMax = 0;
-    this.zIndex = {};
+    this.strokes = {};
   }
 
   addStroke(stroke: Tool): void {
-    this.zIndex[stroke.id] = stroke.zIndex;
+    this.strokes[stroke.id] = stroke;
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
     this.yMax = Math.max(this.yMax, stroke.boundingBox.yMax);
   }
 
   removeStroke(id: string): boolean {
-    if (this.zIndex[id] == undefined) {
+    if (this.strokes[id] == undefined) {
       return false;
     }
-    return this.layers[this.zIndex[id]].removeStroke(id);
+    const zIndex = this.strokes[id].zIndex;
+    this.strokes[id] = undefined;
+    return this.layers[zIndex].removeStroke(id);
+  }
+
+  getStrokes(): Tool[] {
+    return Object.values(this.strokes);
   }
 
   addActiveStroke(stroke: Tool) {
@@ -179,8 +185,9 @@ export class CanvasManager {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
     Profiler.stop("binding");
 
-    Profiler.start("buffering"); // Takes 90% of time
+    Profiler.start("buffering");
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(array), this.gl.STREAM_DRAW);
+    // Note to self: don't bother with with gl.bufferSubData, doesn't work well on mobile
     Profiler.stop("buffering");
 
     Profiler.start("program");
@@ -192,7 +199,7 @@ export class CanvasManager {
     Profiler.stop("drawing");
   }
 
-  viewport(x, y, width, height) {
+  viewport(x: number, y: number, width: number, height: number) {
     this.gl.viewport(x, y, width, height);
   }
 

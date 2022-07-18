@@ -3,7 +3,7 @@ import { ViewManager } from "./Gestures";
 import { ScrollBars, ComputeDPI } from "./UI";
 import ToolWheel from "./ToolWheel";
 import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
-import { Tool } from "./Tools";
+import { StrokeEraser, Tool } from "./Tools";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
 import { ActionStack } from "./ActionsStack";
@@ -204,7 +204,9 @@ export default class App {
           if (!this.activeTool) {
             // New stroke
             this.activeTool = this.wheel.NewTool();
-            this.network.updateTool(this.activeTool);
+            if (!(this.activeTool instanceof StrokeEraser)) {
+              this.network.updateTool(this.activeTool);
+            }
             console.log("new tool");
             // Long press eraser gesture
             const d = pointerType == "pen" ? 15 : 1;
@@ -220,17 +222,21 @@ export default class App {
           }
 
           this.activeTool.update(x, y, pressure, timeStamp);
-          this.network.updateInput(x, y, pressure, timeStamp);
+          if (!(this.activeTool instanceof StrokeEraser)) {
+            this.network.updateInput(x, y, pressure, timeStamp);
+          }
           this.render();
         } else if (this.activeTool) {
           // Finished stroke
-          const stroke = this.activeTool;
-          this.canvasManager.addStroke(stroke);
-          console.log(stroke.zIndex, stroke.id);
-          this.actions.push({
-            undo: () => this.canvasManager.removeStroke(stroke.id),
-            redo: () => this.canvasManager.addStroke(stroke),
-          });
+          if (!(this.activeTool instanceof StrokeEraser)) {
+            const stroke = this.activeTool;
+            this.canvasManager.addStroke(stroke);
+            console.log(stroke.zIndex, stroke.id);
+            this.actions.push({
+              undo: (): boolean => this.canvasManager.removeStroke(stroke.id),
+              redo: () => this.canvasManager.addStroke(stroke),
+            });
+          }
 
           this.activeTool.delete();
           this.activeTool = undefined;
@@ -254,7 +260,7 @@ export default class App {
     this.rendering = true;
     const renderStart = performance.now();
 
-    if (this.activeTool) {
+    if (this.activeTool && !(this.activeTool instanceof StrokeEraser)) {
       Profiler.start("active stroke");
       this.canvasManager.addActiveStroke(this.activeTool);
       Profiler.stop("active stroke");

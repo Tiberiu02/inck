@@ -8,6 +8,8 @@ const STIFFNESS_P = STIFFNESS * 0.05;
 const DRAG = 0.1;
 const A_STEP_DENSITY = 0.05; // rounded tip angular distance between vertices
 
+export const GetStrokeRadius = (width: number, p: number): number => (width * (p + 1)) / 3;
+
 export class DynamicStroke {
   protected inputs: number[];
   private path: PathPoint[];
@@ -42,14 +44,29 @@ export class DynamicStroke {
     const nx = -vy / v;
     const ny = vx / v;
 
-    const r = (this.width * (p + 1)) / 3;
+    const r = GetStrokeRadius(this.width, p);
     const angleStep = A_STEP_DENSITY / (2 * Math.PI * r) ** 0.5;
 
     return { x, y, t, nx, ny, r, angleStep };
   }
 
   getArray() {
-    if (!this.path.length) return [];
+    if (!this.path.length) {
+      if (!this.inputs.length) return [];
+
+      const [x, y, p, t] = this.inputs.slice(0, 4);
+      const { r, angleStep } = this.getMassPathPoint({ x, y, p, vx: 1, vy: 1, t });
+
+      let array = [];
+      for (let a = 0; a < Math.PI; a += angleStep) {
+        const [sin, cos] = [Math.sin(a), Math.cos(a)];
+        array.push(x + r * cos, y + r * sin, ...this.color);
+        array.push(x + r * cos, y - r * sin, ...this.color);
+      }
+      array.push(x - r, y, ...this.color);
+      array.push(x - r, y, ...this.color);
+      return array;
+    }
 
     const dt = 1;
     const X = this.inputs[this.inputs.length - ELEMENTS_PER_INPUT + OFFSET_INPUT.X];

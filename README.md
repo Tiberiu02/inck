@@ -170,8 +170,9 @@ When professor opens lecture notes:
 
 ### Tech debt
 * [ ] Send live collaboration update on scroll (not just on pointer move), so that pointer appears to move when scrolling
-* [ ] Optimize live collaboration (send only stroke modification, not entire stroke every time)
+* [X] Optimize live collaboration (send only stroke modification, not entire stroke every time)
 * [ ] Careful about storing collaborators in memory in Server, probably better to use mongo when lots of users
+* [ ] When undoing stroke erase, insert stroke back to its initial position, not as a new stroke
 
 # License
 

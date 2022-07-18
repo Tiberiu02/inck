@@ -1,36 +1,45 @@
-import { CanvasManager } from "./CanvasManager";
-import { Action } from "./types";
+export interface Action {
+  undo: () => boolean;
+  redo: () => void;
+}
 
 export class ActionStack {
   private actions: Action[];
-  private index: number; // index of the last action done
+  private indexOfLastActionDone: number;
 
   constructor() {
     this.actions = [];
-    this.index = -1;
+    this.indexOfLastActionDone = -1;
   }
 
   push(action: Action) {
     // Clear undone actions from the stack
-    while (this.actions.length > this.index + 1) {
+    while (this.actions.length > this.indexOfLastActionDone + 1) {
       this.actions.pop();
     }
 
-    this.index = this.actions.length;
+    this.indexOfLastActionDone = this.actions.length;
     this.actions.push(action);
   }
 
   undo() {
-    if (this.index >= 0) {
-      this.actions[this.index].undo();
-      this.index--;
+    if (this.indexOfLastActionDone >= 0) {
+      const success = this.actions[this.indexOfLastActionDone].undo();
+      if (success) {
+        this.indexOfLastActionDone--;
+      } else {
+        // Action cannot be undone, remove from stack and retry
+        this.actions.splice(this.indexOfLastActionDone, 1);
+        this.indexOfLastActionDone--;
+        this.undo();
+      }
     }
   }
 
   redo() {
-    if (this.index + 1 < this.actions.length) {
-      this.index++;
-      this.actions[this.index].redo();
+    if (this.indexOfLastActionDone + 1 < this.actions.length) {
+      this.indexOfLastActionDone++;
+      this.actions[this.indexOfLastActionDone].redo();
     }
   }
 }

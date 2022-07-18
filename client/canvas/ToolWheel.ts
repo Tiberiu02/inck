@@ -1,4 +1,6 @@
-import { Pen, Eraser, HighlighterPen } from "./Tools";
+import { CanvasManager } from "./CanvasManager";
+import App from "./Main";
+import { Pen, Eraser, HighlighterPen, StrokeEraser } from "./Tools";
 
 const RES_ROOT = "/wheel/";
 
@@ -25,7 +27,7 @@ function createElement(tag, attributes = {}) {
 }
 
 export default class ToolWheel {
-  app: any;
+  app: App;
   R: number;
   wheel: any;
   widthsWheels: { pen: any; highlighter: any; shapes: any };
@@ -85,12 +87,16 @@ export default class ToolWheel {
     if (this.tool == "pen") {
       return new Pen((window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom, [...rgb, 1]);
     } else if (this.tool == "highlighter") {
-      return new HighlighterPen((window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom, [...rgb, 0.2]);
+      return new HighlighterPen((window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom, [
+        ...rgb,
+        0.2,
+      ]);
     } else if (this.tool == "eraser") {
-      return new Eraser();
+      return new StrokeEraser(this.app.canvasManager, this.app.actions);
     } else if (this.tool == "shapes") {
       return new Pen((window.DPI * WIDTHS[this.width.shapes]) / innerWidth / this.app.view.zoom, [...rgb, 1]);
-    } else if (this.tool == "selection") return new Pen((window.DPI * 0.02) / innerWidth / this.app.view.zoom, [0, 0, 0, 1]);
+    } else if (this.tool == "selection")
+      return new Pen((window.DPI * 0.02) / innerWidth / this.app.view.zoom, [0, 0, 0, 1]);
   }
 
   setColor(color) {
@@ -192,7 +198,9 @@ export default class ToolWheel {
         A ${r2} ${r2} 0 0 1 ${spin(r2, a2)}
         L ${spin(r1, a2)}
       `;
-      pen.appendChild(createElement("path", { class: "", d: path1, fill: COLORS_PEN_HEX[i], stroke: COLORS_PEN_HEX[i] }));
+      pen.appendChild(
+        createElement("path", { class: "", d: path1, fill: COLORS_PEN_HEX[i], stroke: COLORS_PEN_HEX[i] })
+      );
 
       // Pen icon
       const iconSize = R / 6;
@@ -202,7 +210,9 @@ export default class ToolWheel {
         createElement("image", {
           class: "pen-img",
           href: RES_ROOT + `Tool_Pen_${COLORS_NAMES[i]}.png`,
-          transform: `rotate(${30 + (ai / Math.PI) * 180} ${spin(r, ai)}) translate(${-iconSize / 2}, ${-iconSize / 2})`,
+          transform: `rotate(${30 + (ai / Math.PI) * 180} ${spin(r, ai)}) translate(${-iconSize / 2}, ${
+            -iconSize / 2
+          })`,
           height: iconSize,
           width: iconSize,
           ...spinO(r, ai),
@@ -232,7 +242,9 @@ export default class ToolWheel {
       highlighter.appendChild(
         createElement("image", {
           href: RES_ROOT + `Tool_Highlighter_${COLORS_NAMES[i]}.png`,
-          transform: `rotate(${320 + (ai / Math.PI) * 180} ${spin((r2 + r3) / 2, ai)}) translate(${-iconSize / 2}, ${-iconSize / 2})`,
+          transform: `rotate(${320 + (ai / Math.PI) * 180} ${spin((r2 + r3) / 2, ai)}) translate(${-iconSize / 2}, ${
+            -iconSize / 2
+          })`,
           height: iconSize,
           width: iconSize,
           ...spinO((r2 + r3) / 2, ai),
@@ -268,7 +280,9 @@ export default class ToolWheel {
         g.appendChild(
           createElement("image", {
             href: RES_ROOT + `${SHAPES[j]}_${COLORS_NAMES[i]}.png`,
-            transform: `rotate(${270 + (ang / Math.PI) * 180} ${spin((r3 + r4) / 2, ang)}) translate(${-iconSize / 2}, ${-iconSize / 2})`,
+            transform: `rotate(${270 + (ang / Math.PI) * 180} ${spin((r3 + r4) / 2, ang)}) translate(${
+              -iconSize / 2
+            }, ${-iconSize / 2})`,
             height: iconSize,
             width: iconSize,
             ...spinO((r3 + r4) / 2, ang),
@@ -375,7 +389,15 @@ export default class ToolWheel {
       M ${R * 1.07} ${R * 0.93}
       L ${R * 0.93} ${R * 1.07}
       `;
-      close_button.appendChild(createElement("path", { class: "", stroke: "red", "stroke-width": R * 0.04, "stroke-linecap": "round", d: path_x }));
+      close_button.appendChild(
+        createElement("path", {
+          class: "",
+          stroke: "red",
+          "stroke-width": R * 0.04,
+          "stroke-linecap": "round",
+          d: path_x,
+        })
+      );
       close_button.addEventListener("pointerdown", () => actions.hide());
 
       menu.appendChild(close_button);
@@ -411,9 +433,9 @@ export default class ToolWheel {
       menu.appendChild(option);
     }
 
-    AddOptionButton(RES_ROOT + "Redo.png", Math.PI * 1.63, () => actions.redo());
+    AddOptionButton(RES_ROOT + "Redo.png", Math.PI * 1.37, () => actions.redo());
     AddOptionButton(RES_ROOT + "Tool_Settings.png", Math.PI * 1.5, () => actions.settings());
-    AddOptionButton(RES_ROOT + "Undo.png", Math.PI * 1.37, () => actions.undo());
+    AddOptionButton(RES_ROOT + "Undo.png", Math.PI * 1.63, () => actions.undo());
 
     return menu;
   }
@@ -486,7 +508,8 @@ export default class ToolWheel {
     const getHoverW = (x, y) => {
       const regex = /rotate\((-*[0-9\.]+)rad\)/.exec(menu.style.transform);
       const a = regex ? parseFloat(regex[1]) : 0;
-      const a_rel = Math.atan2(y - parseFloat(menu.style.top) - R, x - parseFloat(menu.style.left) - R) - a + Math.PI * 5;
+      const a_rel =
+        Math.atan2(y - parseFloat(menu.style.top) - R, x - parseFloat(menu.style.left) - R) - a + Math.PI * 5;
       return Math.floor((a_rel % (2 * Math.PI)) / SLICE_ANGLE);
     };
 

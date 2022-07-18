@@ -75,49 +75,62 @@ class Server {
         }
 
         this.docs[docId].users = this.docs[docId].users.filter(u => u != socket);
-        console.log(`[${new Date().toLocaleString()}] ${ip} stopped drawing on ${docId}, ${this.docs[docId].users.length} users remaining`);
+        console.log(
+          `[${new Date().toLocaleString()}] ${ip} stopped drawing on ${docId}, ${
+            this.docs[docId].users.length
+          } users remaining`
+        );
       });
 
-      socket.on("new stroke", stroke => {
-        console.log(`[${new Date().toLocaleString()}] ${ip} is drawing on /doc/${docId}`);
-
-        if (!docId) {
+      socket.on("remove stroke", id => {
+        if (!docId || !canWrite || typeof id != "string") {
           return;
         }
 
         for (let u of this.docs[docId].users) {
           if (u != socket) {
-            u.emit("load strokes", [stroke]);
+            u.emit("unload strokes", [id]);
           }
         }
 
-        if (!canWrite) {
-          return;
-        }
-
-        QueryAllDB("data", "notes", { id: docId }, { id: 1 }, response => {
-          if (response.length) {
-            UpdateDB("data", "notes", { id: docId }, { $push: { strokes: stroke } });
-          } else {
-            InsertDB("data", "notes", { id: docId, strokes: [stroke] });
-          }
-        });
+        UpdateDB("data", "notes", { id: docId }, { $pull: { strokes: { id: id } } });
       });
 
-      socket.on("undo stroke", () => {
-        if (!docId) {
-          return;
+      socket.on("new stroke", stroke => {
+        try {
+          console.log(`[${new Date().toLocaleString()}] ${ip} is drawing on /doc/${docId}`);
+
+          if (!docId) {
+            return;
+          }
+
+          const [uId, sId] = stroke.id.split("-");
+
+          if (uId != userId) {
+            console.log(`Invalid stroke on ${docId}`);
+            return;
+          }
+
+          for (let u of this.docs[docId].users) {
+            if (u != socket) {
+              u.emit("load strokes", [stroke]);
+            }
+          }
+
+          if (!canWrite) {
+            return;
+          }
+
+          QueryAllDB("data", "notes", { id: docId }, { id: 1 }, response => {
+            if (response.length) {
+              UpdateDB("data", "notes", { id: docId }, { $push: { strokes: stroke } });
+            } else {
+              InsertDB("data", "notes", { id: docId, strokes: [stroke] });
+            }
+          });
+        } catch (e) {
+          console.log(e);
         }
-
-        console.log(`[${new Date().toLocaleString()}] ${ip} is undoing on /doc/${docId}`);
-
-        if (docId == "" || !canWrite) {
-          return;
-        }
-
-        QueryAllDB("data", "notes", { id: docId }, { id: 1 }, response => {
-          if (response.length) UpdateDB("data", "notes", { id: docId }, { $pop: { strokes: 1 } });
-        });
       });
 
       socket.on("request document", id => {
