@@ -7,7 +7,7 @@ function redirect(request, relativeDest) {
   return NextResponse.redirect(url);
 }
 
-export async function middleware(request) {
+export function middleware(request) {
   const { pathname } = request.nextUrl;
   const token = request.cookies[authCookieName];
 
