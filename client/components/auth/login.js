@@ -1,62 +1,51 @@
-import { useRouter } from 'next/router'
-import React, { useState } from 'react'
-import { setAuthToken } from '../AuthToken.js'
-import GetApiPath from '../GetApiPath'
+import { useRouter } from "next/router";
+import React, { useState } from "react";
+import { setAuthToken } from "../AuthToken.js";
+import GetApiPath from "../GetApiPath";
 
-
-
-
-export default function Login({
-  facebookCallback,
-  googleCallback,
-  toSignUpCallback
-}) {
-
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const router = useRouter()
-
+export default function Login({ facebookCallback, googleCallback, toSignUpCallback }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const login = async () => {
-    setError("")
+    setError("");
 
-    const endpoint = GetApiPath('/api/auth/login')
+    const endpoint = GetApiPath("/api/auth/login");
     console.log(endpoint);
-  
+
     const credentials = {
       email: email,
       password: password,
-    }
-  
-  
-    const response = await fetch(
-      endpoint,
-      {
-        method: "post",
-        body: JSON.stringify(credentials),
-        headers: {
-          "Content-type": "application/json;charset=UTF-8"
-        },
-      }
-    )
-    const jsonResponse = await response.json()
+    };
 
-  
+    const response = await fetch(endpoint, {
+      method: "post",
+      body: JSON.stringify(credentials),
+      headers: {
+        "Content-type": "application/json;charset=UTF-8",
+      },
+    });
+    const jsonResponse = await response.json();
+
     if (response.status == 200) {
-      setAuthToken(jsonResponse.token)
-      router.push("/explorer")
+      setAuthToken(jsonResponse.token);
+      router.push("/explorer");
     } else {
-      setError('Could not log in: ' + jsonResponse["error"])
+      setError("Could not log in: " + jsonResponse["error"]);
     }
-  }
+  };
 
-  const textFieldStyle = "bg-white placeholder-gray-400 text-gray-900 h-10 rounded-md shadow-md px-3 focus:outline-none focus:ring-4 focus:ring-gray-300"
-  const buttonStyle = "bg-primary hover:bg-primary-light hover:shadow-sm duration-100 text-white w-full h-10 rounded-md shadow-lg font-bold tracking-wider text-sm"
-  const undelineStyle = "pl-1 underline decoration-gray-500 decoration underline-offset-2 decoration-[2px] hover:text-gray-800 hover:decoration-gray-800 cursor-pointer"
+  const textFieldStyle =
+    "bg-white placeholder-gray-400 text-gray-900 h-10 rounded-md shadow-md px-3 focus:outline-none focus:ring-4 focus:ring-gray-300";
+  const buttonStyle =
+    "bg-primary hover:bg-primary-light hover:shadow-sm duration-100 text-white w-full h-10 rounded-md shadow-lg font-bold tracking-wider text-sm";
+  const undelineStyle =
+    "pl-1 underline decoration-gray-500 decoration underline-offset-2 decoration-[2px] hover:text-gray-800 hover:decoration-gray-800 cursor-pointer";
 
   return (
-    <div className="flex flex-col items-center mx-5 max-w-72">
+    <div className="flex flex-col items-center mx-5 w-72">
       <h2 className="font-semibold text-4xl mb-4">Sign in</h2>
       <h3 className="text-lg mb-8">Connect to your Inck account</h3>
       {/* Main pane
@@ -88,31 +77,34 @@ export default function Login({
           placeholder="Email address"
           className={textFieldStyle}
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
         />
         <input
           placeholder="Password"
           type="password"
           className={textFieldStyle}
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
         />
-          
-        <div className={`${error == "" ? "hidden" : ""} text-center bg-red-500 w-full py-2 rounded-md shadow-md text-white`}>
+
+        <div
+          className={`${error == "" ? "hidden" : ""} text-center bg-red-500 w-full p-2 rounded-md shadow-md text-white`}
+        >
           {error}
         </div>
 
         <button className={buttonStyle} onClick={() => login(email, password)}>
           Sign in
         </button>
-
       </div>
 
       <div className="flex justify-end self-end font-extrabold text-sm text-gray-500 mt-8">
         No account?
-        <div onClick={toSignUpCallback} className={undelineStyle}> SIGN UP </div>
+        <div onClick={toSignUpCallback} className={undelineStyle}>
+          {" "}
+          SIGN UP{" "}
+        </div>
       </div>
-
     </div>
-  )
+  );
 }
