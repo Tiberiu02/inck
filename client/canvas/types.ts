@@ -26,3 +26,12 @@ export interface LineSegment {
   x2: number;
   y2: number;
 }
+
+export interface StrokePoint {
+  x: number;
+  y: number;
+  pressure: number;
+  timestamp: number;
+}
+
+export type RGB = [number, number, number];

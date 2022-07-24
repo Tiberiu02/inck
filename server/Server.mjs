@@ -58,74 +58,78 @@ class Server {
     this.docs = {};
 
     this.io.on("connection", socket => {
-      let ip = socket.conn.remoteAddress.replace("::ffff:", "");
-      let userId = Math.random().toString(36).slice(2);
-      let docId;
-      let canWrite = true;
+      const user = {
+        ip: socket.conn.remoteAddress.replace("::ffff:", ""),
+        id: Math.random().toString(36).slice(2),
+        canWrite: true,
+        socket: socket,
+      };
+
+      socket.emit("userId", user.id);
 
       socket.on("disconnect", () => {
-        if (!docId) {
+        if (!user.docId) {
           return;
         }
 
-        for (let u of this.docs[docId].users) {
-          if (u != socket) {
-            u.emit("collaborator", userId, null, null);
+        for (let other of this.docs[user.docId].users) {
+          if (other != user) {
+            other.socket.emit(`collaborator remove ${user.id}`);
           }
         }
 
-        this.docs[docId].users = this.docs[docId].users.filter(u => u != socket);
+        this.docs[user.docId].users = this.docs[user.docId].users.filter(u => u != socket);
         console.log(
-          `[${new Date().toLocaleString()}] ${ip} stopped drawing on ${docId}, ${
-            this.docs[docId].users.length
+          `[${new Date().toLocaleString()}] ${user.ip} stopped drawing on ${user.docId}, ${
+            this.docs[user.docId].users.length
           } users remaining`
         );
       });
 
       socket.on("remove stroke", id => {
-        if (!docId || !canWrite || typeof id != "string") {
+        if (!user.docId || !user.canWrite || typeof id != "string") {
           return;
         }
 
-        for (let u of this.docs[docId].users) {
-          if (u != socket) {
-            u.emit("unload strokes", [id]);
+        for (let other of this.docs[user.docId].users) {
+          if (other != user) {
+            other.socket.emit("unload strokes", [id]);
           }
         }
 
-        UpdateDB("data", "notes", { id: docId }, { $pull: { strokes: { id: id } } });
+        UpdateDB("data", "notes", { id: user.docId }, { $pull: { strokes: { id: id } } });
       });
 
       socket.on("new stroke", stroke => {
         try {
-          console.log(`[${new Date().toLocaleString()}] ${ip} is drawing on /doc/${docId}`);
+          console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /doc/${user.docId}`);
 
-          if (!docId) {
+          if (!user.docId) {
             return;
           }
 
           const [uId, sId] = stroke.id.split("-");
 
-          if (uId != userId) {
-            console.log(`Invalid stroke on ${docId}`);
+          if (uId != user.id) {
+            console.log(`Invalid stroke on ${user.docId}. User id = ${user.id} (received ${uId})`);
             return;
           }
 
-          for (let u of this.docs[docId].users) {
-            if (u != socket) {
-              u.emit("load strokes", [stroke]);
+          for (let other of this.docs[user.docId].users) {
+            if (other != user) {
+              other.socket.emit("load strokes", [stroke]);
             }
           }
 
-          if (!canWrite) {
+          if (!user.canWrite) {
             return;
           }
 
-          QueryAllDB("data", "notes", { id: docId }, { id: 1 }, response => {
+          QueryAllDB("data", "notes", { id: user.docId }, { id: 1 }, response => {
             if (response.length) {
-              UpdateDB("data", "notes", { id: docId }, { $push: { strokes: stroke } });
+              UpdateDB("data", "notes", { id: user.docId }, { $push: { strokes: stroke } });
             } else {
-              InsertDB("data", "notes", { id: docId, strokes: [stroke] });
+              InsertDB("data", "notes", { id: user.docId, strokes: [stroke] });
             }
           });
         } catch (e) {
@@ -134,75 +138,73 @@ class Server {
       });
 
       socket.on("request document", id => {
-        if (docId) {
+        if (user.docId) {
           return;
         }
 
-        docId = id;
-        console.log(`[${new Date().toLocaleString()}] ${ip} started drawing on /doc/${docId}`);
+        user.docId = id;
+        console.log(`[${new Date().toLocaleString()}] ${user.ip} started drawing on /doc/${user.docId}`);
 
         if (!this.docs[id]) {
           this.docs[id] = {
-            users: [socket],
+            users: [user],
           };
         } else {
-          this.docs[id].users.push(socket);
+          this.docs[id].users.push(user);
         }
 
-        if (docId == "demo") {
-          canWrite = false;
+        if (user.docId == "demo") {
+          user.canWrite = false;
         }
-        if (docId == "secret_demo_page") {
-          docId = "demo";
+        if (user.docId == "secret_demo_page") {
+          user.docId = "demo";
         }
 
-        QueryAllDB("data", "notes", { id: docId }, {}, result => {
+        // Inform existing collaborators about new collaborator, and vice versa
+        for (let other of this.docs[user.docId].users) {
+          if (other != user) {
+            other.socket.emit("new collaborator", user.id);
+            user.socket.emit("new collaborator", other.id);
+          }
+        }
+
+        QueryAllDB("data", "notes", { id: user.docId }, {}, result => {
           if (!result.length) {
-            socket.emit("load strokes", [], userId);
+            socket.emit("load strokes", [], user.id);
           } else {
-            socket.emit("load strokes", result[0].strokes, userId);
+            socket.emit("load strokes", result[0].strokes, user.id);
           }
         });
-      });
-
-      socket.on("live update", (pointer, activeStroke) => {
-        if (!this.docs[docId]) return;
-
-        for (let u of this.docs[docId].users) {
-          if (u != socket) {
-            u.emit("collaborator", userId, pointer, activeStroke);
-          }
-        }
       });
 
       // LIVE COLLABORATION
 
       socket.on("update pointer", pointer => {
-        if (!this.docs[docId]) return;
+        if (!user.docId || !this.docs[user.docId]) return;
 
-        for (let u of this.docs[docId].users) {
-          if (u != socket) {
-            u.emit("collaborator pointer", userId, pointer);
+        for (let other of this.docs[user.docId].users) {
+          if (other != user) {
+            other.socket.emit(`collaborator pointer ${user.id}`, pointer);
           }
         }
       });
 
       socket.on("update input", (x, y, p, t) => {
-        if (!this.docs[docId]) return;
+        if (!user.docId || !this.docs[user.docId]) return;
 
-        for (let u of this.docs[docId].users) {
-          if (u != socket) {
-            u.emit("collaborator input", userId, x, y, p, t);
+        for (let other of this.docs[user.docId].users) {
+          if (other != user) {
+            other.socket.emit(`collaborator input ${user.id}`, x, y, p, t);
           }
         }
       });
 
       socket.on("update tool", tool => {
-        if (!this.docs[docId]) return;
+        if (!user.docId || !this.docs[user.docId]) return;
 
-        for (let u of this.docs[docId].users) {
-          if (u != socket) {
-            u.emit("collaborator tool", userId, tool);
+        for (let other of this.docs[user.docId].users) {
+          if (other != user) {
+            other.socket.emit(`collaborator tool ${user.id}`, tool);
           }
         }
       });

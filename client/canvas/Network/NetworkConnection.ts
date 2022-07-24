@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { Tool } from "../Tools";
+import { Stroke, Tool } from "../Tools";
 import { Vector2D } from "../types";
 
 const SERVER_PORT = 8080;
@@ -27,22 +27,27 @@ export class NetworkConnection {
 
     this.collabs = {};
 
-    this.socket.on("collaborator pointer", (id, pointer) => {
-      this.collabs[id] ??= { id };
-      this.collabs[id].pointer = pointer;
-      this.requestRerender();
-    });
-    this.socket.on("collaborator tool", (id, tool) => {
-      this.collabs[id] ??= { id };
-      this.collabs[id].activeStroke = tool ? Tool.deserialize(tool) : undefined;
-      this.requestRerender();
-    });
-    this.socket.on("collaborator input", (id, x, y, p, t) => {
-      this.collabs[id] ??= { id };
-      if (this.collabs[id].activeStroke) {
-        this.collabs[id].activeStroke.update(x, y, p, t);
+    this.socket.on("new collaborator", (id: string) => {
+      this.collabs[id] = { id };
+
+      this.socket.on(`collaborator pointer ${id}`, pointer => {
+        this.collabs[id].pointer = pointer;
         this.requestRerender();
-      }
+      });
+      this.socket.on(`collaborator tool ${id}`, tool => {
+        this.collabs[id].activeStroke = tool ? Tool.deserialize(tool, window.app.canvasManager) : undefined;
+        this.requestRerender();
+      });
+      this.socket.on(`collaborator input ${id}`, (x, y, p, t) => {
+        //console.log("collab input", this.collabs[id].activeStroke);
+        if (this.collabs[id].activeStroke) {
+          this.collabs[id].activeStroke.update(x, y, p, t);
+          this.requestRerender();
+        }
+      });
+      this.socket.on(`collaborator remove ${id}`, () => {
+        delete this.collabs[id];
+      });
     });
   }
 

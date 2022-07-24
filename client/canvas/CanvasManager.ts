@@ -1,7 +1,7 @@
 import { ViewManager } from "./Gestures";
 import { ELEMENTS_PER_VERTEX, GL } from "./GL";
 import Profiler from "./Profiler";
-import { Tool } from "./Tools";
+import { Stroke, Tool } from "./Tools";
 
 const BUFFER_SIZE = 5e4;
 const NUM_LAYERS = 2;
@@ -121,8 +121,8 @@ export class CanvasManager {
   private layers: StrokeCluster[];
   private buffer: WebGLBuffer;
   private program: WebGLProgram;
-  private activeStrokes: Tool[];
-  private strokes: { [id: string]: Tool };
+  private activeStrokes: Stroke[];
+  private strokes: { [id: string]: Stroke };
 
   protected view: ViewManager;
 
@@ -139,9 +139,10 @@ export class CanvasManager {
     this.strokes = {};
   }
 
-  addStroke(stroke: Tool): void {
+  addStroke(stroke: Stroke): void {
     this.strokes[stroke.id] = stroke;
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
+    console.log(stroke.boundingBox.yMax, this.yMax);
     this.yMax = Math.max(this.yMax, stroke.boundingBox.yMax);
   }
 
@@ -154,11 +155,11 @@ export class CanvasManager {
     return this.layers[zIndex].removeStroke(id);
   }
 
-  getStrokes(): Tool[] {
+  getStrokes(): Stroke[] {
     return Object.values(this.strokes);
   }
 
-  addActiveStroke(stroke: Tool) {
+  addActiveStroke(stroke: Stroke) {
     this.activeStrokes.push(stroke);
   }
 
@@ -170,7 +171,7 @@ export class CanvasManager {
         .filter(stroke => stroke.zIndex == ix)
         .forEach(stroke => {
           Profiler.start("vectorization");
-          const array = stroke.vectorize(true);
+          const array = stroke.vectorize();
           Profiler.stop("vectorization");
           Profiler.start("active rendering");
           this.renderStroke(array);

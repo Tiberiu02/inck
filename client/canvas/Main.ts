@@ -3,7 +3,7 @@ import { ViewManager } from "./Gestures";
 import { ScrollBars, ComputeDPI } from "./UI";
 import ToolWheel from "./ToolWheel";
 import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
-import { StrokeEraser, Tool } from "./Tools";
+import { Pen, StrokeEraser, Tool } from "./Tools";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
 import { ActionStack } from "./ActionsStack";
@@ -211,7 +211,10 @@ export default class App {
             // Long press eraser gesture
             const d = pointerType == "pen" ? 15 : 1;
             this.activeTool.ifLongPress(pointerType == "pen" ? 500 : 1000, d / innerWidth / this.view.zoom, () => {
-              this.activeTool.delete();
+              this.activeTool.release();
+              if (this.activeTool instanceof Pen) {
+                this.actions.undo();
+              }
               this.openingWheel = true;
               this.activeTool = undefined;
               this.wheel.hide();
@@ -228,17 +231,7 @@ export default class App {
           this.render();
         } else if (this.activeTool) {
           // Finished stroke
-          if (!(this.activeTool instanceof StrokeEraser)) {
-            const stroke = this.activeTool;
-            this.canvasManager.addStroke(stroke);
-            console.log(stroke.zIndex, stroke.id);
-            this.actions.push({
-              undo: (): boolean => this.canvasManager.removeStroke(stroke.id),
-              redo: () => this.canvasManager.addStroke(stroke),
-            });
-          }
-
-          this.activeTool.delete();
+          this.activeTool.release();
           this.activeTool = undefined;
           this.network.updateTool(undefined);
 
@@ -262,7 +255,7 @@ export default class App {
 
     if (this.activeTool && !(this.activeTool instanceof StrokeEraser)) {
       Profiler.start("active stroke");
-      this.canvasManager.addActiveStroke(this.activeTool);
+      this.activeTool.render();
       Profiler.stop("active stroke");
     }
     this.canvasManager.render();

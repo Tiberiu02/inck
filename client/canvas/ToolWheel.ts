@@ -1,6 +1,7 @@
 import { CanvasManager } from "./CanvasManager";
 import App from "./Main";
-import { Pen, Eraser, HighlighterPen, StrokeEraser } from "./Tools";
+import { Pen, StrokeEraser } from "./Tools";
+import { RGB } from "./types";
 
 const RES_ROOT = "/wheel/";
 
@@ -85,18 +86,20 @@ export default class ToolWheel {
       .map(v => parseInt(v, 16) / 255);
 
     if (this.tool == "pen") {
-      return new Pen((window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom, [...rgb, 1]);
+      const width = (window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
+      return new Pen(width, rgb as RGB, 1, this.app.canvasManager, this.app.actions);
     } else if (this.tool == "highlighter") {
-      return new HighlighterPen((window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom, [
-        ...rgb,
-        0.2,
-      ]);
+      const width = (window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom;
+      return new Pen(width, rgb as RGB, 0, this.app.canvasManager, this.app.actions);
     } else if (this.tool == "eraser") {
       return new StrokeEraser(this.app.canvasManager, this.app.actions);
     } else if (this.tool == "shapes") {
-      return new Pen((window.DPI * WIDTHS[this.width.shapes]) / innerWidth / this.app.view.zoom, [...rgb, 1]);
-    } else if (this.tool == "selection")
-      return new Pen((window.DPI * 0.02) / innerWidth / this.app.view.zoom, [0, 0, 0, 1]);
+      const width = (window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
+      return new Pen(width, rgb as RGB, 1, this.app.canvasManager, this.app.actions);
+    } else if (this.tool == "selection") {
+      const width = (window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
+      return new Pen(width, rgb as RGB, 1, this.app.canvasManager, this.app.actions);
+    }
   }
 
   setColor(color) {

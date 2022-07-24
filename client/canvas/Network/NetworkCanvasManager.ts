@@ -1,7 +1,7 @@
 import { CanvasManager } from "../CanvasManager";
 import { ViewManager } from "../Gestures";
 import { NetworkConnection } from "./NetworkConnection";
-import { Tool } from "../Tools";
+import { Stroke, Tool } from "../Tools";
 
 // input: h as an angle in [0,360] and s,l in [0,1] - output: r,g,b in [0,1]
 function hsl2rgb(h, s, l) {
@@ -24,15 +24,17 @@ export class NetworkCanvasManager extends CanvasManager {
 
     network.emit("request document", docId);
 
-    network.on("load strokes", (data: object[], userId: string) => {
-      console.log("loaded strokes", data, userId);
-
+    network.on("userId", (userId: string) => {
       window.userId = userId;
+    });
+
+    network.on("load strokes", (data: object[]) => {
+      console.log("loaded strokes", data);
 
       for (let s of data) {
         if (!s) continue;
 
-        const stroke = Tool.deserialize(s);
+        const stroke = Stroke.deserialize(s);
         if (stroke) {
           super.addStroke(stroke);
         }
@@ -104,7 +106,8 @@ export class NetworkCanvasManager extends CanvasManager {
       }
 
       if (c.activeStroke) {
-        super.addActiveStroke(c.activeStroke);
+        console.log("rendering active stroke...");
+        c.activeStroke.render();
       }
     }
 
