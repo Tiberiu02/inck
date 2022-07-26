@@ -29,7 +29,9 @@ const fileSchema = new mongoose.Schema({
   owner: { type: ObjectId },
   fileId: { type: String, default: null }, // only for files
   parentDir: { type: Mixed },
-  publicAccess: { type: String }
+  defaultAccess: { type: String },
+  specialAccesses: {type: Mixed},  // Dictionary of user: accessRights
+  removalReqTime: {type: Date, default: null}
 });
 
 export const FileModel = mongoose.model('file', fileSchema);

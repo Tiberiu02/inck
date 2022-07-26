@@ -58,6 +58,7 @@ Open your browser and go to https://localhost:3000.
 * [X] Link with backend
 * [X] File browsing
 * [X] File creation
+
 Must have:
 * [X] Redirect to /auth if not logged in - 10m
 * [ ] Document rights / priveleges - 1h
@@ -173,6 +174,7 @@ When professor opens lecture notes:
 * [X] Optimize live collaboration (send only stroke modification, not entire stroke every time)
 * [ ] Careful about storing collaborators in memory in Server, probably better to use mongo when lots of users
 * [ ] When undoing stroke erase, insert stroke back to its initial position, not as a new stroke
+* [] Bug: creating file does not always reload the UI: database ordering issue, know how to fix properly, will do soon
 
 # License
 
