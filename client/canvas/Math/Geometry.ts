@@ -1,4 +1,4 @@
-import { LineSegment, Rectangle } from "./types";
+import { LineSegment, Rectangle } from "../types";
 
 export function RectangleIntersectsRectangle(a: Rectangle, b: Rectangle, padding: number = 0): boolean {
   return (
