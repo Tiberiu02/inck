@@ -33,36 +33,13 @@ export async function getThrashedFilesFn(req, res) {
       removalReqTime: {$ne: null}
      })
 
-     console.log(files)
-     return
-    //console.log(files)
+    console.log(files)
     res.status(201).send({ files });
 
   } catch (err) {
     console.log(err);
     res.status(400).send({error: "Unable to fetch files"})
   }
-}
-
-export async function removeFilesFn(req, res) {
-  const body = req.body
-  const children = await exploreTree(body.notesToRemove)
-  console.log(children)
-
-  children.forEach(async (fileId) => {
-    const keek = await FileModel.find({
-      _id: fileId
-
-    })
-
-    const kek = await FileModel.deleteMany({
-      _id: fileId
-    })
-    console.log(keek)
-    console.log(kek)
-  })
-
-  return
 }
 
 function generateRandomString(n) {
@@ -98,12 +75,55 @@ export async function createFileFn(req, res) {
   }
 }
 
+export async function removeFilesFn(req, res) {
+  try {
+    const {notesToRemove} = req.body
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
 
+    const children = await exploreTree(notesToRemove)
+  
+    children.forEach(async (fileId) => await FileModel.deleteOne({
+        _id: fileId,
+        owner: token.userId
+      }))
+
+  } catch (err) {
+    console.log(err);
+    res.status(400).send({error: "Unable to fetch files"})
+  }
+}
+
+export async function moveFilesFn(req, res) {
+  try {
+    const {notesToMove, target} = req.body
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
+
+    for (let idx = 0; idx < notesToMove.length; idx++) {
+      const {type, _id} = notesToMove[idx]
+
+      const update = await FileModel.updateOne({
+        _id: _id,
+        owner: token.userId,
+        type: type
+      }, {
+        parentDir: target
+      })
+
+      console.log(update)
+
+    }
+    // TODO return new files
+    return 
+  } catch (err) {
+    console.log(err);
+    res.status(400).send({error: "Unable to fetch files"})
+  }
+}
 
 export async function editFileFn(req, res) {
   try {
-    const {token, id, newName, newVisibility, options} = req.body
-    jwt.verify(token, process.env.JWT_TOKEN)
+    const {id, newName, newVisibility, options} = req.body
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
     // TODO: validate file name & type
     // TODO: when generating file id, make sure it's not already used
 
@@ -115,7 +135,8 @@ export async function editFileFn(req, res) {
     }
 
     const result = await FileModel.findOneAndUpdate({
-      "_id": ObjectId(id)
+      _id: ObjectId(id),
+      owner: token.userId
     }, updateObject)
 
     return res.status(201).send({ message: 'success' });

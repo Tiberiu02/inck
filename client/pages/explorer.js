@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { setuid } from 'process'
 import React, { useState, useEffect } from 'react'
 
 import {
@@ -122,10 +123,8 @@ function FileTree({ className, files, path, setPath }) {
   }
 
   const buildDirListing = (dir, dirPath) => {
-    const symbol = (dir == '')
-    //console.log(path)
     return (
-      <DirListing Symbol={symbols[dir._id]} name={dir.name} userPath={path} dirPath={dirPath}
+      <DirListing key={dir._id} Symbol={symbols[dir._id]} name={dir.name} userPath={path} dirPath={dirPath}
         style={{ paddingLeft: `${dirPath.length}rem` }} onClick={() => setPath(dirPath)}>
         {
           dir.children.filter(f => f.type == 'folder').map(f => buildDirListing(f, dirPath.concat(f._id)))
@@ -200,13 +199,118 @@ function RemoveFilesModal({ visible, setVisible, reloadFiles, removeFiles }) {
             Are you sure you want to remove your beloved notes ?
           </div>
           <div className='text-sm italic mt-3'>
-          *They will be put in the trash for 15 days before definitive removal. Notes inside removed folder will be deleted recursively.
+            *They will be removed permanently. Notes inside removed folder will be deleted recursively.
           </div>
         </div>
 
         <div className='flex justify-between'>
           <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={() => setVisible(false)}>Cancel</button>
           <button onClick={onRemoveClick} className="bg-red-600 hover:bg-red-700 text-white w-fit px-4 py-1 rounded-full self-center">Remove</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MoveModalListing({
+  files,
+  setSelected,
+  selectedFiles,
+  target
+}) {
+  if (files == null) {
+    return <></>
+  }
+
+  const forbidden = new Set(Object.values(selectedFiles).map(x => x._id))
+
+  const treeRepr = (folder, setSelected, prefixLength = 0) => {
+    const folders = folder.children.filter(x => x.type == 'folder')
+    const [isOpen, setOpen] = useState(false)
+
+    const Folder = isOpen ? FaFolderOpen : FaFolder
+    const children = folders.map(folder => treeRepr(folder, setSelected, prefixLength + 1))
+    const prefix = "\u00a0".repeat(prefixLength)
+
+    let onDoubleClick = null
+    let onClick = null
+    let renderChildren = !forbidden.has(folder._id)
+
+    if (renderChildren) {
+      onDoubleClick = () => setOpen(!isOpen)
+      onClick = () => setSelected(folder._id)
+    }
+
+
+
+    return (
+      <div key={folder._id || -1}>
+        <div
+          onDoubleClick={onDoubleClick}
+          onClick={onClick}
+          className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""} text-md`}
+        >
+          {prefix} <Folder className="h-4 w-4" /> &nbsp; <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
+        </div>
+        {isOpen && renderChildren && children}
+      </div>
+    )
+
+  }
+
+  const tree = files ? treeRepr(files['f/notes'], setSelected) : <></>
+
+  return (
+    <div className="overflow-scroll border-4 rounded-lg h-44">
+      {tree}
+    </div>
+  )
+}
+
+
+function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, reloadFiles, moveFiles }) {
+  const [target, setTarget] = useState(null)
+  const onMoveClick = () => {
+    moveFiles(target)
+    setVisible(false)
+    reloadFiles()
+  }
+
+  const closeModal = () => {
+
+    setTarget(null)
+    setVisible(false)
+  }
+
+  const canMove = target != null
+
+  return (
+    <div className={(!visible ? 'hidden' : '') + ' absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center'}>
+      <div onClick={closeModal} className='absolute inset-0'></div>
+      <div className={`relative w-96 h-84 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
+        <div className='flex grid-cols-2 w-full gap-4 font-semibold justify-center'>
+          Move notes
+        </div>
+
+        <div>
+          <MoveModalListing
+            files={files}
+            setSelected={setTarget}
+            target={target}
+            selectedFiles={selectedFiles}
+          />
+        </div>
+
+        <div className="italic text-sm text-center">
+          * Click to select, double-click to open. Impossible to move to dashed folders. TODO: point to FAQ
+        </div>
+
+        <div className='flex justify-between'>
+          <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={closeModal}>Cancel</button>
+          <button
+            disabled={!canMove}
+            onClick={onMoveClick}
+            className={` ${canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"} text-white w-fit px-4 py-1 rounded-full self-center`}>Move files</button>
         </div>
       </div>
     </div>
@@ -233,15 +337,13 @@ function EditFileModal({ visible, setVisible, file, reloadFiles, save }) {
   }
 
   const saveEdits = () => {
-    console.log(file)
-    console.log("id: " + file._id)
     const trimmedNewName = newName.trim()
     if (trimmedNewName == "") {
       setErrorMessage(fileType + "'s name cannot be empty")
       return
     }
     // TODO: solve this
-    console.log("Saved edits")
+    //console.log("Saved edits")
     save(file._id, newName, newNoteAccess)
     hideModal()
     document.location.reload(true)
@@ -356,8 +458,10 @@ async function LoadFiles(callback) {
     if (f.type == 'folder')
       fileDict[f._id].children = [];
   }
-  fileDict['f/notes'] = { name: 'My Notes', children: [] };
+  fileDict['f/notes'] = { name: 'My Notes', children: [], type: 'folder', _id: -1 };
   fileDict['f/trash'] = { name: 'Trash', children: [] };
+
+  console.log(fileList)
 
   for (const f of fileList)
     fileDict[f.parentDir].children.push(fileDict[f._id]);
@@ -415,8 +519,7 @@ async function removeFilesAPICall(notes) {
     }
   })
 
-  console.log(notesData)
-  console.log("Simulating deletion")
+  //console.log(notesData)
 
   await fetch(GetApiPath("/api/explorer/removefiles"), {
     method: 'post',
@@ -431,18 +534,46 @@ async function removeFilesAPICall(notes) {
   })
 }
 
+async function moveFilesAPICall(notes, _target) {
+  // Send only required stuff
+  const target = _target == -1 ? "f/notes" : _target
+  const notesData = Object.values(notes).map(x => {
+    return {
+      type: x.type,
+      _id: x._id
+    }
+  })
+
+  const result = await fetch(GetApiPath("/api/explorer/movefiles"), {
+    method: 'post',
+    body: JSON.stringify({
+      token: getAuthToken(),
+      notesToMove: notesData,
+      target: target
+    }),
+    headers: {
+      "Content-type": "application/json;charset=UTF-8"
+    },
+  })
+  console.log("Result of moving:")
+  console.log(result)
+}
+
 export default function Explorer() {
   const [files, setFiles] = useState(null);
   const [path, setPath] = useState(['f/notes']);
   const [createFileModal, setCreateFileModal] = useState(false)
   const [editFileModal, setEditFileModal] = useState(false)
   const [removeFileModal, setRemoveFileModal] = useState(false)
+  const [moveFileModal, setMoveFileModal] = useState(false)
 
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState({})
   const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]]
 
+
   let selectionWidget
+  //console.log(files)
 
 
   // TODO: something fishy with selection: when edit opens, resets the selection set.
@@ -453,7 +584,7 @@ export default function Explorer() {
     setIsSelecting(newVal)
   }
 
-  
+
 
   // Toggle file selection
   if (isSelecting) {
@@ -466,7 +597,7 @@ export default function Explorer() {
         <button className='hover:bg-gray-300 px-4 py-3 hover' onClick={() => toggleFileSelection(false)}><FaRegWindowClose /></button>
         <button onClick={() => setRemoveFileModal(true)} disabled={noSelection} className='hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3'><FaTrash /></button>
         <button onClick={() => setEditFileModal(true)} disabled={!oneSelected} className='hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3'><FaRegSun /></button>
-        <button disabled={noSelection} className='hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3'><FaExchangeAlt /></button>
+        <button onClick={() => setMoveFileModal(true)} disabled={noSelection} className='hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3'><FaExchangeAlt /></button>
       </div>
 
   } else {
@@ -595,11 +726,33 @@ export default function Explorer() {
         </div>
 
         {/* Create file modal */}
-        <CreateFileModal visible={createFileModal} setVisible={setCreateFileModal} path={path} reloadFiles={reloadFiles} />
+        <CreateFileModal
+          visible={createFileModal}
+          setVisible={setCreateFileModal}
+          path={path}
+          reloadFiles={reloadFiles} />
         {/* Edit file modal */}
-        <EditFileModal file={firstSelectedElement} visible={editFileModal} setVisible={setEditFileModal} reloadFiles={reloadFiles} save={editFileAPICall} />
+        <EditFileModal
+          file={firstSelectedElement}
+          visible={editFileModal}
+          setVisible={setEditFileModal}
+          reloadFiles={reloadFiles}
+          save={editFileAPICall} />
+        {/* Remove files modal */}
+        <RemoveFilesModal
+          visible={removeFileModal}
+          setVisible={setRemoveFileModal}
+          reloadFiles={reloadFiles}
+          removeFiles={() => removeFilesAPICall(Object.values(selectedFiles))} />
         {/* Move files modal */}
-        <RemoveFilesModal visible={removeFileModal} setVisible={setRemoveFileModal} reloadFiles={reloadFiles} removeFiles={() => removeFilesAPICall(Object.values(selectedFiles))} />
+        <MoveFilesModal
+          files={files}
+          selectedFiles={selectedFiles}
+          visible={moveFileModal}
+          setVisible={setMoveFileModal}
+          reloadFiles={reloadFiles}
+          moveFiles={(target) => moveFilesAPICall(selectedFiles, target)}
+        />
       </main>
     </div>
   )
