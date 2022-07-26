@@ -59,8 +59,6 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
 
 
 function Book({ title, onClick, showSelect = false, isSelected = false }) {
-  // console.log(isSelected, showSelect)
-
   return (
     <button onClick={onClick} className='relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col'>
       <div className='bg-slate-800 h-5 w-12 rounded-t-xl -mb-2'></div>
@@ -180,7 +178,7 @@ function PathNavigator({ files, path, setPath }) {
 }
 
 
-function RemoveFilesModal({ visible, setVisible, reloadFiles, removeFiles }) {
+function RemoveFilesModal({ visible, setVisible, removeFiles }) {
   const onRemoveClick = () => {
     removeFiles()
     setVisible(false)
@@ -231,16 +229,25 @@ function MoveModalListing({
     const children = folders.map(folder => treeRepr(folder, setSelected, prefixLength + 1))
     const prefix = "\u00a0".repeat(prefixLength)
 
+    let onDoubleClick = null
+    let onClick = null
+    let renderChildren = !forbidden.has(folder._id)
+
+    if (renderChildren) {
+      onDoubleClick = () => setOpen(!isOpen)
+      onClick = () => setSelected(folder._id)
+    }
+
     return (
       <div key={folder._id || -1}>
         <div
-          onDoubleClick={() => setOpen(!isOpen)}
-          onClick={() => setSelected(folder._id)}
+          onDoubleClick={onDoubleClick}
+          onClick={onClick}
           className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""} text-md`}
         >
           {prefix} <Folder className="h-4 w-4" /> &nbsp; <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
         </div>
-        {isOpen && children}
+        {renderChildren && isOpen && children}
       </div>
     )
 
@@ -256,12 +263,16 @@ function MoveModalListing({
 }
 
 
-function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, reloadFiles, moveFiles }) {
+function MoveFilesModal({
+  visible,
+  setVisible,
+  files = [],
+  selectedFiles = {},
+  moveFiles }) {
   const [target, setTarget] = useState(null)
   const onMoveClick = () => {
     moveFiles(target)
     setVisible(false)
-    reloadFiles()
   }
 
   const closeModal = () => {
@@ -330,8 +341,6 @@ function EditFileModal({ visible, setVisible, file, save }) {
       setErrorMessage(fileType + "'s name cannot be empty")
       return
     }
-    // TODO: solve this
-    //console.log("Saved edits")
     save(file._id, newName, newNoteAccess)
     hideModal()
   }
@@ -426,6 +435,7 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
 function processFilesData(fileList) {
   // Process data for UI
   const fileDict = {};
+
   for (const f of fileList) {
     fileDict[f._id] = f;
     if (f.type == 'folder')
@@ -434,8 +444,9 @@ function processFilesData(fileList) {
   fileDict['f/notes'] = { name: 'My Notes', children: [], type: 'folder', _id: -1 };
   fileDict['f/trash'] = { name: 'Trash', children: [] };
 
-  for (const f of fileList)
+  for (const f of fileList) {
     fileDict[f.parentDir].children.push(fileDict[f._id]);
+  }
 
   for (const f of Object.values(fileDict))
     if (f.children) {
@@ -539,7 +550,7 @@ async function removeFilesAPICall(notes, setFiles) {
 
 }
 
-async function moveFilesAPICall(notes, _target) {
+async function moveFilesAPICall(notes, _target, setFiles) {
   // Send only required stuff
   const target = _target == -1 ? "f/notes" : _target
   const notesData = Object.values(notes).map(x => {
@@ -549,7 +560,7 @@ async function moveFilesAPICall(notes, _target) {
     }
   })
 
-  const result = await fetch(GetApiPath("/api/explorer/movefiles"), {
+  const response = await fetch(GetApiPath("/api/explorer/movefiles"), {
     method: 'post',
     body: JSON.stringify({
       token: getAuthToken(),
@@ -560,8 +571,10 @@ async function moveFilesAPICall(notes, _target) {
       "Content-type": "application/json;charset=UTF-8"
     },
   })
-  console.log("Result of moving:")
-  console.log(result)
+
+  const jsonReply = await response.json()
+  const filesDict = processFilesData(jsonReply.files)
+  setFiles(filesDict)
 }
 
 export default function Explorer() {
@@ -576,12 +589,12 @@ export default function Explorer() {
   const [selectedFiles, setSelectedFiles] = useState({})
   const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]]
 
+  const setFilesAfterChange = (newFiles) => {
+    setFiles(newFiles)
+    setSelectedFiles({})
+  }
 
   let selectionWidget
-  //console.log(files)
-
-
-  // TODO: something fishy with selection: when edit opens, resets the selection set.
   const toggleFileSelection = (newVal) => {
     if (newVal) {
       setSelectedFiles({})
@@ -638,7 +651,6 @@ export default function Explorer() {
     fileClickActionFactory = (f, idx) => (() => window.open("/note/" + f.fileId, "_blank"))
   }
 
-  //
   const drawExplorerItem = (f, idx, _) => {
     const isSelected = isSelecting && f._id in selectedFiles
     if (f.type == 'folder') {
@@ -649,10 +661,6 @@ export default function Explorer() {
 
     }
   }
-
-
-
-  //console.log(path, path.at(-1))
 
   const reloadFiles = () => LoadFiles(setFiles);
 
@@ -731,7 +739,7 @@ export default function Explorer() {
         </div>
 
         {/* Create file modal */}
-        {editFileModal && <CreateFileModal
+        {createFileModal && <CreateFileModal
           visible={createFileModal}
           setVisible={setCreateFileModal}
           setFiles={setFiles}
@@ -742,19 +750,17 @@ export default function Explorer() {
           file={firstSelectedElement}
           visible={editFileModal}
           setVisible={setEditFileModal}
-          setFiles={setFiles}
-          reloadFiles={reloadFiles}
+          setFiles={setFilesAfterChange}
           save={(id, newName, newVisibility, options) =>
-            editFileAPICall(id, newName, setFiles, newVisibility, options)
+            editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options)
           }
         />}
         {/* Remove files modal */}
         {removeFileModal && <RemoveFilesModal
           visible={removeFileModal}
           setVisible={setRemoveFileModal}
-          setFiles={setFiles}
-          reloadFiles={reloadFiles}
-          removeFiles={() => removeFilesAPICall(Object.values(selectedFiles), setFiles)}
+          setFiles={setFilesAfterChange}
+          removeFiles={() => removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange)}
         />}
         {/* Move files modal */}
         {moveFileModal && <MoveFilesModal
@@ -762,9 +768,8 @@ export default function Explorer() {
           selectedFiles={selectedFiles}
           visible={moveFileModal}
           setVisible={setMoveFileModal}
-          setFiles={setFiles}
-          reloadFiles={reloadFiles}
-          moveFiles={(target) => moveFilesAPICall(selectedFiles, target)}
+          setFiles={setFilesAfterChange}
+          moveFiles={(target) => moveFilesAPICall(selectedFiles, target, setFilesAfterChange)}
         />}
       </main>
     </div>
