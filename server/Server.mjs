@@ -11,7 +11,7 @@ dotend.config();
 
 import { UpdateDB, QueryDB, QueryAllDB, InsertDB } from "./Database.mjs";
 import { register as registerFn, login as loginFn } from "./Authentication.mjs";
-import { createFileFn, getFilesFn } from "./FileExplorer.mjs";
+import { createFileFn, editFileFn, getFilesFn, removeFilesFn } from "./FileExplorer.mjs";
 
 class Server {
   constructor(port = 8080) {
@@ -51,6 +51,8 @@ class Server {
     this.app.post("/api/auth/login", jsonBodyParser, loginFn);
     this.app.post("/api/explorer/getfiles", jsonBodyParser, getFilesFn);
     this.app.post("/api/explorer/addfile", jsonBodyParser, createFileFn);
+    this.app.post('/api/explorer/editfile', jsonBodyParser, editFileFn)
+    this.app.post("/api/explorer/removefiles", jsonBodyParser, removeFilesFn)
   }
 
   startSocketServer() {

@@ -58,6 +58,7 @@ Open your browser and go to https://localhost:3000.
 * [X] Link with backend
 * [X] File browsing
 * [X] File creation
+* [] Bug: creating file does not always reload the UI: database ordering issue, know how to fix properly, will do soon
 Must have:
 * [X] Redirect to /auth if not logged in - 10m
 * [ ] Document rights / priveleges - 1h

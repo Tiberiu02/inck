@@ -105,3 +105,7 @@ export async function login(req, res){
     return res.status(400).send({error: "internal error"})
   }
 }
+
+export async function checkNoteAuthentication(req, res) {
+  // TODO: check whether user is allowed to modify note
+}
