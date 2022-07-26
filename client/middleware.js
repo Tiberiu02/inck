@@ -9,7 +9,9 @@ function redirect(request, relativeDest) {
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies[authCookieName];
+  const token = request.cookies.get(authCookieName);
+
+  console.log(token, request.cookies.get(authCookieName));
 
   if (pathname == "/auth" && token !== undefined) {
     return redirect(request, "explorer");
