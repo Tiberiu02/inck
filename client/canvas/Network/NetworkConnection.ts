@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { Stroke, Tool } from "../Tools";
+import { Tool } from "../Tools/Tool";
 import { Vector2D } from "../types";
 
 const SERVER_PORT = 8080;

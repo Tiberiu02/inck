@@ -1,7 +1,7 @@
+import { Stroke } from "./Drawables/Stroke";
 import { ViewManager } from "./Gestures";
-import { ELEMENTS_PER_VERTEX, GL } from "./GL";
+import { ELEMENTS_PER_VERTEX, GL } from "./gl/GL";
 import Profiler from "./Profiler";
-import { Stroke, Tool } from "./Tools";
 
 const BUFFER_SIZE = 5e4;
 const NUM_LAYERS = 2;

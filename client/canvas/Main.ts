@@ -3,10 +3,12 @@ import { ViewManager } from "./Gestures";
 import { ScrollBars, ComputeDPI } from "./UI";
 import ToolWheel from "./ToolWheel";
 import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
-import { Pen, StrokeEraser, Tool } from "./Tools";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
 import { ActionStack } from "./ActionsStack";
+import { Tool } from "./Tools/Tool";
+import { StrokeEraser } from "./Tools/Eraser";
+import { Pen } from "./Tools/Pen";
 
 export default class App {
   canvas: HTMLCanvasElement;
