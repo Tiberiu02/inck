@@ -1,241 +1,311 @@
-import Head from 'next/head'
-import { setuid } from 'process'
-import React, { useState, useEffect } from 'react'
+import Head from "next/head";
+import { setuid } from "process";
+import React, { useState, useEffect } from "react";
 
 import {
-  FaAngleDown, FaAngleRight, FaPencilAlt, FaSearch, FaRegQuestionCircle, FaRegUserCircle, FaRegSun,
-  FaRegClock, FaUsers, FaBookmark, FaTrash, FaBook, FaFolder, FaFolderOpen, FaRegWindowClose, FaExchangeAlt,
-  FaBars
-} from 'react-icons/fa'
-import Cookies from 'universal-cookie'
-import { authCookieName, getAuthToken, setAuthToken, disconnect } from '../components/AuthToken.js'
-import GetApiPath from '../components/GetApiPath'
-
+  FaAngleDown,
+  FaAngleRight,
+  FaPencilAlt,
+  FaSearch,
+  FaRegQuestionCircle,
+  FaRegUserCircle,
+  FaRegSun,
+  FaRegClock,
+  FaUsers,
+  FaBookmark,
+  FaTrash,
+  FaBook,
+  FaFolder,
+  FaFolderOpen,
+  FaRegWindowClose,
+  FaExchangeAlt,
+  FaBars,
+} from "react-icons/fa";
+import Cookies from "universal-cookie";
+import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
+import GetApiPath from "../components/GetApiPath";
 
 function DirListing({ Symbol, symbolClassName, name, className, userPath, dirPath, style, onClick, children, link }) {
-  let [open, setOpen] = useState(false)
-  const selected = userPath && dirPath && userPath.toString() == dirPath.toString()
-  if (!open && userPath && dirPath && userPath.length > dirPath.length && userPath.slice(0, dirPath.length).toString() == dirPath.toString())
-    setOpen(true)
+  let [open, setOpen] = useState(false);
+  const selected = userPath && dirPath && userPath.toString() == dirPath.toString();
+  if (
+    !open &&
+    userPath &&
+    dirPath &&
+    userPath.length > dirPath.length &&
+    userPath.slice(0, dirPath.length).toString() == dirPath.toString()
+  )
+    setOpen(true);
 
-  const Caret = open ? FaAngleDown : FaAngleRight
-  if (!Symbol)
-    Symbol = open ? FaFolderOpen : FaFolder
-  if (link)
-    open = false
+  const Caret = open ? FaAngleDown : FaAngleRight;
+  if (!Symbol) Symbol = open ? FaFolderOpen : FaFolder;
+  if (link) open = false;
 
   const onClickCallback = () => {
     setOpen(!open || !selected);
     if (onClick !== undefined) {
-      onClick()
+      onClick();
     }
-  }
+  };
   return (
-    <div className='min-w-full w-fit'>
-      <button style={style} className={'flex flex-row items-center gap-2 px-4 py-2 outline-none min-w-full w-fit ' + (selected ? 'bg-gray-200 ' : 'hover:bg-gray-100 ') + (selected || open ? 'text-black ' : '') + className}
-        onClick={onClickCallback}>
-        <Caret className={(open ? 'text-black' : 'text-gray-400') + (link ? ' opacity-0' : '')} />
-        <Symbol className={symbolClassName + ' text-2xl mr-1'} />
-        <p className={'whitespace-nowrap mt-[0.15rem] font-bold ' + (open ? '' : '')}>{name}</p>
+    <div className="min-w-full w-fit">
+      <button
+        style={style}
+        className={
+          "flex flex-row items-center gap-2 px-4 py-2 outline-none min-w-full w-fit " +
+          (selected ? "bg-gray-200 " : "hover:bg-gray-100 ") +
+          (selected || open ? "text-black " : "") +
+          className
+        }
+        onClick={onClickCallback}
+      >
+        <Caret className={(open ? "text-black" : "text-gray-400") + (link ? " opacity-0" : "")} />
+        <Symbol className={symbolClassName + " text-2xl mr-1"} />
+        <p className={"whitespace-nowrap mt-[0.15rem] font-bold " + (open ? "" : "")}>{name}</p>
       </button>
-      <div className={!open && 'hidden'}>
-        {children}
-      </div>
+      <div className={!open && "hidden"}>{children}</div>
     </div>
-  )
+  );
 }
 
 function Note({ title, onClick, showSelect = false, isSelected = false }) {
   return (
-    <button onClick={onClick} className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100'>
-      {showSelect && <div className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"} text-center`}>x</div>}
+    <button
+      onClick={onClick}
+      className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100'
+    >
+      {showSelect && (
+        <div
+          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
+            isSelected ? "text-slate-800" : "text-white"
+          } text-center`}
+        >
+          x
+        </div>
+      )}
 
-      <p className='absolute bottom-[10%] py-1 -mx-[2px] border-slate-800 bg-slate-800 w-[calc(100%+4px)] text-white text-sm sm:text-lg text-center line-clamp-2'>
+      <p className="absolute bottom-[10%] py-1 -mx-[2px] border-slate-800 bg-slate-800 w-[calc(100%+4px)] text-white text-sm sm:text-lg text-center line-clamp-2">
         {title}
       </p>
     </button>
-  )
+  );
 }
-
 
 function Book({ title, onClick, showSelect = false, isSelected = false }) {
   return (
-    <button onClick={onClick} className='relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col'>
-      <div className='bg-slate-800 h-5 w-12 rounded-t-xl -mb-2'></div>
-      <div className='realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden'>
-        {showSelect && <div className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"} text-center`}>x</div>}
+    <button
+      onClick={onClick}
+      className="relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col"
+    >
+      <div className="bg-slate-800 h-5 w-12 rounded-t-xl -mb-2"></div>
+      <div className="realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
+        {showSelect && (
+          <div
+            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
+              isSelected ? "text-slate-800" : "text-white"
+            } text-center`}
+          >
+            x
+          </div>
+        )}
 
-        <FaPencilAlt className='text-3xl sm:text-4xl' />
-        <p className='text-sm sm:text-lg text-center line-clamp-2'> {title} </p>
+        <FaPencilAlt className="text-3xl sm:text-4xl" />
+        <p className="text-sm sm:text-lg text-center line-clamp-2"> {title} </p>
       </div>
     </button>
-  )
+  );
 }
 
 function AddButton({ onClick }) {
-  return <>
-    <button onClick={onClick} className='relative w-24 h-32 sm:w-32 sm:h-40 text-gray-200 border-4 rounded-xl text-9xl hover:scale-110 duration-100'>
-      +
-    </button>
-  </>
+  return (
+    <>
+      <button
+        onClick={onClick}
+        className="relative w-24 h-32 sm:w-32 sm:h-40 text-gray-200 border-4 rounded-xl text-9xl hover:scale-110 duration-100"
+      >
+        +
+      </button>
+    </>
+  );
 }
 
 function MobileMenu() {
-  let [open, setOpen] = useState(false)
+  let [open, setOpen] = useState(false);
 
   function toggleOpen() {
-    if (!open) { // disable scrolling
-      document.body.style.position = 'fixed';
+    if (!open) {
+      // disable scrolling
+      document.body.style.position = "fixed";
       document.body.style.top = `-${window.scrollY}px`;
-    } else { // enable scrolling
-      document.body.style.position = '';
-      document.body.style.top = '';
+    } else {
+      // enable scrolling
+      document.body.style.position = "";
+      document.body.style.top = "";
 
       const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      document.body.style.position = "";
+      document.body.style.top = "";
+      window.scrollTo(0, parseInt(scrollY || "0") * -1);
     }
 
-    setOpen(!open)
+    setOpen(!open);
   }
 
   return (
     <>
-      <button className='sm:hidden flex items-center justify-center w-10 h-10 rounded-full' onClick={toggleOpen}>
-        <FaBars className='text-3xl text-gray-500' />
+      <button className="sm:hidden flex items-center justify-center w-10 h-10 rounded-full" onClick={toggleOpen}>
+        <FaBars className="text-3xl text-gray-500" />
       </button>
-      <div className={`fixed h-screen w-screen bg-black z-10 ${open ? 'opacity-50' : 'opacity-0 pointer-events-none'} transition-all duration-200 top-0 left-0`} onClick={toggleOpen}>
-
-      </div>
-      <div className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${open ? 'translate-x-0' : '-translate-x-full'} transition-all duration-200 top-0 left-0 overflow-scroll`}>
-        <FileTree className='pt-10 pb-52 w-full' />
+      <div
+        className={`fixed h-screen w-screen bg-black z-10 ${
+          open ? "opacity-50" : "opacity-0 pointer-events-none"
+        } transition-all duration-200 top-0 left-0`}
+        onClick={toggleOpen}
+      ></div>
+      <div
+        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } transition-all duration-200 top-0 left-0 overflow-scroll`}
+      >
+        <FileTree className="pt-10 pb-52 w-full" />
       </div>
     </>
-  )
+  );
 }
 
 function FileTree({ className, files, path, setPath }) {
   const symbols = {
-    'f/notes': FaBook
-  }
+    "f/notes": FaBook,
+  };
 
   const buildDirListing = (dir, dirPath) => {
     return (
-      <DirListing key={dir._id} Symbol={symbols[dir._id]} name={dir.name} userPath={path} dirPath={dirPath}
-        style={{ paddingLeft: `${dirPath.length}rem` }} onClick={() => setPath(dirPath)}>
-        {
-          dir.children.filter(f => f.type == 'folder').map(f => buildDirListing(f, dirPath.concat(f._id)))
-        }
+      <DirListing
+        key={dir._id}
+        Symbol={symbols[dir._id]}
+        name={dir.name}
+        userPath={path}
+        dirPath={dirPath}
+        style={{ paddingLeft: `${dirPath.length}rem` }}
+        onClick={() => setPath(dirPath)}
+      >
+        {dir.children.filter(f => f.type == "folder").map(f => buildDirListing(f, dirPath.concat(f._id)))}
       </DirListing>
-    )
-  }
+    );
+  };
 
   return (
-    <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{ overflow: 'overlay' }}>
-      <div className='min-w-full w-fit'>
+    <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{ overflow: "overlay" }}>
+      <div className="min-w-full w-fit">
+        <DirListing Symbol={FaRegClock} symbolClassName="mt-[0.1rem]" name="Recent" link></DirListing>
+        <DirListing Symbol={FaUsers} symbolClassName="mt-[0.1rem]" name="Shared with me" link></DirListing>
+        <DirListing Symbol={FaBookmark} name="Homework" link></DirListing>
+        <DirListing Symbol={FaTrash} name="Trash" link></DirListing>
 
-        <DirListing Symbol={FaRegClock} symbolClassName='mt-[0.1rem]' name='Recent' link></DirListing>
-        <DirListing Symbol={FaUsers} symbolClassName='mt-[0.1rem]' name='Shared with me' link></DirListing>
-        <DirListing Symbol={FaBookmark} name='Homework' link></DirListing>
-        <DirListing Symbol={FaTrash} name='Trash' link></DirListing>
+        <div className="mt-5"></div>
 
-        <div className='mt-5'></div>
-
-        {
-          files && buildDirListing(files['f/notes'], ['f/notes'])
-        }
-
+        {files && buildDirListing(files["f/notes"], ["f/notes"])}
       </div>
     </div>
-  )
+  );
 }
 
 function PathNavigator({ files, path, setPath }) {
   let p = [];
 
   p.push(
-    <div key={p.length} onClick={() => setPath(path.slice(0, 1))} className='flex flex-row items-center gap-3 hover:bg-gray-200 -ml-4 px-4 py-1 rounded-full cursor-pointer'>
+    <div
+      key={p.length}
+      onClick={() => setPath(path.slice(0, 1))}
+      className="flex flex-row items-center gap-3 hover:bg-gray-200 -ml-4 px-4 py-1 rounded-full cursor-pointer"
+    >
       <FaBook />
       {files && files[path[0]].name}
     </div>
-  )
+  );
 
   for (let i = 1; i < path.length; i++) {
+    p.push(<FaAngleRight key={p.length} className="sm:mx-4" />);
     p.push(
-      <FaAngleRight key={p.length} className='sm:mx-4' />
-    )
-    p.push(
-      <p key={p.length} onClick={() => setPath(path.slice(0, i + 1))} className='hover:bg-gray-200 px-2 sm:px-4 py-1 rounded-full cursor-pointer'>{files[path[i]].name}</p>
-    )
+      <p
+        key={p.length}
+        onClick={() => setPath(path.slice(0, i + 1))}
+        className="hover:bg-gray-200 px-2 sm:px-4 py-1 rounded-full cursor-pointer"
+      >
+        {files[path[i]].name}
+      </p>
+    );
   }
 
   return (
-    <div className='text-md sm:text-xl text-gray-700 font-bold flex flex-row items-center -ml-3 flex-wrap'>
-      {p}
-    </div>
-  )
+    <div className="text-md sm:text-xl text-gray-700 font-bold flex flex-row items-center -ml-3 flex-wrap">{p}</div>
+  );
 }
-
 
 function RemoveFilesModal({ visible, setVisible, removeFiles }) {
   const onRemoveClick = () => {
-    removeFiles()
-    setVisible(false)
-  }
+    removeFiles();
+    setVisible(false);
+  };
   return (
-    <div className={(!visible ? 'hidden' : '') + ' absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center'}>
-      <div onClick={() => setVisible(false)} className='absolute inset-0'></div>
+    <div
+      className={
+        (!visible ? "hidden" : "") +
+        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
+      }
+    >
+      <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
       <div className={`relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
-        <div className='flex grid-cols-2 w-full gap-4 font-semibold justify-center'>
-          Remove notes
-        </div>
+        <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">Remove notes</div>
 
         <div>
-          <div>
-            Are you sure you want to remove your beloved notes ?
-          </div>
-          <div className='text-sm italic mt-3'>
+          <div>Are you sure you want to remove your beloved notes ?</div>
+          <div className="text-sm italic mt-3">
             *They will be removed permanently. Notes inside removed folder will be deleted recursively.
           </div>
         </div>
 
-        <div className='flex justify-between'>
-          <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={() => setVisible(false)}>Cancel</button>
-          <button onClick={onRemoveClick} className="bg-red-600 hover:bg-red-700 text-white w-fit px-4 py-1 rounded-full self-center">Remove</button>
+        <div className="flex justify-between">
+          <button
+            className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
+            onClick={() => setVisible(false)}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onRemoveClick}
+            className="bg-red-600 hover:bg-red-700 text-white w-fit px-4 py-1 rounded-full self-center"
+          >
+            Remove
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-function MoveModalListing({
-  files,
-  setSelected,
-  selectedFiles,
-  target
-}) {
+function MoveModalListing({ files, setSelected, selectedFiles, target }) {
   if (files == null) {
-    return <></>
+    return <></>;
   }
 
-  const forbidden = new Set(Object.values(selectedFiles).map(x => x._id))
+  const forbidden = new Set(Object.values(selectedFiles).map(x => x._id));
 
-  const treeRepr = (folder, setSelected, prefixLength = 0) => {
-    const folders = folder.children.filter(x => x.type == 'folder')
-    const [isOpen, setOpen] = useState(false)
+  const TreeRepr = (folder, setSelected, prefixLength = 0) => {
+    const folders = folder.children.filter(x => x.type == "folder");
+    const [isOpen, setOpen] = useState(false);
 
-    const Folder = isOpen ? FaFolderOpen : FaFolder
-    const children = folders.map(folder => treeRepr(folder, setSelected, prefixLength + 1))
-    const prefix = "\u00a0".repeat(prefixLength)
+    const Folder = isOpen ? FaFolderOpen : FaFolder;
+    const children = folders.map(folder => TreeRepr(folder, setSelected, prefixLength + 1));
+    const prefix = "\u00a0".repeat(prefixLength);
 
-    let onDoubleClick = null
-    let onClick = null
-    let renderChildren = !forbidden.has(folder._id)
+    let onDoubleClick = null;
+    let onClick = null;
+    let renderChildren = !forbidden.has(folder._id);
 
     if (renderChildren) {
-      onDoubleClick = () => setOpen(!isOpen)
-      onClick = () => setSelected(folder._id)
+      onDoubleClick = () => setOpen(!isOpen);
+      onClick = () => setSelected(folder._id);
     }
 
     return (
@@ -243,193 +313,246 @@ function MoveModalListing({
         <div
           onDoubleClick={onDoubleClick}
           onClick={onClick}
-          className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""} text-md`}
+          className={`flex items-center hover:bg-gray-200 ${
+            target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
+          } text-md`}
         >
-          {prefix} <Folder className="h-4 w-4" /> &nbsp; <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
+          {prefix} <Folder className="h-4 w-4" /> &nbsp;{" "}
+          <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
         </div>
         {renderChildren && isOpen && children}
       </div>
-    )
+    );
+  };
 
-  }
+  const tree = files ? TreeRepr(files["f/notes"], setSelected) : <></>;
 
-  const tree = files ? treeRepr(files['f/notes'], setSelected) : <></>
-
-  return (
-    <div className="overflow-scroll border-4 rounded-lg h-44">
-      {tree}
-    </div>
-  )
+  return <div className="overflow-scroll border-4 rounded-lg h-44">{tree}</div>;
 }
 
-
-function MoveFilesModal({
-  visible,
-  setVisible,
-  files = [],
-  selectedFiles = {},
-  moveFiles }) {
-  const [target, setTarget] = useState(null)
+function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, moveFiles }) {
+  const [target, setTarget] = useState(null);
   const onMoveClick = () => {
-    moveFiles(target)
-    setVisible(false)
-  }
+    moveFiles(target);
+    setVisible(false);
+  };
 
   const closeModal = () => {
+    setTarget(null);
+    setVisible(false);
+  };
 
-    setTarget(null)
-    setVisible(false)
-  }
-
-  const canMove = target != null
+  const canMove = target != null;
 
   return (
-    <div className={(!visible ? 'hidden' : '') + ' absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center'}>
-      <div onClick={closeModal} className='absolute inset-0'></div>
+    <div
+      className={
+        (!visible ? "hidden" : "") +
+        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
+      }
+    >
+      <div onClick={closeModal} className="absolute inset-0"></div>
       <div className={`relative w-96 h-84 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
-        <div className='flex grid-cols-2 w-full gap-4 font-semibold justify-center'>
-          Move notes
-        </div>
+        <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">Move notes</div>
 
         <div>
-          <MoveModalListing
-            files={files}
-            setSelected={setTarget}
-            target={target}
-            selectedFiles={selectedFiles}
-          />
+          <MoveModalListing files={files} setSelected={setTarget} target={target} selectedFiles={selectedFiles} />
         </div>
 
         <div className="italic text-sm text-center">
           * Click to select, double-click to open. Impossible to move to dashed folders. TODO: point to FAQ
         </div>
 
-        <div className='flex justify-between'>
-          <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={closeModal}>Cancel</button>
+        <div className="flex justify-between">
+          <button
+            className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
+            onClick={closeModal}
+          >
+            Cancel
+          </button>
           <button
             disabled={!canMove}
             onClick={onMoveClick}
-            className={` ${canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"} text-white w-fit px-4 py-1 rounded-full self-center`}>Move files</button>
+            className={` ${
+              canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
+            } text-white w-fit px-4 py-1 rounded-full self-center`}
+          >
+            Move files
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
-
 
 function EditFileModal({ visible, setVisible, file, save }) {
   // menuType is either 'note' or 'folder'
-  const [newName, setNewName] = useState("")
-  const [newNoteAccess, setNewNoteAccess] = useState(null)
-  const [errorMessage, setErrorMessage] = useState(null)
+  const [newName, setNewName] = useState("");
+  const [newNoteAccess, setNewNoteAccess] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  const fileType = file !== undefined ? file.type : ""
-  const isAccessVisible = fileType == 'note'
+  const fileType = file !== undefined ? file.type : "";
+  const isAccessVisible = fileType == "note";
 
-  const hideErrorMessage = errorMessage == null
+  const hideErrorMessage = errorMessage == null;
 
   const hideModal = () => {
-    setNewName("")
-    setNewNoteAccess("")
-    setErrorMessage(null)
-    setVisible(false)
-  }
+    setNewName("");
+    setNewNoteAccess("");
+    setErrorMessage(null);
+    setVisible(false);
+  };
 
   const saveEdits = () => {
-    const trimmedNewName = newName.trim()
+    const trimmedNewName = newName.trim();
     if (trimmedNewName == "") {
-      setErrorMessage(fileType + "'s name cannot be empty")
-      return
+      setErrorMessage(fileType + "'s name cannot be empty");
+      return;
     }
-    save(file._id, newName, newNoteAccess)
-    hideModal()
-  }
+    save(file._id, newName, newNoteAccess);
+    hideModal();
+  };
 
   return (
-    <div className={(!visible ? 'hidden' : '') + ' absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center'}>
-      <div onClick={hideModal} className='absolute inset-0'></div>
+    <div
+      className={
+        (!visible ? "hidden" : "") +
+        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
+      }
+    >
+      <div onClick={hideModal} className="absolute inset-0"></div>
       <div className={`relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
-        <div className='flex grid-cols-2 w-full gap-4 font-semibold justify-center'>
+        <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">
           Edit {file !== undefined && file.type}
         </div>
-        <div className={'flex' + ' flex-col gap-6'}>
-          <div className='flex gap-4'>
+        <div className={"flex" + " flex-col gap-6"}>
+          <div className="flex gap-4">
             Name
-            <input value={newName} onChange={e => setNewName(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md' />
+            <input
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+            />
           </div>
-          <div className={`flex gap-4 ${isAccessVisible ? '' : 'hidden'}`}>
+          <div className={`flex gap-4 ${isAccessVisible ? "" : "hidden"}`}>
             Public&nbsp;access
-            <select value={newNoteAccess} onChange={e => setNewNoteAccess(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md'>
-              <option value='edit'>View &amp; edit</option>
-              <option value='view'>View only</option>
-              <option value='none'>None</option>
+            <select
+              value={newNoteAccess}
+              onChange={e => setNewNoteAccess(e.target.value)}
+              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+            >
+              <option value="edit">View &amp; edit</option>
+              <option value="view">View only</option>
+              <option value="none">None</option>
             </select>
           </div>
         </div>
-        <button onClick={saveEdits} className='bg-slate-800 hover:bg-black text-white w-fit px-4 py-1 rounded-full self-center'>Save modifications</button>
-        <div className={`${hideErrorMessage ? 'hidden' : ''}`}>
+        <button
+          onClick={saveEdits}
+          className="bg-slate-800 hover:bg-black text-white w-fit px-4 py-1 rounded-full self-center"
+        >
+          Save modifications
+        </button>
+        <div className={`${hideErrorMessage ? "hidden" : ""}`}>
           <span className="font-semibold text-red-600">Error:</span> {errorMessage}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
-  const [menu, setMenu] = useState('note')
-  const [noteName, setNoteName] = useState('')
-  const [notePublicAccess, setNotePublicAccess] = useState('view')
-  const [folderName, setFolderName] = useState('')
+  const [menu, setMenu] = useState("note");
+  const [noteName, setNoteName] = useState("");
+  const [notePublicAccess, setNotePublicAccess] = useState("view");
+  const [folderName, setFolderName] = useState("");
 
   const submit = () => {
-    if (menu == 'note')
+    if (menu == "note")
       addFile(noteName, menu, path.at(-1), setFiles, {
-        publicAccess: notePublicAccess
-      })
-    else
-      addFile(folderName, menu, path.at(-1), setFiles)
+        publicAccess: notePublicAccess,
+      });
+    else addFile(folderName, menu, path.at(-1), setFiles);
 
-    setMenu('note')
-    setNoteName('')
-    setNotePublicAccess('view')
-    setFolderName('')
+    setMenu("note");
+    setNoteName("");
+    setNotePublicAccess("view");
+    setFolderName("");
 
-    setVisible(false)
-    reloadFiles()
-  }
+    setVisible(false);
+    reloadFiles();
+  };
 
   return (
-    <div className={(!visible ? 'hidden' : '') + ' absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center'}>
-      <div onClick={() => setVisible(false)} className='absolute inset-0'></div>
-      <div className='relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between'>
-        <div className='grid grid-cols-2 w-full gap-4'>
-          <button onClick={() => setMenu('note')} className={'w-full rounded-full flex justify-center p-1 gap-2 ' + (menu == 'note' ? 'bg-gray-200' : 'hover:bg-gray-200')}><FaBook className='text-sm mt-2' /> New note</button>
-          <button onClick={() => setMenu('folder')} className={'w-full rounded-full flex justify-center p-1 gap-2 ' + (menu == 'folder' ? 'bg-gray-200' : 'hover:bg-gray-200')}><FaFolder className='text-sm mt-2' /> New folder</button>
+    <div
+      className={
+        (!visible ? "hidden" : "") +
+        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
+      }
+    >
+      <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
+      <div className="relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between">
+        <div className="grid grid-cols-2 w-full gap-4">
+          <button
+            onClick={() => setMenu("note")}
+            className={
+              "w-full rounded-full flex justify-center p-1 gap-2 " +
+              (menu == "note" ? "bg-gray-200" : "hover:bg-gray-200")
+            }
+          >
+            <FaBook className="text-sm mt-2" /> New note
+          </button>
+          <button
+            onClick={() => setMenu("folder")}
+            className={
+              "w-full rounded-full flex justify-center p-1 gap-2 " +
+              (menu == "folder" ? "bg-gray-200" : "hover:bg-gray-200")
+            }
+          >
+            <FaFolder className="text-sm mt-2" /> New folder
+          </button>
         </div>
-        <div className={(menu == 'note' ? 'flex' : 'hidden') + ' flex-col gap-6'}>
-          <div className='flex gap-4'>
+        <div className={(menu == "note" ? "flex" : "hidden") + " flex-col gap-6"}>
+          <div className="flex gap-4">
             Name
-            <input value={noteName} onChange={e => setNoteName(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md' />
+            <input
+              value={noteName}
+              onChange={e => setNoteName(e.target.value)}
+              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+            />
           </div>
-          <div className='flex gap-4'>
+          <div className="flex gap-4">
             Public&nbsp;access
-            <select value={notePublicAccess} onChange={e => setNotePublicAccess(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md'>
-              <option value='edit'>View &amp; edit</option>
-              <option value='view'>View only</option>
-              <option value='none'>None</option>
+            <select
+              value={notePublicAccess}
+              onChange={e => setNotePublicAccess(e.target.value)}
+              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+            >
+              <option value="edit">View &amp; edit</option>
+              <option value="view">View only</option>
+              <option value="none">None</option>
             </select>
           </div>
         </div>
-        <div className={(menu == 'folder' ? 'flex' : 'hidden') + ' flex-col gap-6'}>
-          <div className='flex gap-4'>
+        <div className={(menu == "folder" ? "flex" : "hidden") + " flex-col gap-6"}>
+          <div className="flex gap-4">
             Name
-            <input value={folderName} onChange={e => setFolderName(e.target.value)} className='bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md' />
+            <input
+              value={folderName}
+              onChange={e => setFolderName(e.target.value)}
+              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+            />
           </div>
         </div>
-        <button onClick={submit} className='bg-slate-800 hover:bg-black text-white w-fit px-4 py-1 rounded-full self-center'>Create {menu}</button>
+        <button
+          onClick={submit}
+          className="bg-slate-800 hover:bg-black text-white w-fit px-4 py-1 rounded-full self-center"
+        >
+          Create {menu}
+        </button>
       </div>
     </div>
-  )
+  );
 }
 
 function processFilesData(fileList) {
@@ -438,11 +561,10 @@ function processFilesData(fileList) {
 
   for (const f of fileList) {
     fileDict[f._id] = f;
-    if (f.type == 'folder')
-      fileDict[f._id].children = [];
+    if (f.type == "folder") fileDict[f._id].children = [];
   }
-  fileDict['f/notes'] = { name: 'My Notes', children: [], type: 'folder', _id: -1 };
-  fileDict['f/trash'] = { name: 'Trash', children: [] };
+  fileDict["f/notes"] = { name: "My Notes", children: [], type: "folder", _id: -1 };
+  fileDict["f/trash"] = { name: "Trash", children: [] };
 
   for (const f of fileList) {
     fileDict[f.parentDir].children.push(fileDict[f._id]);
@@ -451,216 +573,233 @@ function processFilesData(fileList) {
   for (const f of Object.values(fileDict))
     if (f.children) {
       f.children.sort((a, b) => {
-        if (a.type != b.type)
-          return a.type == 'folder' ? -1 : 1
-        if (a.name != b.name)
-          return a.name < b.name ? -1 : 1
-        return 0
-      })
+        if (a.type != b.type) return a.type == "folder" ? -1 : 1;
+        if (a.name != b.name) return a.name < b.name ? -1 : 1;
+        return 0;
+      });
     }
 
-  return fileDict
+  return fileDict;
 }
 
 async function LoadFiles(callback) {
-  const response = await fetch(GetApiPath('/api/explorer/getfiles'), {
-    method: 'post',
+  const response = await fetch(GetApiPath("/api/explorer/getfiles"), {
+    method: "post",
     body: JSON.stringify({ token: getAuthToken() }),
     headers: {
-      "Content-type": "application/json;charset=UTF-8"
+      "Content-type": "application/json;charset=UTF-8",
     },
   });
   const json = await response.json();
 
   const fileList = json.files;
-  const fileDict = processFilesData(fileList)
+  const fileDict = processFilesData(fileList);
   callback(fileDict);
 }
 
-async function addFile(
-  name,
-  type,
-  parentDir,
-  setFiles,
-  options = {}) {
-  const response = await fetch(GetApiPath('/api/explorer/addfile'), {
+async function addFile(name, type, parentDir, setFiles, options = {}) {
+  const response = await fetch(GetApiPath("/api/explorer/addfile"), {
     // TODO: check, shouldnt have to put the token, it should be in the header by default
-    method: 'post',
+    method: "post",
     body: JSON.stringify({ token: getAuthToken(), name, type, parentDir, options }),
     headers: {
-      "Content-type": "application/json;charset=UTF-8"
+      "Content-type": "application/json;charset=UTF-8",
     },
   });
 
-  const jsonReply = await response.json()
-  const filesDict = processFilesData(jsonReply.files)
-  setFiles(filesDict)
+  const jsonReply = await response.json();
+  const filesDict = processFilesData(jsonReply.files);
+  setFiles(filesDict);
 }
 
-async function editFileAPICall(
-  id,
-  newName,
-  setFiles,
-  newVisibility = null,
-  options = {}
-) {
+async function editFileAPICall(id, newName, setFiles, newVisibility = null, options = {}) {
   const response = await fetch(GetApiPath("/api/explorer/editfile"), {
-    method: 'post',
+    method: "post",
     body: JSON.stringify({
       token: getAuthToken(),
       id: id,
       newName: newName,
       newVisibility: newVisibility,
-      options: options
+      options: options,
     }),
     headers: {
-      "Content-type": "application/json;charset=UTF-8"
+      "Content-type": "application/json;charset=UTF-8",
     },
-  })
+  });
 
-  const jsonReply = await response.json()
-  const filesDict = processFilesData(jsonReply.files)
-  setFiles(filesDict)
+  const jsonReply = await response.json();
+  const filesDict = processFilesData(jsonReply.files);
+  setFiles(filesDict);
 }
 
 async function removeFilesAPICall(notes, setFiles) {
-
   const notesData = notes.map(x => {
     return {
       type: x.type,
       _id: x._id,
-    }
-  })
+    };
+  });
 
   const response = await fetch(GetApiPath("/api/explorer/removefiles"), {
-    method: 'post',
+    method: "post",
     body: JSON.stringify({
       token: getAuthToken(),
-      notesToRemove: notesData
-
+      notesToRemove: notesData,
     }),
     headers: {
-      "Content-type": "application/json;charset=UTF-8"
+      "Content-type": "application/json;charset=UTF-8",
     },
-  })
+  });
 
-  const jsonReply = await response.json()
-  const filesDict = processFilesData(jsonReply.files)
-  setFiles(filesDict)
-
+  const jsonReply = await response.json();
+  const filesDict = processFilesData(jsonReply.files);
+  setFiles(filesDict);
 }
 
 async function moveFilesAPICall(notes, _target, setFiles) {
   // Send only required stuff
-  const target = _target == -1 ? "f/notes" : _target
+  const target = _target == -1 ? "f/notes" : _target;
   const notesData = Object.values(notes).map(x => {
     return {
       type: x.type,
-      _id: x._id
-    }
-  })
+      _id: x._id,
+    };
+  });
 
   const response = await fetch(GetApiPath("/api/explorer/movefiles"), {
-    method: 'post',
+    method: "post",
     body: JSON.stringify({
       token: getAuthToken(),
       notesToMove: notesData,
-      target: target
+      target: target,
     }),
     headers: {
-      "Content-type": "application/json;charset=UTF-8"
+      "Content-type": "application/json;charset=UTF-8",
     },
-  })
+  });
 
-  const jsonReply = await response.json()
-  const filesDict = processFilesData(jsonReply.files)
-  setFiles(filesDict)
+  const jsonReply = await response.json();
+  const filesDict = processFilesData(jsonReply.files);
+  setFiles(filesDict);
 }
 
 export default function Explorer() {
   const [files, setFiles] = useState(null);
-  const [path, setPath] = useState(['f/notes']);
-  const [createFileModal, setCreateFileModal] = useState(false)
-  const [editFileModal, setEditFileModal] = useState(false)
-  const [removeFileModal, setRemoveFileModal] = useState(false)
-  const [moveFileModal, setMoveFileModal] = useState(false)
+  const [path, setPath] = useState(["f/notes"]);
+  const [createFileModal, setCreateFileModal] = useState(false);
+  const [editFileModal, setEditFileModal] = useState(false);
+  const [removeFileModal, setRemoveFileModal] = useState(false);
+  const [moveFileModal, setMoveFileModal] = useState(false);
 
-  const [isSelecting, setIsSelecting] = useState(false)
-  const [selectedFiles, setSelectedFiles] = useState({})
-  const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]]
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState({});
+  const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]];
 
-  const setFilesAfterChange = (newFiles) => {
-    setFiles(newFiles)
-    setSelectedFiles({})
-  }
+  const setFilesAfterChange = newFiles => {
+    setFiles(newFiles);
+    setSelectedFiles({});
+  };
 
-  let selectionWidget
-  const toggleFileSelection = (newVal) => {
+  let selectionWidget;
+  const toggleFileSelection = newVal => {
     if (newVal) {
-      setSelectedFiles({})
+      setSelectedFiles({});
     }
-    setIsSelecting(newVal)
-  }
-
-
+    setIsSelecting(newVal);
+  };
 
   // Toggle file selection
   if (isSelecting) {
+    const noSelection = Object.keys(selectedFiles).length == 0;
+    const oneSelected = Object.keys(selectedFiles).length == 1;
 
-    const noSelection = Object.keys(selectedFiles).length == 0
-    const oneSelected = Object.keys(selectedFiles).length == 1
-
-    selectionWidget =
-      <div className='flex w-full justify-between rounded-xl border-2 overflow-clip'>
-        <button className='hover:bg-gray-300 px-4 py-3 hover' onClick={() => toggleFileSelection(false)}><FaRegWindowClose /></button>
-        <button onClick={() => setRemoveFileModal(true)} disabled={noSelection} className='hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3'><FaTrash /></button>
-        <button onClick={() => setEditFileModal(true)} disabled={!oneSelected} className='hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3'><FaRegSun /></button>
-        <button onClick={() => setMoveFileModal(true)} disabled={noSelection} className='hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3'><FaExchangeAlt /></button>
+    selectionWidget = (
+      <div className="flex w-full justify-between rounded-xl border-2 overflow-clip">
+        <button className="hover:bg-gray-300 px-4 py-3 hover" onClick={() => toggleFileSelection(false)}>
+          <FaRegWindowClose />
+        </button>
+        <button
+          onClick={() => setRemoveFileModal(true)}
+          disabled={noSelection}
+          className="hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3"
+        >
+          <FaTrash />
+        </button>
+        <button
+          onClick={() => setEditFileModal(true)}
+          disabled={!oneSelected}
+          className="hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3"
+        >
+          <FaRegSun />
+        </button>
+        <button
+          onClick={() => setMoveFileModal(true)}
+          disabled={noSelection}
+          className="hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3"
+        >
+          <FaExchangeAlt />
+        </button>
       </div>
-
+    );
   } else {
-    selectionWidget =
+    selectionWidget = (
       <button
         onClick={() => toggleFileSelection(true)}
-        className='py-2 text-l font-medium hover:text-gray-600 hover:bg-gray-300 flex items-center justify-center rounded-md px-3'>
+        className="py-2 text-l font-medium hover:text-gray-600 hover:bg-gray-300 flex items-center justify-center rounded-md px-3"
+      >
         Select...
       </button>
+    );
   }
 
-  let fileClickActionFactory
-  let bookClickActionFactory
+  let fileClickActionFactory;
+  let bookClickActionFactory;
   // Set click action for explorer elements
   if (isSelecting) {
     function explorerItemClickActionFactory(f, idx) {
       const onClick = () => {
-        const newState = { ...selectedFiles }
+        const newState = { ...selectedFiles };
         if (f._id in newState) {
-          delete newState[f._id]
+          delete newState[f._id];
         } else {
-          newState[f._id] = f
+          newState[f._id] = f;
         }
-        setSelectedFiles(newState)
-      }
-      return onClick
+        setSelectedFiles(newState);
+      };
+      return onClick;
     }
 
-    bookClickActionFactory = explorerItemClickActionFactory
-    fileClickActionFactory = explorerItemClickActionFactory
+    bookClickActionFactory = explorerItemClickActionFactory;
+    fileClickActionFactory = explorerItemClickActionFactory;
   } else {
-    bookClickActionFactory = (f, idx) => (() => setPath(path.concat([f._id])))
-    fileClickActionFactory = (f, idx) => (() => window.open("/note/" + f.fileId, "_blank"))
+    bookClickActionFactory = (f, idx) => () => setPath(path.concat([f._id]));
+    fileClickActionFactory = (f, idx) => () => window.open("/note/" + f.fileId, "_blank");
   }
 
   const drawExplorerItem = (f, idx, _) => {
-    const isSelected = isSelecting && f._id in selectedFiles
-    if (f.type == 'folder') {
-      return <Book key={f.name} isSelected={isSelected} showSelect={isSelecting} title={f.name} onClick={bookClickActionFactory(f, idx)} />
-
+    const isSelected = isSelecting && f._id in selectedFiles;
+    if (f.type == "folder") {
+      return (
+        <Book
+          key={f.name}
+          isSelected={isSelected}
+          showSelect={isSelecting}
+          title={f.name}
+          onClick={bookClickActionFactory(f, idx)}
+        />
+      );
     } else {
-      return <Note key={f.fileId} isSelected={isSelected} showSelect={isSelecting} title={f.name} onClick={fileClickActionFactory(f, idx)} />
-
+      return (
+        <Note
+          key={f.fileId}
+          isSelected={isSelected}
+          showSelect={isSelecting}
+          title={f.name}
+          onClick={fileClickActionFactory(f, idx)}
+        />
+      );
     }
-  }
+  };
 
   const reloadFiles = () => LoadFiles(setFiles);
 
@@ -676,102 +815,115 @@ export default function Explorer() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className='font-round'>
-        <div className='relative flex flex-col w-[100vw] h-[100vh]'>
-
-          { /** Top bar */}
-          <div className='flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300'>
+      <main className="font-round">
+        <div className="relative flex flex-col w-[100vw] h-[100vh]">
+          {/** Top bar */}
+          <div className="flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300">
             <MobileMenu />
-            <div className='hidden sm:flex flex-row gap-3 items-center text-gray-800'>
-              <FaPencilAlt className='text-2xl' />
-              <p className='font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]'>Inck</p>
+            <div className="hidden sm:flex flex-row gap-3 items-center text-gray-800">
+              <FaPencilAlt className="text-2xl" />
+              <p className="font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]">Inck</p>
             </div>
-            <div className="w-48 justify-center align-middle flex">
-              {selectionWidget}
-            </div>
-            <div className='flex bg-gray-100 border-[1px] border-gray-300 text-gray-500 flex-row items-center h-10 overflow-hidden w-full max-w-xl rounded-lg'>
-              <button className='group pl-2 h-10 flex items-center justify-center'>
-                <div className='group-hover:bg-gray-300 flex items-center justify-center w-8 h-8 rounded-full'>
+            <div className="w-48 justify-center align-middle flex">{selectionWidget}</div>
+            <div className="flex bg-gray-100 border-[1px] border-gray-300 text-gray-500 flex-row items-center h-10 overflow-hidden w-full max-w-xl rounded-lg">
+              <button className="group pl-2 h-10 flex items-center justify-center">
+                <div className="group-hover:bg-gray-300 flex items-center justify-center w-8 h-8 rounded-full">
                   <FaSearch />
                 </div>
               </button>
-              <input className='pl-2 bg-transparent focus:outline-none text-gray-900 placeholder-gray-400' placeholder='Search notes' />
+              <input
+                className="pl-2 bg-transparent focus:outline-none text-gray-900 placeholder-gray-400"
+                placeholder="Search notes"
+              />
             </div>
-            <div className='hidden sm:flex flex-row gap-2 text-gray-500'>
-              <button onClick={disconnect} className='text-l font-medium hover:text-gray-600 hover:bg-gray-300 flex items-center justify-center rounded-md px-3'>
+            <div className="hidden sm:flex flex-row gap-2 text-gray-500">
+              <button
+                onClick={disconnect}
+                className="text-l font-medium hover:text-gray-600 hover:bg-gray-300 flex items-center justify-center rounded-md px-3"
+              >
                 Disconnect
               </button>
-              <button className='hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full'>
-                <FaRegQuestionCircle className='text-2xl' />
+              <button className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full">
+                <FaRegQuestionCircle className="text-2xl" />
               </button>
-              <button className='hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full'>
-                <FaRegUserCircle className='text-2xl' />
+              <button className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full">
+                <FaRegUserCircle className="text-2xl" />
               </button>
-              <button className='hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full'>
-                <FaRegSun className='text-2xl' />
+              <button className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full">
+                <FaRegSun className="text-2xl" />
               </button>
             </div>
           </div>
 
-          <div className='h-full w-full flex flex-row pt-4 overflow-hidden'>
-            <FileTree files={files} path={path} setPath={setPath}
-              className='hidden sm:flex pb-10 w-96 border-r-[1px] border-gray-300' />
+          <div className="h-full w-full flex flex-row pt-4 overflow-hidden">
+            <FileTree
+              files={files}
+              path={path}
+              setPath={setPath}
+              className="hidden sm:flex pb-10 w-96 border-r-[1px] border-gray-300"
+            />
 
-            <div className='relative flex flex-col w-full h-full px-10 gap-12 py-3 overflow-scroll'>
+            <div className="relative flex flex-col w-full h-full px-10 gap-12 py-3 overflow-scroll">
               <PathNavigator files={files} path={path} setPath={setPath} />
 
               {/** Notes */}
-              <div className='flex flex-row flex-wrap gap-4 sm:gap-8 m-auto pb-40 justify-evenly'>
+              <div className="flex flex-row flex-wrap gap-4 sm:gap-8 m-auto pb-40 justify-evenly">
+                {files && files[path.at(-1)].children.map(drawExplorerItem)}
 
-                {
-                  files && files[path.at(-1)].children.map(drawExplorerItem)
-                }
-
-                <AddButton onClick={() => {
-                  setCreateFileModal(true);
-                  reloadFiles();
-                }} />
-
+                <AddButton
+                  onClick={() => {
+                    setCreateFileModal(true);
+                    reloadFiles();
+                  }}
+                />
               </div>
-
             </div>
           </div>
         </div>
 
         {/* Create file modal */}
-        {createFileModal && <CreateFileModal
-          visible={createFileModal}
-          setVisible={setCreateFileModal}
-          setFiles={setFiles}
-          path={path}
-          reloadFiles={reloadFiles} />}
+        {createFileModal && (
+          <CreateFileModal
+            visible={createFileModal}
+            setVisible={setCreateFileModal}
+            setFiles={setFiles}
+            path={path}
+            reloadFiles={reloadFiles}
+          />
+        )}
         {/* Edit file modal */}
-        {editFileModal && <EditFileModal
-          file={firstSelectedElement}
-          visible={editFileModal}
-          setVisible={setEditFileModal}
-          setFiles={setFilesAfterChange}
-          save={(id, newName, newVisibility, options) =>
-            editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options)
-          }
-        />}
+        {editFileModal && (
+          <EditFileModal
+            file={firstSelectedElement}
+            visible={editFileModal}
+            setVisible={setEditFileModal}
+            setFiles={setFilesAfterChange}
+            save={(id, newName, newVisibility, options) =>
+              editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options)
+            }
+          />
+        )}
         {/* Remove files modal */}
-        {removeFileModal && <RemoveFilesModal
-          visible={removeFileModal}
-          setVisible={setRemoveFileModal}
-          setFiles={setFilesAfterChange}
-          removeFiles={() => removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange)}
-        />}
+        {removeFileModal && (
+          <RemoveFilesModal
+            visible={removeFileModal}
+            setVisible={setRemoveFileModal}
+            setFiles={setFilesAfterChange}
+            removeFiles={() => removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange)}
+          />
+        )}
         {/* Move files modal */}
-        {moveFileModal && <MoveFilesModal
-          files={files}
-          selectedFiles={selectedFiles}
-          visible={moveFileModal}
-          setVisible={setMoveFileModal}
-          setFiles={setFilesAfterChange}
-          moveFiles={(target) => moveFilesAPICall(selectedFiles, target, setFilesAfterChange)}
-        />}
+        {moveFileModal && (
+          <MoveFilesModal
+            files={files}
+            selectedFiles={selectedFiles}
+            visible={moveFileModal}
+            setVisible={setMoveFileModal}
+            setFiles={setFilesAfterChange}
+            moveFiles={target => moveFilesAPICall(selectedFiles, target, setFilesAfterChange)}
+          />
+        )}
       </main>
     </div>
-  )
+  );
 }
