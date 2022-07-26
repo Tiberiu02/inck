@@ -184,7 +184,6 @@ function RemoveFilesModal({ visible, setVisible, reloadFiles, removeFiles }) {
   const onRemoveClick = () => {
     removeFiles()
     setVisible(false)
-    document.location.reload(true)
   }
   return (
     <div className={(!visible ? 'hidden' : '') + ' absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center'}>
@@ -232,27 +231,16 @@ function MoveModalListing({
     const children = folders.map(folder => treeRepr(folder, setSelected, prefixLength + 1))
     const prefix = "\u00a0".repeat(prefixLength)
 
-    let onDoubleClick = null
-    let onClick = null
-    let renderChildren = !forbidden.has(folder._id)
-
-    if (renderChildren) {
-      onDoubleClick = () => setOpen(!isOpen)
-      onClick = () => setSelected(folder._id)
-    }
-
-
-
     return (
       <div key={folder._id || -1}>
         <div
-          onDoubleClick={onDoubleClick}
-          onClick={onClick}
+          onDoubleClick={() => setOpen(!isOpen)}
+          onClick={() => setSelected(folder._id)}
           className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""} text-md`}
         >
           {prefix} <Folder className="h-4 w-4" /> &nbsp; <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
         </div>
-        {isOpen && renderChildren && children}
+        {isOpen && children}
       </div>
     )
 
@@ -318,7 +306,7 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, r
 }
 
 
-function EditFileModal({ visible, setVisible, file, reloadFiles, save }) {
+function EditFileModal({ visible, setVisible, file, save }) {
   // menuType is either 'note' or 'folder'
   const [newName, setNewName] = useState("")
   const [newNoteAccess, setNewNoteAccess] = useState(null)
@@ -346,8 +334,6 @@ function EditFileModal({ visible, setVisible, file, reloadFiles, save }) {
     //console.log("Saved edits")
     save(file._id, newName, newNoteAccess)
     hideModal()
-    document.location.reload(true)
-    reloadFiles()
   }
 
   return (
@@ -380,7 +366,7 @@ function EditFileModal({ visible, setVisible, file, reloadFiles, save }) {
   )
 }
 
-function CreateFileModal({ visible, setVisible, path, reloadFiles }) {
+function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
   const [menu, setMenu] = useState('note')
   const [noteName, setNoteName] = useState('')
   const [notePublicAccess, setNotePublicAccess] = useState('view')
@@ -388,11 +374,11 @@ function CreateFileModal({ visible, setVisible, path, reloadFiles }) {
 
   const submit = () => {
     if (menu == 'note')
-      addFile(noteName, menu, path.at(-1), {
+      addFile(noteName, menu, path.at(-1), setFiles, {
         publicAccess: notePublicAccess
       })
     else
-      addFile(folderName, menu, path.at(-1))
+      addFile(folderName, menu, path.at(-1), setFiles)
 
     setMenu('note')
     setNoteName('')
@@ -437,21 +423,8 @@ function CreateFileModal({ visible, setVisible, path, reloadFiles }) {
   )
 }
 
-async function LoadFiles(callback) {
-
-  // TODO bug: no refresh after name change
-
-  const response = await fetch(GetApiPath('/api/explorer/getfiles'), {
-    method: 'post',
-    body: JSON.stringify({ token: getAuthToken() }),
-    headers: {
-      "Content-type": "application/json;charset=UTF-8"
-    },
-  });
-  const json = await response.json();
-
-  const fileList = json.files;
-
+function processFilesData(fileList) {
+  // Process data for UI
   const fileDict = {};
   for (const f of fileList) {
     fileDict[f._id] = f;
@@ -460,8 +433,6 @@ async function LoadFiles(callback) {
   }
   fileDict['f/notes'] = { name: 'My Notes', children: [], type: 'folder', _id: -1 };
   fileDict['f/trash'] = { name: 'Trash', children: [] };
-
-  console.log(fileList)
 
   for (const f of fileList)
     fileDict[f.parentDir].children.push(fileDict[f._id]);
@@ -477,12 +448,31 @@ async function LoadFiles(callback) {
       })
     }
 
-  // console.log(fileDict);
+  return fileDict
+}
+
+async function LoadFiles(callback) {
+  const response = await fetch(GetApiPath('/api/explorer/getfiles'), {
+    method: 'post',
+    body: JSON.stringify({ token: getAuthToken() }),
+    headers: {
+      "Content-type": "application/json;charset=UTF-8"
+    },
+  });
+  const json = await response.json();
+
+  const fileList = json.files;
+  const fileDict = processFilesData(fileList)
   callback(fileDict);
 }
 
-async function addFile(name, type, parentDir, options = {}) {
-  await fetch(GetApiPath('/api/explorer/addfile'), {
+async function addFile(
+  name,
+  type,
+  parentDir,
+  setFiles,
+  options = {}) {
+  const response = await fetch(GetApiPath('/api/explorer/addfile'), {
     // TODO: check, shouldnt have to put the token, it should be in the header by default
     method: 'post',
     body: JSON.stringify({ token: getAuthToken(), name, type, parentDir, options }),
@@ -491,11 +481,19 @@ async function addFile(name, type, parentDir, options = {}) {
     },
   });
 
-  // console.log('Created file!');
+  const jsonReply = await response.json()
+  const filesDict = processFilesData(jsonReply.files)
+  setFiles(filesDict)
 }
 
-async function editFileAPICall(id, newName, newVisibility = null, options = {}) {
-  await fetch(GetApiPath("/api/explorer/editfile"), {
+async function editFileAPICall(
+  id,
+  newName,
+  setFiles,
+  newVisibility = null,
+  options = {}
+) {
+  const response = await fetch(GetApiPath("/api/explorer/editfile"), {
     method: 'post',
     body: JSON.stringify({
       token: getAuthToken(),
@@ -508,9 +506,13 @@ async function editFileAPICall(id, newName, newVisibility = null, options = {}) 
       "Content-type": "application/json;charset=UTF-8"
     },
   })
+
+  const jsonReply = await response.json()
+  const filesDict = processFilesData(jsonReply.files)
+  setFiles(filesDict)
 }
 
-async function removeFilesAPICall(notes) {
+async function removeFilesAPICall(notes, setFiles) {
 
   const notesData = notes.map(x => {
     return {
@@ -519,9 +521,7 @@ async function removeFilesAPICall(notes) {
     }
   })
 
-  //console.log(notesData)
-
-  await fetch(GetApiPath("/api/explorer/removefiles"), {
+  const response = await fetch(GetApiPath("/api/explorer/removefiles"), {
     method: 'post',
     body: JSON.stringify({
       token: getAuthToken(),
@@ -532,6 +532,11 @@ async function removeFilesAPICall(notes) {
       "Content-type": "application/json;charset=UTF-8"
     },
   })
+
+  const jsonReply = await response.json()
+  const filesDict = processFilesData(jsonReply.files)
+  setFiles(filesDict)
+
 }
 
 async function moveFilesAPICall(notes, _target) {
@@ -726,33 +731,41 @@ export default function Explorer() {
         </div>
 
         {/* Create file modal */}
-        <CreateFileModal
+        {editFileModal && <CreateFileModal
           visible={createFileModal}
           setVisible={setCreateFileModal}
+          setFiles={setFiles}
           path={path}
-          reloadFiles={reloadFiles} />
+          reloadFiles={reloadFiles} />}
         {/* Edit file modal */}
-        <EditFileModal
+        {editFileModal && <EditFileModal
           file={firstSelectedElement}
           visible={editFileModal}
           setVisible={setEditFileModal}
+          setFiles={setFiles}
           reloadFiles={reloadFiles}
-          save={editFileAPICall} />
+          save={(id, newName, newVisibility, options) =>
+            editFileAPICall(id, newName, setFiles, newVisibility, options)
+          }
+        />}
         {/* Remove files modal */}
-        <RemoveFilesModal
+        {removeFileModal && <RemoveFilesModal
           visible={removeFileModal}
           setVisible={setRemoveFileModal}
+          setFiles={setFiles}
           reloadFiles={reloadFiles}
-          removeFiles={() => removeFilesAPICall(Object.values(selectedFiles))} />
+          removeFiles={() => removeFilesAPICall(Object.values(selectedFiles), setFiles)}
+        />}
         {/* Move files modal */}
-        <MoveFilesModal
+        {moveFileModal && <MoveFilesModal
           files={files}
           selectedFiles={selectedFiles}
           visible={moveFileModal}
           setVisible={setMoveFileModal}
+          setFiles={setFiles}
           reloadFiles={reloadFiles}
           moveFiles={(target) => moveFilesAPICall(selectedFiles, target)}
-        />
+        />}
       </main>
     </div>
   )
