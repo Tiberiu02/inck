@@ -1,5 +1,6 @@
 import { io } from "socket.io-client";
-import { Stroke, Tool } from "../Tools";
+import { DeserializeTool } from "../Tools/DeserializeTool";
+import { Tool } from "../Tools/Tool";
 import { Vector2D } from "../types";
 
 const SERVER_PORT = 8080;
@@ -35,7 +36,7 @@ export class NetworkConnection {
         this.requestRerender();
       });
       this.socket.on(`collaborator tool ${id}`, tool => {
-        this.collabs[id].activeStroke = tool ? Tool.deserialize(tool, window.app.canvasManager) : undefined;
+        this.collabs[id].activeStroke = tool ? DeserializeTool(tool, window.app.canvasManager) : undefined;
         this.requestRerender();
       });
       this.socket.on(`collaborator input ${id}`, (x, y, p, t) => {

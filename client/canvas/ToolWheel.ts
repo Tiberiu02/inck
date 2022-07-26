@@ -1,6 +1,7 @@
 import { CanvasManager } from "./CanvasManager";
 import App from "./Main";
-import { Pen, StrokeEraser } from "./Tools";
+import { StrokeEraser } from "./Tools/Eraser";
+import { Pen } from "./Tools/Pen";
 import { RGB } from "./types";
 
 const RES_ROOT = "/wheel/";

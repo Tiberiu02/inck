@@ -1,14 +1,12 @@
-import { ELEMENTS_PER_VERTEX } from "./GL";
-import { OFFSET_INPUT, ELEMENTS_PER_INPUT, Stroke } from "./Tools";
-import { PathPoint, StrokePoint, Vector2D } from "./types";
+import { GetStrokeRadius } from "../Drawables/Stroke";
+import { ELEMENTS_PER_VERTEX } from "../gl/GL";
+import { PathPoint, StrokePoint, Vector2D } from "../types";
 
 const D_T = 5;
 const STIFFNESS = 0.005;
 const STIFFNESS_P = STIFFNESS * 0.05;
 const DRAG = 0.1;
 const A_STEP_DENSITY = 0.05; // rounded tip angular distance between vertices
-
-export const GetStrokeRadius = (width: number, p: number): number => (width * (p + 1)) / 3;
 
 export class DynamicStroke {
   private firstStrokePoint: StrokePoint;

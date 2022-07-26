@@ -1,7 +1,7 @@
 import { CanvasManager } from "../CanvasManager";
+import { Stroke } from "../Drawables/Stroke";
 import { ViewManager } from "../Gestures";
 import { NetworkConnection } from "./NetworkConnection";
-import { Stroke, Tool } from "../Tools";
 
 // input: h as an angle in [0,360] and s,l in [0,1] - output: r,g,b in [0,1]
 function hsl2rgb(h, s, l) {
