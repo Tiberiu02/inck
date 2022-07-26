@@ -1,6 +1,5 @@
 import { ActionStack } from "../ActionsStack";
 import { CanvasManager } from "../CanvasManager";
-import { Pen } from "./Pen";
 
 export class Tool {
   private longPressTimeout: number;
@@ -72,11 +71,5 @@ export class Tool {
 
   serialize(): any {
     return {};
-  }
-
-  static deserialize(data: any, canvasManager: CanvasManager, actionStack?: ActionStack) {
-    if (data && data.type == "p") {
-      return Pen.deserialize(data, canvasManager, actionStack);
-    }
   }
 }
