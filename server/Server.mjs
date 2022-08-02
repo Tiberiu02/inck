@@ -51,9 +51,9 @@ class Server {
     this.app.post("/api/auth/login", jsonBodyParser, loginFn);
     this.app.post("/api/explorer/getfiles", jsonBodyParser, getFilesFn);
     this.app.post("/api/explorer/addfile", jsonBodyParser, createFileFn);
-    this.app.post('/api/explorer/editfile', jsonBodyParser, editFileFn)
-    this.app.post("/api/explorer/removefiles", jsonBodyParser, removeFilesFn)
-    this.app.post("/api/explorer/movefiles", jsonBodyParser, moveFilesFn)
+    this.app.post("/api/explorer/editfile", jsonBodyParser, editFileFn);
+    this.app.post("/api/explorer/removefiles", jsonBodyParser, removeFilesFn);
+    this.app.post("/api/explorer/movefiles", jsonBodyParser, moveFilesFn);
   }
 
   startSocketServer() {
@@ -175,7 +175,8 @@ class Server {
           if (!result.length) {
             socket.emit("load strokes", [], user.id);
           } else {
-            socket.emit("load strokes", result[0].strokes, user.id);
+            const strokes = result[0].strokes;
+            socket.emit("load strokes", strokes, user.id);
           }
         });
       });

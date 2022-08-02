@@ -1,5 +1,6 @@
 import { ActionStack } from "../ActionsStack";
 import { CanvasManager } from "../CanvasManager";
+import { DeserializeStroke } from "../Drawables/DeserializeDrawable";
 import { Stroke } from "../Drawables/Stroke";
 import { RGB } from "../types";
 import { Tool } from "./Tool";
@@ -38,7 +39,7 @@ export class Pen extends Tool {
   }
 
   static deserialize(data: any, canvasManager: CanvasManager, actionStack?: ActionStack): Pen {
-    const stroke = Stroke.deserialize(data);
+    const stroke = DeserializeStroke(data);
     const pen = new Pen(stroke.width, stroke.color, stroke.zIndex, canvasManager, actionStack);
     pen.stroke = stroke;
     return pen;

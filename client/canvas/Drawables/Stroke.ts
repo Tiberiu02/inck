@@ -2,7 +2,6 @@ import { DistanceSq, LineBoundingBox, RectangleIntersectsRectangle } from "../Ma
 import { LineSegment, Rectangle, RGB, StrokePoint } from "../types";
 import { DynamicStroke } from "../Math/Vectorization";
 import { Drawable } from "./Drawable";
-import { FreeShape } from "./FreeShape";
 
 export const GetStrokeRadius = (width: number, p: number): number => (width * (p + 1)) / 3;
 
@@ -102,22 +101,5 @@ export class Stroke implements Drawable {
       zIndex: this.zIndex,
       id: this.id,
     };
-  }
-
-  static deserialize(data: any): Stroke {
-    const color = data.color.slice(0, 3);
-    const zIndex = data.type == "h" ? 0 : data.zIndex ?? 1;
-    const { width, timestamp, path, id } = data;
-
-    const stroke = new Stroke(color, width, zIndex, timestamp, id);
-    for (let i = 0; i < path.length; i += ELEMENTS_PER_INPUT)
-      stroke.push({
-        x: path[i + OFFSET_INPUT.X],
-        y: path[i + OFFSET_INPUT.Y],
-        pressure: path[i + OFFSET_INPUT.P],
-        timestamp: path[i + OFFSET_INPUT.T],
-      });
-
-    return stroke;
   }
 }

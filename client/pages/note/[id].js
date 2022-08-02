@@ -13,21 +13,15 @@ export default function Note() {
   const router = useRouter();
   const { id } = router.query;
 
-  const [messageIdx, setMessageIdx] = useState(null)
+  const [messageIdx, setMessageIdx] = useState(null);
 
   useEffect(() => {
-    setMessageIdx(() => Math.floor(Math.random() * loadingMessages.length))
-  }, [])
+    setMessageIdx(() => Math.floor(Math.random() * loadingMessages.length));
+  }, []);
 
   const isMessageVisible = messageIdx != null;
-  console.log(messageIdx)
-  console.log(isMessageVisible)
-
-
-
-  
-
-  
+  console.log(messageIdx);
+  console.log(isMessageVisible);
 
   // TODO check authentication here with a fetch
 
@@ -35,13 +29,18 @@ export default function Note() {
     return (
       <div className="grid h-screen place-items-center bg-gray-100 animate-pulse">
         <div className="flex flex-col text-center  w-96 h-48 justify-around ">
-          <h1 className='font-bold text-4xl'>Your note is loading</h1> 
-          <span className={`${isMessageVisible ? "opacity-100" : "opacity-0"} font-light transition-opacity  italic text-xl`}>{loadingMessages[messageIdx || 0]}</span>
+          <h1 className="font-bold text-4xl">Your note is loading</h1>
+          <span
+            className={`${
+              isMessageVisible ? "opacity-100" : "opacity-0"
+            } font-light transition-opacity  italic text-xl`}
+          >
+            {loadingMessages[messageIdx || 0]}
+          </span>
         </div>
       </div>
-    )
+    );
   }
-  
 
   return (
     <div>
@@ -61,7 +60,7 @@ export default function Note() {
           <FaPencilAlt className="w-6 h-6" />
         </div>
         <div className="p-3 hover:bg-primary-dark">
-          <TbEraser className="w-6 h-6" />
+          <TbEraserOff className="w-6 h-6" />
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { Drawable } from "./Drawables/Drawable";
 import { Stroke } from "./Drawables/Stroke";
 import { ViewManager } from "./Gestures";
 import { ELEMENTS_PER_VERTEX, GL } from "./gl/GL";
@@ -122,7 +123,7 @@ export class CanvasManager {
   private buffer: WebGLBuffer;
   private program: WebGLProgram;
   private activeStrokes: Stroke[];
-  private strokes: { [id: string]: Stroke };
+  private strokes: { [id: string]: Drawable };
 
   protected view: ViewManager;
 
@@ -139,10 +140,9 @@ export class CanvasManager {
     this.strokes = {};
   }
 
-  addStroke(stroke: Stroke): void {
+  addStroke(stroke: Drawable): void {
     this.strokes[stroke.id] = stroke;
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
-    console.log(stroke.boundingBox.yMax, this.yMax);
     this.yMax = Math.max(this.yMax, stroke.boundingBox.yMax);
   }
 
@@ -155,7 +155,7 @@ export class CanvasManager {
     return this.layers[zIndex].removeStroke(id);
   }
 
-  getStrokes(): Stroke[] {
+  getStrokes(): Drawable[] {
     return Object.values(this.strokes);
   }
 

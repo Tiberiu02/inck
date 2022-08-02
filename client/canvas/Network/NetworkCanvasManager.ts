@@ -1,4 +1,5 @@
 import { CanvasManager } from "../CanvasManager";
+import { DeserializeDrawable } from "../Drawables/DeserializeDrawable";
 import { Stroke } from "../Drawables/Stroke";
 import { ViewManager } from "../Gestures";
 import { NetworkConnection } from "./NetworkConnection";
@@ -34,7 +35,7 @@ export class NetworkCanvasManager extends CanvasManager {
       for (let s of data) {
         if (!s) continue;
 
-        const stroke = Stroke.deserialize(s);
+        const stroke = DeserializeDrawable(s);
         if (stroke) {
           super.addStroke(stroke);
         }
