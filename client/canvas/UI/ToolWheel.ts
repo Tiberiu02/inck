@@ -1,8 +1,9 @@
-import { CanvasManager } from "./CanvasManager";
-import App from "./Main";
-import { StrokeEraser } from "./Tools/Eraser";
-import { Pen } from "./Tools/Pen";
-import { RGB } from "./types";
+import { CanvasManager } from "../CanvasManager";
+import App from "../Main";
+import { StrokeEraser } from "../Tools/Eraser";
+import { Pen } from "../Tools/Pen";
+import { RGB } from "../types";
+import { DPI } from "./DPI";
 
 const RES_ROOT = "/wheel/";
 
@@ -41,7 +42,7 @@ export default class ToolWheel {
 
   constructor(app, actions) {
     this.app = app;
-    this.R = Math.min(3 * window.DPI, innerWidth / 2, innerHeight / 2);
+    this.R = Math.min(3 * DPI(), innerWidth / 2, innerHeight / 2);
 
     Object.assign(this, actions);
 
@@ -87,18 +88,18 @@ export default class ToolWheel {
       .map(v => parseInt(v, 16) / 255);
 
     if (this.tool == "pen") {
-      const width = (window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
+      const width = (DPI() * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
       return new Pen(width, rgb as RGB, 1, this.app.canvasManager, this.app.actions);
     } else if (this.tool == "highlighter") {
-      const width = (window.DPI * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom;
+      const width = (DPI() * H_WIDTHS[this.width.highlighter]) / innerWidth / this.app.view.zoom;
       return new Pen(width, rgb as RGB, 0, this.app.canvasManager, this.app.actions);
     } else if (this.tool == "eraser") {
       return new StrokeEraser(this.app.canvasManager, this.app.actions);
     } else if (this.tool == "shapes") {
-      const width = (window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
+      const width = (DPI() * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
       return new Pen(width, rgb as RGB, 1, this.app.canvasManager, this.app.actions);
     } else if (this.tool == "selection") {
-      const width = (window.DPI * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
+      const width = (DPI() * WIDTHS[this.width.pen]) / innerWidth / this.app.view.zoom;
       return new Pen(width, rgb as RGB, 1, this.app.canvasManager, this.app.actions);
     }
   }
@@ -455,7 +456,7 @@ export default class ToolWheel {
       const a1 = SLICE_ANGLE * i;
       const a2 = SLICE_ANGLE * (i + 1);
       const a = (a1 + a2) / 2;
-      const w = (type == "highlighter" ? H_WIDTHS[i] : WIDTHS[i]) * window.DPI;
+      const w = (type == "highlighter" ? H_WIDTHS[i] : WIDTHS[i]) * DPI();
 
       let part = createElement("g", { class: "button_group" });
       part.addEventListener("pointerup", () => {

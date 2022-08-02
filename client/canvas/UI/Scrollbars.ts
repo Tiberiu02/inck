@@ -1,18 +1,3 @@
-export function ShowCircularWave(x, y, r, duration) {
-  let el = document.createElement("div");
-  el.className = "circular-wave-animation";
-
-  el.style.width = el.style.height = `${2 * r}px`;
-  el.style.marginLeft = el.style.marginTop = `-${r}px`;
-  el.style.left = x + "px";
-  el.style.top = y + "px";
-  el.style.animationDuration = `${duration}ms`;
-
-  document.body.appendChild(el);
-
-  setTimeout(() => el.remove(), duration);
-}
-
 export class ScrollBars {
   width: any;
   margin: any;
@@ -111,15 +96,4 @@ export class ScrollBars {
       height: `${this.vBarHeight}px`,
     });
   }
-}
-
-// Detect screen DPI
-export function ComputeDPI() {
-  let el = document.createElement("div");
-  el.style.position = "absolute";
-  el.style.height = "1in";
-  el.style.top = "100%";
-  document.body.appendChild(el);
-  window.DPI = el.offsetHeight;
-  document.body.removeChild(el);
 }

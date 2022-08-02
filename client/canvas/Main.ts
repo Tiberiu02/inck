@@ -1,7 +1,7 @@
 import Profiler from "./Profiler";
 import { ViewManager } from "./Gestures";
-import { ScrollBars, ComputeDPI } from "./UI";
-import ToolWheel from "./ToolWheel";
+import { ScrollBars } from "./UI/Scrollbars";
+import ToolWheel from "./UI/ToolWheel";
 import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
@@ -29,8 +29,6 @@ export default class App {
   actions: ActionStack;
 
   constructor(canvas) {
-    ComputeDPI();
-
     this.canvas = canvas;
     Object.assign(document.body.style, {
       width: "100vw",

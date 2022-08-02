@@ -52,7 +52,7 @@ export default function Note() {
 
       <Canvas />
       <FullScreenButton />
-      <div className="fixed opacity-80 text-white top-20 left-32 z-50 hidden bg-primary rounded-2xl overflow-hidden items-center shadow-md">
+      <div className="fixed opacity-80 text-white top-20 left-32 z-50 flex bg-primary rounded-2xl overflow-hidden items-center shadow-md">
         <div className="p-3 hover:bg-primary-dark">
           <IoIosUndo className="w-6 h-6" />
         </div>
