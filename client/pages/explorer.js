@@ -76,9 +76,8 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
     >
       {showSelect && (
         <div
-          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
-            isSelected ? "text-slate-800" : "text-white"
-          } text-center`}
+          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
+            } text-center`}
         >
           x
         </div>
@@ -101,9 +100,8 @@ function Book({ title, onClick, showSelect = false, isSelected = false }) {
       <div className="realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
         {showSelect && (
           <div
-            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
-              isSelected ? "text-slate-800" : "text-white"
-            } text-center`}
+            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
+              } text-center`}
           >
             x
           </div>
@@ -157,15 +155,13 @@ function MobileMenu() {
         <FaBars className="text-3xl text-gray-500" />
       </button>
       <div
-        className={`fixed h-screen w-screen bg-black z-10 ${
-          open ? "opacity-50" : "opacity-0 pointer-events-none"
-        } transition-all duration-200 top-0 left-0`}
+        className={`fixed h-screen w-screen bg-black z-10 ${open ? "opacity-50" : "opacity-0 pointer-events-none"
+          } transition-all duration-200 top-0 left-0`}
         onClick={toggleOpen}
       ></div>
       <div
-        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        } transition-all duration-200 top-0 left-0 overflow-scroll`}
+        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${open ? "translate-x-0" : "-translate-x-full"
+          } transition-all duration-200 top-0 left-0 overflow-scroll`}
       >
         <FileTree className="pt-10 pb-52 w-full" />
       </div>
@@ -313,9 +309,8 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
         <div
           onDoubleClick={onDoubleClick}
           onClick={onClick}
-          className={`flex items-center hover:bg-gray-200 ${
-            target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
-          } text-md`}
+          className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
+            } text-md`}
         >
           {prefix} <Folder className="h-4 w-4" /> &nbsp;{" "}
           <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
@@ -373,9 +368,8 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
           <button
             disabled={!canMove}
             onClick={onMoveClick}
-            className={` ${
-              canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
-            } text-white w-fit px-4 py-1 rounded-full self-center`}
+            className={` ${canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
+              } text-white w-fit px-4 py-1 rounded-full self-center`}
           >
             Move files
           </button>
@@ -389,27 +383,21 @@ function EditFileModal({ visible, setVisible, file, save }) {
   // menuType is either 'note' or 'folder'
   const [newName, setNewName] = useState("");
   const [newNoteAccess, setNewNoteAccess] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null);
 
   const fileType = file !== undefined ? file.type : "";
   const isAccessVisible = fileType == "note";
 
-  const hideErrorMessage = errorMessage == null;
-
   const hideModal = () => {
     setNewName("");
     setNewNoteAccess("");
-    setErrorMessage(null);
     setVisible(false);
   };
 
   const saveEdits = () => {
     const trimmedNewName = newName.trim();
-    if (trimmedNewName == "") {
-      setErrorMessage(fileType + "'s name cannot be empty");
-      return;
+    if (trimmedNewName != "") {
+      save(file._id, newName, newNoteAccess);
     }
-    save(file._id, newName, newNoteAccess);
     hideModal();
   };
 
@@ -429,6 +417,7 @@ function EditFileModal({ visible, setVisible, file, save }) {
           <div className="flex gap-4">
             Name
             <input
+              placeholder={file.name}
               value={newName}
               onChange={e => setNewName(e.target.value)}
               className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
@@ -453,9 +442,6 @@ function EditFileModal({ visible, setVisible, file, save }) {
         >
           Save modifications
         </button>
-        <div className={`${hideErrorMessage ? "hidden" : ""}`}>
-          <span className="font-semibold text-red-600">Error:</span> {errorMessage}
-        </div>
       </div>
     </div>
   );
