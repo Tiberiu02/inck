@@ -1,5 +1,5 @@
 import Profiler from "./Profiler";
-import { ViewManager } from "./Gestures";
+import { ViewManager } from "./View/ViewManager";
 import { ScrollBars } from "./UI/Scrollbars";
 import ToolWheel from "./UI/ToolWheel";
 import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
@@ -9,13 +9,14 @@ import { ActionStack } from "./ActionsStack";
 import { Tool } from "./Tools/Tool";
 import { StrokeEraser } from "./Tools/Eraser";
 import { Pen } from "./Tools/Pen";
+import { iosTouch, SimplePointerEvent } from "./types";
 
 export default class App {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
   canvasManager: CanvasManager;
   animationFrameRequestId: number;
-  view: ViewManager;
+  viewManager: ViewManager;
   scrollBars: ScrollBars;
   wheel: ToolWheel;
   rerender: boolean;
@@ -26,7 +27,7 @@ export default class App {
   rendering: boolean;
   nextRender: number;
   network: NetworkConnection;
-  actions: ActionStack;
+  actionStack: ActionStack;
 
   constructor(canvas) {
     this.canvas = canvas;
@@ -46,31 +47,38 @@ export default class App {
     });
 
     // Create view
-    this.view = new ViewManager(this);
-    this.view.disableWindowOverscrolling();
+    this.viewManager = new ViewManager();
+    this.viewManager.getView().addListener(() => this.scheduleRender());
 
     this.network = new NetworkConnection(() => this.scheduleRender());
 
     // Create canvas manager
-    this.canvasManager = new NetworkCanvasManager(this.canvas, this.view, this.network);
+    this.canvasManager = new NetworkCanvasManager(this.canvas, this.viewManager.getView(), this.network);
 
     // Create scroll bars
-    this.scrollBars = new ScrollBars("rgba(0, 0, 0, 0.5)", 10, 0);
+    this.scrollBars = new ScrollBars(this.viewManager.getMutableView(), this.canvasManager.getYMax());
 
     // Adjust canvas size
     this.resizeCanvas();
+
+    window.addEventListener("wheel", e => this.viewManager.handleWheelEvent(e), { passive: false });
+    window.addEventListener("mousemove", e => this.viewManager.handleMouseEvent(e));
+    this.canvas.addEventListener("touchstart", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
+    this.canvas.addEventListener("touchend", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
+    this.canvas.addEventListener("touchcancel", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
+    this.canvas.addEventListener("touchmove", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
 
     // Add event listeners
     // Different listeners for Apple devices
     // because pointer events API is broken in Safari (yay!)
     if (navigator.vendor == "Apple Computer, Inc.") {
-      window.addEventListener("mousedown", this.handleMouseEvent.bind(this), false);
-      window.addEventListener("mousemove", this.handleMouseEvent.bind(this), false);
-      window.addEventListener("mouseup", this.handleMouseEvent.bind(this), false);
+      window.addEventListener("mousedown", this.handleMouseEvent.bind(this));
+      window.addEventListener("mousemove", this.handleMouseEvent.bind(this));
+      window.addEventListener("mouseup", this.handleMouseEvent.bind(this));
 
-      window.addEventListener("touchdown", this.handleTouchEvent.bind(this), false);
-      window.addEventListener("touchmove", this.handleTouchEvent.bind(this), false);
-      window.addEventListener("touchend", this.handleTouchEvent.bind(this), false);
+      window.addEventListener("touchdown", this.handleTouchEvent.bind(this));
+      window.addEventListener("touchmove", this.handleTouchEvent.bind(this));
+      window.addEventListener("touchend", this.handleTouchEvent.bind(this));
     } else {
       window.addEventListener("pointerdown", this.handlePointerEvent.bind(this));
       window.addEventListener("pointermove", this.handlePointerEvent.bind(this));
@@ -82,19 +90,19 @@ export default class App {
     window.addEventListener("contextmenu", e => e.preventDefault());
 
     // Create tool wheel
-    this.wheel = new ToolWheel(this, {
+    this.wheel = new ToolWheel(this.viewManager.getView(), this.canvasManager, this.actionStack, {
       undo: () => {
-        this.actions.undo();
+        this.actionStack.undo();
         this.render();
       },
       redo: () => {
-        this.actions.redo();
+        this.actionStack.redo();
         this.render();
       },
       settings: () => console.log("settings"),
     });
 
-    this.actions = new ActionStack();
+    this.actionStack = new ActionStack();
 
     requestAnimationFrame(() => this.renderLoop());
   }
@@ -136,10 +144,12 @@ export default class App {
     this.scheduleRender();
   }
 
-  // to remove
-  handleMouseEvent(e) {
+  // iOS
+  handleMouseEvent(e: MouseEvent) {
     e.preventDefault();
     let pointerEvent = {
+      pointerId: 0,
+      type: e.type.replace("touch", "pointer").replace("end", "up"),
       x: e.x,
       y: e.y,
       pressure: e.buttons ? 0.5 : 0,
@@ -151,40 +161,30 @@ export default class App {
     this.handlePointerEvent(pointerEvent);
   }
 
-  handleTouchEvent(e) {
-    const t = e.changedTouches[0];
+  // iOS
+  handleTouchEvent(e: TouchEvent) {
+    const t = e.changedTouches[0] as iosTouch;
     const pointerEvent = {
+      pointerId: t.identifier,
+      type: e.type.replace("touch", "pointer").replace("end", "up"),
       x: t.clientX,
       y: t.clientY,
       pressure: e.type == "touchend" ? 0 : t.touchType == "stylus" ? t.force : 0.5,
       timeStamp: performance.now(),
       target: t.target,
-      pointerType: "pen",
+      pointerType: t.touchType == "stylus" ? "pen" : "touch",
       id: t.identifier,
       preventDefault: () => e.preventDefault(),
     };
 
-    if (t.touchType === "stylus") {
-      // stylus
-      this.handlePointerEvent(pointerEvent);
-    } else if (
-      this.scrollBars.scrolling() ||
-      t.target == this.scrollBars.vertical ||
-      t.target == this.scrollBars.horizontal
-    ) {
-      // scrollbar
-      this.scrollBars.handlePointerEvent(pointerEvent, this.view, this.canvasManager.yMax);
-      this.scheduleRender();
-    } // gesture
-    else this.view.handleTouchEvent(e);
+    this.handlePointerEvent(pointerEvent);
   }
 
-  handlePointerEvent(e) {
+  handlePointerEvent(e: SimplePointerEvent) {
     //console.log(e, e.target);
-    if (this.scrollBars.scrolling() || e.target == this.scrollBars.vertical || e.target == this.scrollBars.horizontal) {
-      this.scrollBars.handlePointerEvent(e, this.view, this.canvasManager.yMax);
-      this.scheduleRender();
-    } else if (e.target == this.canvas) {
+    this.scrollBars.handlePointerEvent(e);
+
+    if (!this.scrollBars.scrolling() && e.target == this.canvas) {
       e.preventDefault();
 
       if (e.pressure && this.wheel.isVisible() && this.openingWheel) return;
@@ -194,7 +194,7 @@ export default class App {
       if (!e.pressure && this.openingWheel) this.openingWheel = false;
 
       let { type, pressure, timeStamp, pointerType } = e;
-      let [x, y] = this.view.mapCoords(e.x, e.y);
+      let [x, y] = this.viewManager.getView().getCanvasCoords(e.x, e.y);
 
       this.drawing = pressure > 0 && pointerType != "touch";
 
@@ -209,11 +209,13 @@ export default class App {
             }
             console.log("new tool");
             // Long press eraser gesture
-            const d = pointerType == "pen" ? 15 : 1;
-            this.activeTool.ifLongPress(pointerType == "pen" ? 500 : 1000, d / innerWidth / this.view.zoom, () => {
+            let d = pointerType == "pen" ? 15 : 1;
+            d = this.viewManager.getView().getCanvasCoords(d, 0, true)[0];
+
+            this.activeTool.ifLongPress(pointerType == "pen" ? 500 : 1000, d, () => {
               this.activeTool.release();
               if (this.activeTool instanceof Pen) {
-                this.actions.undo();
+                this.actionStack.undo();
               }
               this.openingWheel = true;
               this.activeTool = undefined;
@@ -259,8 +261,6 @@ export default class App {
       Profiler.stop("active stroke");
     }
     this.canvasManager.render();
-
-    this.scrollBars.update(this.view, this.canvasManager.yMax);
 
     this.nextRender = performance.now() * 2 - renderStart;
     this.rendering = false;

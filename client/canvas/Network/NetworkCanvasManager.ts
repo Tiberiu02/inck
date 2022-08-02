@@ -1,7 +1,6 @@
 import { CanvasManager } from "../CanvasManager";
 import { DeserializeDrawable } from "../Drawables/DeserializeDrawable";
-import { Stroke } from "../Drawables/Stroke";
-import { ViewManager } from "../Gestures";
+import { View } from "../View/View";
 import { NetworkConnection } from "./NetworkConnection";
 
 // input: h as an angle in [0,360] and s,l in [0,1] - output: r,g,b in [0,1]
@@ -15,7 +14,7 @@ export class NetworkCanvasManager extends CanvasManager {
   private network: NetworkConnection;
   private collabsContainer: HTMLDivElement;
 
-  constructor(canvas: HTMLCanvasElement, view: ViewManager, network: NetworkConnection) {
+  constructor(canvas: HTMLCanvasElement, view: View, network: NetworkConnection) {
     super(canvas, view);
 
     this.network = network;
@@ -95,8 +94,9 @@ export class NetworkCanvasManager extends CanvasManager {
       c.el.style.display = "none";
 
       if (c.pointer) {
-        const x = (c.pointer.x - this.view.left) * this.view.zoom * innerWidth;
-        const y = (c.pointer.y - this.view.top) * this.view.zoom * innerWidth;
+        const [x, y] = this.view.getScreenCoords(c.pointer.x, c.pointer.y);
+        //const x = (c.pointer.x - this.view.left) * this.view.zoom * innerWidth;
+        //const y = (c.pointer.y - this.view.top) * this.view.zoom * innerWidth;
 
         if (x >= 0 && x < innerWidth - 15 && y >= 0 && y < innerHeight - 21)
           Object.assign(c.el.style, {

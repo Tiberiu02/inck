@@ -1,25 +1,34 @@
+import { MutableView } from "../View/View";
+import { ObservableNumber } from "../Observable";
+import { SimplePointerEvent } from "../types";
+import { Display } from "./DisplayProps";
+
 export class ScrollBars {
+  view: MutableView;
   width: any;
   margin: any;
   pointers: { x: number; y: number }[];
   vertical: HTMLDivElement;
   horizontal: HTMLDivElement;
   scrollDirection: any;
-  yMax: number;
+  yMax: ObservableNumber;
   vBarHeight: number;
 
-  constructor(color, width, margin) {
-    this.width = width;
-    this.margin = margin;
+  constructor(view: MutableView, yMax: ObservableNumber) {
+    this.view = view;
+    this.yMax = yMax;
+    this.width = 10;
+    this.margin = 0;
+    this.yMax = yMax;
+    this.pointers = [];
+
     const style = {
-      backgroundColor: color,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
       position: "absolute",
       width: "0px",
       height: "0px",
-      borderRadius: `${width / 2}px`,
+      borderRadius: `${this.width / 2}px`,
     };
-
-    this.pointers = [];
 
     this.vertical = document.createElement("div");
     Object.assign(this.vertical.style, style);
@@ -28,9 +37,16 @@ export class ScrollBars {
     this.horizontal = document.createElement("div");
     Object.assign(this.horizontal.style, style);
     document.body.appendChild(this.horizontal);
+
+    view.addListener(() => this.updateBars());
+    yMax.addListener(() => this.updateBars());
   }
 
-  handlePointerEvent(e, view, yMax) {
+  handlePointerEvent(e: SimplePointerEvent) {
+    if (e.target != this.horizontal && e.target != this.vertical && !this.scrolling()) {
+      return;
+    }
+
     let { pointerId, x, y, pressure } = e;
 
     if (pressure) {
@@ -41,32 +57,34 @@ export class ScrollBars {
       if (this.pointers[pointerId]) {
         const p = this.pointers[pointerId];
         if (this.scrollDirection == "vertical") {
-          const dy = ((y - p.y) / (innerHeight - 3 * this.margin - this.width)) * this.yMax;
-          view.top = Math.max(0, Math.min(this.yMax - innerHeight / innerWidth / view.zoom, view.top + dy));
+          const dy = ((y - p.y) / (innerHeight - 3 * this.margin - this.width)) * this.yMax.get();
+          this.view.applyTranslation(0, dy);
         } else {
           const dx = (x - p.x) / (innerWidth - 3 * this.margin - this.width);
-          view.left = Math.max(0, Math.min(1 - 1 / view.zoom, view.left + dx));
+          this.view.applyTranslation(dx, 0);
         }
-      } else this.yMax = Math.max(yMax, view.top + innerHeight / innerWidth / view.zoom);
+      }
 
       this.pointers[pointerId] = { x, y };
     } else {
       this.pointers = [];
-      delete this.yMax;
+      //delete this.yMax;
       delete this.scrollDirection;
     }
   }
 
-  scrolling() {
+  scrolling(): boolean {
     return this.pointers.length > 0;
   }
 
-  update(view, yMax) {
-    if (this.yMax) yMax = this.yMax;
+  getYMax() {
+    return Math.max(this.yMax.get(), this.view.getCanvasCoords(0, innerHeight)[1]);
+  }
 
-    const hLen = 1 / view.zoom;
-    const hStart = view.left;
-    const hFullLen = document.documentElement.clientWidth - 3 * this.margin - this.width;
+  private updateBars() {
+    const hLen = 1 / this.view.getZoom();
+    const hStart = this.view.getLeft();
+    const hFullLen = Display.Width() - 3 * this.margin - this.width;
 
     Object.assign(this.horizontal.style, {
       display: hLen == 1 ? "none" : "",
@@ -76,11 +94,10 @@ export class ScrollBars {
       width: `${hLen * hFullLen}px`,
     });
 
-    const aspectRatio = innerHeight / innerWidth;
-    const vSize = Math.max(yMax, view.top + (1 / view.zoom) * aspectRatio);
-    const vLen = (hLen * aspectRatio) / vSize;
-    const vStart = view.top / vSize;
-    let vFullLen = document.documentElement.clientHeight - 2 * this.margin - this.margin - this.width;
+    const vSize = Math.max(this.getYMax(), this.view.getTop() + 1 / this.view.getZoom() / Display.AspectRatio());
+    const vLen = hLen / Display.AspectRatio() / vSize;
+    const vStart = this.view.getTop() / vSize;
+    let vFullLen = Display.Height() - 2 * this.margin - this.margin - this.width;
 
     this.vBarHeight = vLen * vFullLen;
     if (this.vBarHeight < this.width) {

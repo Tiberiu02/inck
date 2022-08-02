@@ -1,11 +1,22 @@
 import { Drawable } from "./Drawables/Drawable";
 import { Stroke } from "./Drawables/Stroke";
-import { ViewManager } from "./Gestures";
+import { View } from "./View/View";
 import { ELEMENTS_PER_VERTEX, GL } from "./gl/GL";
+import { MutableObservableNumber, Observable, ObservableNumber } from "./Observable";
 import Profiler from "./Profiler";
+import { Display } from "./UI/DisplayProps";
 
 const BUFFER_SIZE = 5e4;
 const NUM_LAYERS = 2;
+
+function GetUniforms(view: View) {
+  return {
+    u_AspectRatio: Display.AspectRatio(),
+    u_Left: view.getLeft(),
+    u_Top: view.getTop(),
+    u_Zoom: view.getZoom(),
+  };
+}
 
 class StrokeBuffer {
   private gl: WebGL2RenderingContext;
@@ -13,17 +24,17 @@ class StrokeBuffer {
   private buffer: WebGLBuffer;
   private synced: boolean;
   private strokes: { id: string; size: number }[];
-  program: WebGLProgram;
-  getUniforms: () => object;
+  private program: WebGLProgram;
+  private view: View;
 
-  constructor(gl: WebGL2RenderingContext, program: WebGLProgram, getUniforms: () => object) {
+  constructor(gl: WebGL2RenderingContext, program: WebGLProgram, view: View) {
     this.gl = gl;
     this.array = [];
     this.buffer = gl.createBuffer();
     this.synced = false;
     this.strokes = [];
     this.program = program;
-    this.getUniforms = getUniforms;
+    this.view = view;
   }
 
   canAdd(array: number[]): boolean {
@@ -61,7 +72,7 @@ class StrokeBuffer {
       this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.array), this.gl.STREAM_DRAW);
       this.synced = true;
     }
-    GL.setProgram(this.gl, this.program, this.getUniforms());
+    GL.setProgram(this.gl, this.program, GetUniforms(this.view));
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.array.length / ELEMENTS_PER_VERTEX);
   }
 
@@ -74,15 +85,15 @@ class StrokeCluster {
   private gl: WebGL2RenderingContext;
   private buffers: StrokeBuffer[];
   private strokeLocation: { [id: string]: StrokeBuffer };
-  program: WebGLProgram;
-  getUniforms: () => object;
+  private program: WebGLProgram;
+  private view: View;
 
-  constructor(gl: WebGL2RenderingContext, program: WebGLProgram, getUniforms: () => object) {
+  constructor(gl: WebGL2RenderingContext, program: WebGLProgram, view: View) {
     this.gl = gl;
     this.buffers = [];
     this.strokeLocation = {};
     this.program = program;
-    this.getUniforms = getUniforms;
+    this.view = view;
   }
 
   addStroke(id: string, array: number[]) {
@@ -91,7 +102,7 @@ class StrokeCluster {
       buffer.add(id, array);
       this.strokeLocation[id] = buffer;
     } else {
-      const buffer = new StrokeBuffer(this.gl, this.program, this.getUniforms);
+      const buffer = new StrokeBuffer(this.gl, this.program, this.view);
       buffer.add(id, array);
       this.buffers.push(buffer);
       this.strokeLocation[id] = buffer;
@@ -124,26 +135,25 @@ export class CanvasManager {
   private program: WebGLProgram;
   private activeStrokes: Stroke[];
   private strokes: { [id: string]: Drawable };
+  private yMax: MutableObservableNumber;
 
-  protected view: ViewManager;
+  protected view: View;
 
-  public yMax: number;
-
-  constructor(canvas: HTMLCanvasElement, view: ViewManager) {
+  constructor(canvas: HTMLCanvasElement, view: View) {
     this.gl = GL.initWebGL(canvas);
     this.program = GL.createProgram(this.gl);
-    this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(this.gl, this.program, () => view.getUniforms()));
+    this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(this.gl, this.program, view));
     this.buffer = this.gl.createBuffer();
     this.view = view;
     this.activeStrokes = [];
-    this.yMax = 0;
+    this.yMax = new MutableObservableNumber(0);
     this.strokes = {};
   }
 
   addStroke(stroke: Drawable): void {
     this.strokes[stroke.id] = stroke;
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
-    this.yMax = Math.max(this.yMax, stroke.boundingBox.yMax);
+    this.yMax.set(Math.max(this.yMax.get(), stroke.boundingBox.yMax));
   }
 
   removeStroke(id: string): boolean {
@@ -192,7 +202,7 @@ export class CanvasManager {
     Profiler.stop("buffering");
 
     Profiler.start("program");
-    GL.setProgram(this.gl, program ?? this.program, this.view.getUniforms());
+    GL.setProgram(this.gl, program ?? this.program, GetUniforms(this.view));
     Profiler.stop("program");
 
     Profiler.start("drawing");
@@ -202,6 +212,10 @@ export class CanvasManager {
 
   viewport(x: number, y: number, width: number, height: number) {
     this.gl.viewport(x, y, width, height);
+  }
+
+  getYMax(): ObservableNumber {
+    return this.yMax;
   }
 
   private clearCanvas() {
