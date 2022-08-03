@@ -159,6 +159,10 @@ export default class ToolWheel {
 
     this.widthsWheels[type].style.display = "";
     this.widthsWheels[type].style.transform = `rotate(${a - SLICE_ANGLE * this.width[type]}rad)`;
+    const w = this.width[type];
+    for (let i = 0; i < this.widthsWheels[type].children.length; i++)
+      this.widthsWheels[type].children[i].children[0].style.fill =
+        i == w ? "rgba(220, 220, 220, 1)" : "rgba(240, 240, 240, 1)";
   }
 
   static addStyleSheets() {
