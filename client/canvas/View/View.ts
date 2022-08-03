@@ -96,7 +96,7 @@ export class MutableView extends View {
     this.top -= y1 - y0;
     this.clip();
 
-    this.registerUpdate();
+    this.registerChange();
   }
 
   applyTranslation(deltaX: number, deltaY: number) {
@@ -104,6 +104,6 @@ export class MutableView extends View {
     this.left += deltaX;
     this.clip();
 
-    this.registerUpdate();
+    this.registerChange();
   }
 }

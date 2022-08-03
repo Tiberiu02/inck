@@ -38,8 +38,8 @@ export class ScrollBars {
     Object.assign(this.horizontal.style, style);
     document.body.appendChild(this.horizontal);
 
-    view.addListener(() => this.updateBars());
-    yMax.addListener(() => this.updateBars());
+    view.onChange(() => this.updateBars());
+    yMax.onChange(() => this.updateBars());
   }
 
   handlePointerEvent(e: SimplePointerEvent) {

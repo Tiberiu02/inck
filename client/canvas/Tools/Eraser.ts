@@ -27,7 +27,7 @@ export class StrokeEraser extends Tool {
         this.canvasManager.removeStroke(s.id);
         this.actionStack.push({
           undo: () => {
-            // TODO: Add stroke at the same position as before
+            // TODO: Add stroke at the same index as before
             this.canvasManager.addStroke(s);
             return true;
           },

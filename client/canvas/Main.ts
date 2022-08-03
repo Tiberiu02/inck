@@ -10,6 +10,7 @@ import { Tool } from "./Tools/Tool";
 import { StrokeEraser } from "./Tools/Eraser";
 import { Pen } from "./Tools/Pen";
 import { iosTouch, SimplePointerEvent } from "./types";
+import { CaddieMenu } from "./UI/CaddieMenu";
 
 export default class App {
   canvas: HTMLCanvasElement;
@@ -28,6 +29,7 @@ export default class App {
   nextRender: number;
   network: NetworkConnection;
   actionStack: ActionStack;
+  caddie: CaddieMenu;
 
   constructor(canvas) {
     this.canvas = canvas;
@@ -48,12 +50,14 @@ export default class App {
 
     // Create view
     this.viewManager = new ViewManager();
-    this.viewManager.getView().addListener(() => this.scheduleRender());
+    this.viewManager.getView().onChange(() => this.scheduleRender());
 
-    this.network = new NetworkConnection(() => this.scheduleRender());
+    this.network = new NetworkConnection();
+    this.network.onChange(() => this.scheduleRender());
 
     // Create canvas manager
     this.canvasManager = new NetworkCanvasManager(this.canvas, this.viewManager.getView(), this.network);
+    this.canvasManager.onChange(() => this.scheduleRender());
 
     // Create scroll bars
     this.scrollBars = new ScrollBars(this.viewManager.getMutableView(), this.canvasManager.getYMax());
@@ -89,20 +93,12 @@ export default class App {
 
     window.addEventListener("contextmenu", e => e.preventDefault());
 
-    // Create tool wheel
-    this.wheel = new ToolWheel(this.viewManager.getView(), this.canvasManager, this.actionStack, {
-      undo: () => {
-        this.actionStack.undo();
-        this.render();
-      },
-      redo: () => {
-        this.actionStack.redo();
-        this.render();
-      },
-      settings: () => console.log("settings"),
-    });
-
     this.actionStack = new ActionStack();
+
+    // Create tool wheel
+    this.wheel = new ToolWheel(this.viewManager.getView(), this.canvasManager, this.actionStack);
+
+    this.caddie = new CaddieMenu(this.actionStack, this.wheel);
 
     requestAnimationFrame(() => this.renderLoop());
   }
@@ -189,7 +185,7 @@ export default class App {
 
       if (e.pressure && this.wheel.isVisible() && this.openingWheel) return;
 
-      if (e.pressure && this.wheel.isVisible() && !this.openingWheel) this.wheel.hide();
+      if (e.pressure && this.wheel.isVisible() && !this.openingWheel) this.wheel.close();
 
       if (!e.pressure && this.openingWheel) this.openingWheel = false;
 
@@ -219,7 +215,7 @@ export default class App {
               }
               this.openingWheel = true;
               this.activeTool = undefined;
-              this.wheel.hide();
+              this.wheel.close();
               this.wheel.show(e.x, e.y);
               console.log(e.x, e.y);
               this.render();

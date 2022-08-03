@@ -128,7 +128,7 @@ class StrokeCluster {
   }
 }
 
-export class CanvasManager {
+export class CanvasManager extends Observable {
   private gl: WebGL2RenderingContext;
   private layers: StrokeCluster[];
   private buffer: WebGLBuffer;
@@ -140,6 +140,8 @@ export class CanvasManager {
   protected view: View;
 
   constructor(canvas: HTMLCanvasElement, view: View) {
+    super();
+
     this.gl = GL.initWebGL(canvas);
     this.program = GL.createProgram(this.gl);
     this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(this.gl, this.program, view));
@@ -154,6 +156,7 @@ export class CanvasManager {
     this.strokes[stroke.id] = stroke;
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
     this.yMax.set(Math.max(this.yMax.get(), stroke.boundingBox.yMax));
+    this.registerChange();
   }
 
   removeStroke(id: string): boolean {
@@ -162,7 +165,10 @@ export class CanvasManager {
     }
     const zIndex = this.strokes[id].zIndex;
     this.strokes[id] = undefined;
-    return this.layers[zIndex].removeStroke(id);
+
+    const result = this.layers[zIndex].removeStroke(id);
+    this.registerChange();
+    return result;
   }
 
   getStrokes(): Drawable[] {

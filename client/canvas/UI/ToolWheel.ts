@@ -5,6 +5,9 @@ import { StrokeEraser } from "../Tools/Eraser";
 import { Pen } from "../Tools/Pen";
 import { RGB } from "../types";
 import { Display } from "./DisplayProps";
+import { CreateEvent, EventCore, EventTrigger } from "../EventDriven";
+import { Observable } from "../Observable";
+import { EventsDescription } from "mongodb";
 
 const RES_ROOT = "/wheel/";
 
@@ -31,6 +34,12 @@ function createElement(tag, attributes = {}) {
 }
 
 export default class ToolWheel {
+  onClose: EventCore;
+  private registerClose: EventTrigger;
+
+  onOpenSettings: EventCore;
+  private registerOpenSettings: EventTrigger;
+
   view: View;
   canvasManager: CanvasManager;
   actionStack: ActionStack;
@@ -43,15 +52,16 @@ export default class ToolWheel {
   tool: string;
   shape: any;
 
-  constructor(view: View, canvasManager: CanvasManager, actionStack: ActionStack, actions: object) {
+  constructor(view: View, canvasManager: CanvasManager, actionStack: ActionStack) {
+    [this.onClose, this.registerClose] = CreateEvent();
+    [this.onOpenSettings, this.registerOpenSettings] = CreateEvent();
+
     this.view = view;
     this.canvasManager = canvasManager;
     this.actionStack = actionStack;
     this.R = Math.min(3 * Display.DPI(), innerWidth / 2, innerHeight / 2);
 
-    Object.assign(this, actions);
-
-    this.wheel = ToolWheel.build(this.R, this);
+    this.wheel = this.buildToolWheel(this.R);
 
     ToolWheel.addStyleSheets();
     this.hide();
@@ -59,9 +69,9 @@ export default class ToolWheel {
 
     //*
     this.widthsWheels = {
-      pen: ToolWheel.buildWidthsWheel(this.R, "pen", w => (this.width.pen = w)),
-      highlighter: ToolWheel.buildWidthsWheel(this.R, "highlighter", w => (this.width.highlighter = w)),
-      shapes: ToolWheel.buildWidthsWheel(this.R, "shapes", w => (this.width.shapes = w)),
+      pen: this.buildWidthsWheel(this.R, "pen", w => (this.width.pen = w)),
+      highlighter: this.buildWidthsWheel(this.R, "highlighter", w => (this.width.highlighter = w)),
+      shapes: this.buildWidthsWheel(this.R, "shapes", w => (this.width.shapes = w)),
     };
     this.widthsContainer = document.createElement("div");
     Object.assign(this.widthsContainer.style, {
@@ -73,7 +83,9 @@ export default class ToolWheel {
       overflow: "hidden",
       "pointer-events": "none",
     });
-    for (const wheel of Object.values(this.widthsWheels)) this.widthsContainer.appendChild(wheel);
+    for (const wheel of Object.values(this.widthsWheels)) {
+      this.widthsContainer.appendChild(wheel);
+    }
     document.body.appendChild(this.widthsContainer);
 
     this.color = "#000000";
@@ -112,7 +124,7 @@ export default class ToolWheel {
     this.color = color;
   }
 
-  setTool(tool) {
+  setTool(tool: string) {
     this.tool = tool;
   }
 
@@ -124,7 +136,7 @@ export default class ToolWheel {
     return this.wheel.style.display != "none";
   }
 
-  show(x, y) {
+  show(x: number, y: number) {
     let transform = "scale(1)";
     if (x != undefined && y != undefined) {
       const x1 = Math.max(this.R, Math.min(innerWidth - this.R, x));
@@ -150,8 +162,13 @@ export default class ToolWheel {
     setTimeout(() => (this.wheel.style.transform = transform), 50);
   }
 
-  hide() {
+  private hide() {
     this.wheel.classList.add("wheel-hidden");
+  }
+
+  close() {
+    this.hide();
+    this.registerClose();
   }
 
   showWidths(a, type) {
@@ -172,7 +189,7 @@ export default class ToolWheel {
     document.head.appendChild(e);
   }
 
-  static build(R, actions) {
+  private buildToolWheel(R) {
     const apple = navigator.vendor == "Apple Computer, Inc.";
 
     const spin = (r, a, d = 0) => [R - r * Math.cos(a + d / r), R - r * Math.sin(a + d / r)];
@@ -196,11 +213,11 @@ export default class ToolWheel {
 
       let pen = createElement("g", { class: apple ? "" : "pen" });
       pen.addEventListener("pointerdown", e => {
-        actions.setColor(COLORS_PEN_HEX[i]);
-        actions.setTool("pen");
-        actions.hide();
-        actions.showWidths(a1, "pen");
-        actions.widthsWheels.pen.setPointerCapture(e.pointerId);
+        this.setColor(COLORS_PEN_HEX[i]);
+        this.setTool("pen");
+        this.hide();
+        this.showWidths(a1, "pen");
+        this.widthsWheels.pen.setPointerCapture(e.pointerId);
       });
 
       // Color slice
@@ -234,11 +251,11 @@ export default class ToolWheel {
 
       let highlighter = createElement("g", { class: "button_group" });
       highlighter.addEventListener("pointerdown", e => {
-        actions.setColor(COLORS_HIGHLIGHTER_HEX[i]);
-        actions.setTool("highlighter");
-        actions.hide();
-        actions.showWidths(a1, "highlighter");
-        actions.widthsWheels.highlighter.setPointerCapture(e.pointerId);
+        this.setColor(COLORS_HIGHLIGHTER_HEX[i]);
+        this.setTool("highlighter");
+        this.hide();
+        this.showWidths(a1, "highlighter");
+        this.widthsWheels.highlighter.setPointerCapture(e.pointerId);
       });
 
       // Highlighter shape
@@ -272,12 +289,12 @@ export default class ToolWheel {
 
         let g = createElement("g", { class: "button_group" });
         g.addEventListener("pointerdown", e => {
-          actions.setColor(COLORS_PEN_HEX[i]);
-          actions.setTool("shapes");
-          actions.setShape(SHAPES[j].toLowerCase());
-          actions.hide();
-          actions.showWidths(a1, "shapes");
-          actions.widthsWheels.shapes.setPointerCapture(e.pointerId);
+          this.setColor(COLORS_PEN_HEX[i]);
+          this.setTool("shapes");
+          this.setShape(SHAPES[j].toLowerCase());
+          this.hide();
+          this.showWidths(a1, "shapes");
+          this.widthsWheels.shapes.setPointerCapture(e.pointerId);
         });
 
         let path3 = `
@@ -319,8 +336,9 @@ export default class ToolWheel {
 
       let eraser = createElement("g", { class: "tool_button" });
       eraser.addEventListener("pointerdown", () => {
-        actions.setTool("eraser");
-        actions.hide();
+        this.setTool("eraser");
+        this.hide();
+        this.registerClose();
       });
 
       // Eraser slice
@@ -357,8 +375,9 @@ export default class ToolWheel {
 
       let selection = createElement("g", { class: "tool_button" });
       selection.addEventListener("pointerdown", () => {
-        actions.setTool("selection");
-        actions.hide();
+        this.setTool("selection");
+        this.hide();
+        this.registerClose();
       });
 
       // Selection slice
@@ -411,7 +430,10 @@ export default class ToolWheel {
           d: path_x,
         })
       );
-      close_button.addEventListener("pointerdown", () => actions.hide());
+      close_button.addEventListener("pointerdown", () => {
+        this.hide();
+        this.registerClose();
+      });
 
       menu.appendChild(close_button);
     }
@@ -446,14 +468,14 @@ export default class ToolWheel {
       menu.appendChild(option);
     }
 
-    AddOptionButton(RES_ROOT + "Redo.png", Math.PI * 1.37, () => actions.redo());
-    AddOptionButton(RES_ROOT + "Tool_Settings.png", Math.PI * 1.5, () => actions.settings());
-    AddOptionButton(RES_ROOT + "Undo.png", Math.PI * 1.63, () => actions.undo());
+    AddOptionButton(RES_ROOT + "Redo.png", Math.PI * 1.37, () => this.actionStack.redo());
+    AddOptionButton(RES_ROOT + "Tool_Settings.png", Math.PI * 1.5, () => this.registerOpenSettings());
+    AddOptionButton(RES_ROOT + "Undo.png", Math.PI * 1.63, () => this.actionStack.undo());
 
     return menu;
   }
 
-  static buildWidthsWheel(R, type, setW) {
+  buildWidthsWheel(R: number, type: string, setW) {
     const spin = (r, a, d = 0) => [R - r * Math.cos(a + d / r), R - r * Math.sin(a + d / r)];
     const spinO = (r, a, d = 0) => ({ x: R - r * Math.cos(a + d / r), y: R - r * Math.sin(a + d / r) });
 
@@ -471,6 +493,7 @@ export default class ToolWheel {
         setW(i);
         console.log("width", i);
         menu.style.display = "none";
+        this.registerClose();
       });
 
       // part shape
@@ -526,11 +549,15 @@ export default class ToolWheel {
       return Math.floor((a_rel % (2 * Math.PI)) / SLICE_ANGLE);
     };
 
-    menu.addEventListener("pointerleave", () => (menu.style.display = "none"));
+    menu.addEventListener("pointerleave", () => {
+      menu.style.display = "none";
+      this.registerClose();
+    });
     menu.addEventListener("pointerup", e => {
       const w = getHoverW(e.x, e.y);
       if (w >= 0 && w < N_WIDTHS) setW(w);
       menu.style.display = "none";
+      this.registerClose();
     });
     menu.addEventListener("pointermove", e => {
       const w = getHoverW(e.x, e.y);

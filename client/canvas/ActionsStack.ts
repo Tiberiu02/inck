@@ -31,7 +31,6 @@ export class ActionStack {
         // Action cannot be undone, remove from stack and retry
         this.actions.splice(this.indexOfLastActionDone, 1);
         this.indexOfLastActionDone--;
-        this.undo();
       }
     }
   }

@@ -52,17 +52,6 @@ export default function Note() {
 
       <Canvas />
       <FullScreenButton />
-      <div className="fixed opacity-80 text-white top-20 left-32 z-50 flex bg-primary rounded-2xl overflow-hidden items-center shadow-md">
-        <div className="p-3 hover:bg-primary-dark">
-          <IoIosUndo className="w-6 h-6" />
-        </div>
-        <div className="p-3 border-x-2 border-primary-dark hover:bg-primary-dark">
-          <FaPencilAlt className="w-6 h-6" />
-        </div>
-        <div className="p-3 hover:bg-primary-dark">
-          <TbEraserOff className="w-6 h-6" />
-        </div>
-      </div>
     </div>
   );
 }
