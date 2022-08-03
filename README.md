@@ -25,7 +25,7 @@ Node.js, MongoDB, as well as a few Node.js packages.
 
 # Usage
 
-Open your browser and go to https://localhost:3000.
+Open your browser and go to https://localhost:3080.
 
 # To-do list
 
