@@ -67,10 +67,6 @@ export default class App {
 
     window.addEventListener("wheel", e => this.viewManager.handleWheelEvent(e), { passive: false });
     window.addEventListener("mousemove", e => this.viewManager.handleMouseEvent(e));
-    this.canvas.addEventListener("touchstart", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
-    this.canvas.addEventListener("touchend", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
-    this.canvas.addEventListener("touchcancel", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
-    this.canvas.addEventListener("touchmove", (e: TouchEvent) => this.viewManager.handleTouchEvent(e));
 
     // Add event listeners
     // Different listeners for Apple devices
@@ -90,6 +86,12 @@ export default class App {
       window.addEventListener("pointerleave", this.handlePointerEvent.bind(this));
       window.addEventListener("pointerout", this.handlePointerEvent.bind(this));
     }
+
+    const viewManagerTouchHandler = (e: TouchEvent) => !this.drawing && this.viewManager.handleTouchEvent(e);
+    this.canvas.addEventListener("touchstart", viewManagerTouchHandler);
+    this.canvas.addEventListener("touchend", viewManagerTouchHandler);
+    this.canvas.addEventListener("touchcancel", viewManagerTouchHandler);
+    this.canvas.addEventListener("touchmove", viewManagerTouchHandler);
 
     window.addEventListener("contextmenu", e => e.preventDefault());
 
