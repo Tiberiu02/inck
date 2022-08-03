@@ -5,8 +5,8 @@ import { StrokeEraser } from "../Tools/Eraser";
 import { Pen } from "../Tools/Pen";
 import { RGB } from "../types";
 import { Display } from "./DisplayProps";
-import { CreateEvent, EventCore, EventTrigger } from "../EventDriven";
-import { Observable } from "../Observable";
+import { CreateEvent, EventCore, EventTrigger } from "../DesignPatterns/EventDriven";
+import { Observable } from "../DesignPatterns/Observable";
 import { EventsDescription } from "mongodb";
 
 const RES_ROOT = "/wheel/";

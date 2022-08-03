@@ -2,7 +2,7 @@ import { Drawable } from "./Drawables/Drawable";
 import { Stroke } from "./Drawables/Stroke";
 import { View } from "./View/View";
 import { ELEMENTS_PER_VERTEX, GL } from "./gl/GL";
-import { MutableObservableNumber, Observable, ObservableNumber } from "./Observable";
+import { MutableObservableNumber, Observable, ObservableNumber } from "./DesignPatterns/Observable";
 import Profiler from "./Profiler";
 import { Display } from "./UI/DisplayProps";
 

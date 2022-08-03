@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { Observable } from "../Observable";
+import { Observable } from "../DesignPatterns/Observable";
 import { DeserializeTool } from "../Tools/DeserializeTool";
 import { Tool } from "../Tools/Tool";
 import { Vector2D } from "../types";

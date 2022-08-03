@@ -33,7 +33,7 @@
  * The view has the same aspect ratio as the screen.
  */
 
-import { Observable } from "../Observable";
+import { Observable } from "../DesignPatterns/Observable";
 import { Display } from "../UI/DisplayProps";
 
 export class View extends Observable {
