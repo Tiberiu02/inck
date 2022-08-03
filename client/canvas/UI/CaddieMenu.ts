@@ -1,17 +1,41 @@
 import tailwind from "../../tailwind.config";
 import { ActionStack } from "../ActionsStack";
+import { Vector2D } from "../types";
+import { Display } from "./DisplayProps";
 import ToolWheel from "./ToolWheel";
 
 export class CaddieMenu {
   private el: HTMLElement;
-  actionStack: ActionStack;
-  wheel: ToolWheel;
+  private actionStack: ActionStack;
+  private wheel: ToolWheel;
+  private pointer: Vector2D;
+  private lastUpdate: number;
 
   constructor(actionStack: ActionStack, wheel: ToolWheel) {
     this.actionStack = actionStack;
     this.wheel = wheel;
 
     this.el = this.createMenu();
+
+    this.pointer = { x: 0, y: 0 };
+    this.lastUpdate = performance.now();
+    requestAnimationFrame(() => this.update());
+  }
+
+  update() {
+    const t = performance.now();
+    const dt = t - this.lastUpdate;
+
+    const DIST = 1; // inc
+    this.el.style.top = this.pointer.y - this.el.getBoundingClientRect().height / 2 - DIST * Display.DPI() + "px";
+    this.el.style.left = this.pointer.x - this.el.getBoundingClientRect().width / 2 - DIST * Display.DPI() + "px";
+
+    this.lastUpdate = t;
+    requestAnimationFrame(() => this.update());
+  }
+
+  updatePointer(x: number, y: number) {
+    this.pointer = { x, y };
   }
 
   private createMenu() {
@@ -19,7 +43,7 @@ export class CaddieMenu {
     const primaryDark = tailwind.theme.extend.colors["primary-dark"];
 
     const div = document.createElement("div");
-    div.style.zIndex = "10";
+    div.style.zIndex = "20";
     div.style.position = "fixed";
     div.style.boxShadow = "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);";
     div.style.opacity = "0.8";
@@ -34,6 +58,7 @@ export class CaddieMenu {
     const button = () => {
       const div = document.createElement("div");
       div.style.padding = "0.75rem";
+      div.style.cursor = "pointer";
       div.addEventListener("pointerdown", () => (div.style.backgroundColor = primaryDark));
       div.addEventListener("pointerup", () => (div.style.backgroundColor = primary));
       div.addEventListener("pointerout", () => (div.style.backgroundColor = primary));

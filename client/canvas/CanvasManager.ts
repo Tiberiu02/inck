@@ -156,7 +156,7 @@ export class CanvasManager extends Observable {
     this.strokes[stroke.id] = stroke;
     this.layers[stroke.zIndex].addStroke(stroke.id, stroke.vectorize());
     this.yMax.set(Math.max(this.yMax.get(), stroke.boundingBox.yMax));
-    this.registerChange();
+    this.registerUpdate();
   }
 
   removeStroke(id: string): boolean {
@@ -167,7 +167,7 @@ export class CanvasManager extends Observable {
     this.strokes[id] = undefined;
 
     const result = this.layers[zIndex].removeStroke(id);
-    this.registerChange();
+    this.registerUpdate();
     return result;
   }
 

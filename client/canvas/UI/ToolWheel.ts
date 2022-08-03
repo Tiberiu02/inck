@@ -430,7 +430,7 @@ export default class ToolWheel {
           d: path_x,
         })
       );
-      close_button.addEventListener("pointerdown", () => {
+      close_button.addEventListener("pointerup", () => {
         this.hide();
         this.registerClose();
       });

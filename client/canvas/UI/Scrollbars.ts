@@ -1,5 +1,5 @@
 import { MutableView } from "../View/View";
-import { ObservableNumber } from "../Observable";
+import { ObservableNumber } from "../DesignPatterns/Observable";
 import { SimplePointerEvent } from "../types";
 import { Display } from "./DisplayProps";
 
@@ -38,8 +38,8 @@ export class ScrollBars {
     Object.assign(this.horizontal.style, style);
     document.body.appendChild(this.horizontal);
 
-    view.onChange(() => this.updateBars());
-    yMax.onChange(() => this.updateBars());
+    view.onUpdate(() => this.updateBars());
+    yMax.onUpdate(() => this.updateBars());
   }
 
   handlePointerEvent(e: SimplePointerEvent) {

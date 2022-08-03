@@ -5,11 +5,11 @@ export class Observable {
     this.listeners = [];
   }
 
-  onChange(listener: () => void) {
+  onUpdate(listener: () => void) {
     this.listeners.push(listener);
   }
 
-  protected registerChange() {
+  protected registerUpdate() {
     for (const listener of this.listeners) {
       listener();
     }

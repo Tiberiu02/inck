@@ -50,14 +50,14 @@ export default class App {
 
     // Create view
     this.viewManager = new ViewManager();
-    this.viewManager.getView().onChange(() => this.scheduleRender());
+    this.viewManager.getView().onUpdate(() => this.scheduleRender());
 
     this.network = new NetworkConnection();
-    this.network.onChange(() => this.scheduleRender());
+    this.network.onUpdate(() => this.scheduleRender());
 
     // Create canvas manager
     this.canvasManager = new NetworkCanvasManager(this.canvas, this.viewManager.getView(), this.network);
-    this.canvasManager.onChange(() => this.scheduleRender());
+    this.canvasManager.onUpdate(() => this.scheduleRender());
 
     // Create scroll bars
     this.scrollBars = new ScrollBars(this.viewManager.getMutableView(), this.canvasManager.getYMax());
@@ -226,7 +226,9 @@ export default class App {
           if (!(this.activeTool instanceof StrokeEraser)) {
             this.network.updateInput(x, y, pressure, timeStamp);
           }
+
           this.render();
+          this.caddie.updatePointer(e.x, e.y);
         } else if (this.activeTool) {
           // Finished stroke
           this.activeTool.release();

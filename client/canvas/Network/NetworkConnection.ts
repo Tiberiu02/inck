@@ -34,17 +34,17 @@ export class NetworkConnection extends Observable {
 
       this.socket.on(`collaborator pointer ${id}`, pointer => {
         this.collabs[id].pointer = pointer;
-        this.registerChange();
+        this.registerUpdate();
       });
       this.socket.on(`collaborator tool ${id}`, tool => {
         this.collabs[id].activeStroke = tool ? DeserializeTool(tool, window.app.canvasManager) : undefined;
-        this.registerChange();
+        this.registerUpdate();
       });
       this.socket.on(`collaborator input ${id}`, (x, y, p, t) => {
         //console.log("collab input", this.collabs[id].activeStroke);
         if (this.collabs[id].activeStroke) {
           this.collabs[id].activeStroke.update(x, y, p, t);
-          this.registerChange();
+          this.registerUpdate();
         }
       });
       this.socket.on(`collaborator remove ${id}`, () => {
