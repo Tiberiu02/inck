@@ -7,7 +7,6 @@ import ToolWheel from "./ToolWheel";
 enum STATES {
   IDLE,
   FOLLOWING,
-  FADE_IN,
   FADE_OUT,
 }
 
@@ -20,9 +19,9 @@ const TELEPORT_THRESHOLD = 2;
 const MIN_OPACITY = 30; //inc
 const MAX_OPACITY = 80; //inc
 
-const PULL_FORCE = 5; // (inc/s2) / inc = 1/s2
-const DRAG_FORCE = 5;
-const OPACITY_SPEED = 400;
+const PULL_FORCE = 5;
+
+const OPACITY_SPEED = 400; // % / s
 
 export class CaddieMenu {
   private el: HTMLElement;
@@ -57,7 +56,7 @@ export class CaddieMenu {
     const t = performance.now();
     const dt = (t - this.lastUpdate) / MS_PER_TIME_UNIT;
 
-    const target_pull = () => (this.pos = this.pos.add(this.target.sub(this.pos).mul(5).mul(dt)));
+    const target_pull = () => (this.pos = this.pos.add(this.target.sub(this.pos).mul(PULL_FORCE).mul(dt)));
 
     if (this.state == STATES.IDLE) {
       if (this.pointer) {
