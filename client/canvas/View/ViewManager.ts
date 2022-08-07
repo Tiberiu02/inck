@@ -14,7 +14,7 @@ export class ViewManager {
 
     this.touches = [];
 
-    this.mouse = { x: 0, y: 0 };
+    this.mouse = new Vector2D(0, 0);
 
     this.inertia = new ScrollInertia(this.view);
 
@@ -63,7 +63,7 @@ export class ViewManager {
         rAvg += Math.sqrt((x - xAvg) ** 2 + (y - yAvg) ** 2);
       }
 
-      this.averagePointerPos = { x: xAvg, y: yAvg };
+      this.averagePointerPos = new Vector2D(xAvg, yAvg);
       this.averagePointerDist = N > 1 ? rAvg / N : 1;
     }
   }
@@ -131,7 +131,7 @@ export class ViewManager {
   }
 
   handleMouseEvent(e: MouseEvent) {
-    this.mouse = { x: e.clientX, y: e.clientY };
+    this.mouse = new Vector2D(e.clientX, e.clientY);
   }
 }
 
@@ -157,12 +157,12 @@ class ScrollInertia {
       const vy = dy / dt;
 
       if (!this.velocity) {
-        this.velocity = { x: vx, y: vy };
+        this.velocity = new Vector2D(vx, vy);
       } else
-        this.velocity = {
-          x: this.velocity.x * (1 - SMOOTH_AVG) + vx * SMOOTH_AVG,
-          y: this.velocity.y * (1 - SMOOTH_AVG) + vy * SMOOTH_AVG,
-        };
+        this.velocity = new Vector2D(
+          this.velocity.x * (1 - SMOOTH_AVG) + vx * SMOOTH_AVG,
+          this.velocity.y * (1 - SMOOTH_AVG) + vy * SMOOTH_AVG
+        );
     }
     this.t = t;
   }
@@ -189,8 +189,7 @@ class ScrollInertia {
       if (Math.sqrt(vx ** 2 + vy ** 2) > MINIMUM_VELOCITY) {
         this.view.applyTranslation(this.velocity.x * dt, this.velocity.y * dt);
 
-        this.velocity.x *= 1 - Math.min(1, dt * INERTIA_DECAY_PER_MS);
-        this.velocity.y *= 1 - Math.min(1, dt * INERTIA_DECAY_PER_MS);
+        this.velocity = this.velocity.mul(1 - Math.min(1, dt * INERTIA_DECAY_PER_MS));
 
         this.t = t;
       } else {

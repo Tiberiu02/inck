@@ -1,6 +1,40 @@
-export interface Vector2D {
-  x: number;
-  y: number;
+export class Vector2D {
+  readonly x: number;
+  readonly y: number;
+
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+  }
+
+  add(other: Vector2D): Vector2D {
+    return new Vector2D(this.x + other.x, this.y + other.y);
+  }
+
+  sub(other: Vector2D): Vector2D {
+    return new Vector2D(this.x - other.x, this.y - other.y);
+  }
+
+  mul(factor: number): Vector2D {
+    return new Vector2D(this.x * factor, this.y * factor);
+  }
+
+  div(factor: number): Vector2D {
+    return new Vector2D(this.x / factor, this.y / factor);
+  }
+
+  rot(angle: number): Vector2D {
+    const [sin, cos] = [Math.sin(angle), Math.cos(angle)];
+    return new Vector2D(this.x * cos - this.y * sin, this.x * sin + this.y * cos);
+  }
+
+  norm(): number {
+    return Math.sqrt(this.x ** 2 + this.y ** 2);
+  }
+
+  dist(other: Vector2D): number {
+    return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+  }
 }
 
 export interface Rectangle {

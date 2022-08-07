@@ -9,7 +9,7 @@ import { ActionStack } from "./ActionsStack";
 import { Tool } from "./Tools/Tool";
 import { StrokeEraser } from "./Tools/Eraser";
 import { Pen } from "./Tools/Pen";
-import { iosTouch, SimplePointerEvent } from "./types";
+import { iosTouch, SimplePointerEvent, Vector2D } from "./types";
 import { CaddieMenu } from "./UI/CaddieMenu";
 
 export default class App {
@@ -87,7 +87,8 @@ export default class App {
       window.addEventListener("pointerout", this.handlePointerEvent.bind(this));
     }
 
-    const viewManagerTouchHandler = (e: TouchEvent) => !this.drawing && this.viewManager.handleTouchEvent(e);
+    const viewManagerTouchHandler = (e: TouchEvent) =>
+      !this.drawing && (e.changedTouches[0] as iosTouch).touchType != "stylus" && this.viewManager.handleTouchEvent(e);
     this.canvas.addEventListener("touchstart", viewManagerTouchHandler);
     this.canvas.addEventListener("touchend", viewManagerTouchHandler);
     this.canvas.addEventListener("touchcancel", viewManagerTouchHandler);
@@ -206,22 +207,6 @@ export default class App {
               this.network.updateTool(this.activeTool);
             }
             console.log("new tool");
-            // Long press eraser gesture
-            let d = pointerType == "pen" ? 15 : 1;
-            d = this.viewManager.getView().getCanvasCoords(d, 0, true)[0];
-
-            this.activeTool.ifLongPress(pointerType == "pen" ? 500 : 1000, d, () => {
-              this.activeTool.release();
-              if (this.activeTool instanceof Pen) {
-                this.actionStack.undo();
-              }
-              this.openingWheel = true;
-              this.activeTool = undefined;
-              this.wheel.close();
-              this.wheel.show(e.x, e.y);
-              console.log(e.x, e.y);
-              this.render();
-            });
           }
 
           this.activeTool.update(x, y, pressure, timeStamp);
@@ -230,7 +215,7 @@ export default class App {
           }
 
           this.render();
-          this.caddie.updatePointer(e.x, e.y);
+          this.caddie.updatePointer(new Vector2D(e.x, e.y));
         } else if (this.activeTool) {
           // Finished stroke
           this.activeTool.release();
@@ -238,9 +223,10 @@ export default class App {
           this.network.updateTool(undefined);
 
           this.render();
+          this.caddie.updatePointer(null);
         }
 
-        const pointer = type == "pointerleave" || type == "pointerout" ? undefined : { x, y };
+        const pointer = type == "pointerleave" || type == "pointerout" ? null : new Vector2D(x, y);
         this.network.updatePointer(pointer);
       }
     }

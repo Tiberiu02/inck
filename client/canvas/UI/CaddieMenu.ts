@@ -4,12 +4,38 @@ import { Vector2D } from "../types";
 import { Display } from "./DisplayProps";
 import ToolWheel from "./ToolWheel";
 
+enum STATES {
+  IDLE,
+  FOLLOWING,
+  FADE_IN,
+  FADE_OUT,
+}
+
+const MS_PER_TIME_UNIT = 1000;
+const DIST_FROM_CURSOR = 1.5; //inc
+const PAGE_PADDING = 0.1; //inc
+const CORNER_PADDING = 1; //inc
+const TELEPORT_THRESHOLD = 2;
+
+const MIN_OPACITY = 30; //inc
+const MAX_OPACITY = 80; //inc
+
+const PULL_FORCE = 5; // (inc/s2) / inc = 1/s2
+const DRAG_FORCE = 5;
+const OPACITY_SPEED = 400;
+
 export class CaddieMenu {
   private el: HTMLElement;
   private actionStack: ActionStack;
   private wheel: ToolWheel;
-  private pointer: Vector2D;
   private lastUpdate: number;
+
+  private pointer: Vector2D;
+  private pos: Vector2D;
+  private v: Vector2D;
+  private target: Vector2D;
+  private opacity: number;
+  private state: STATES;
 
   constructor(actionStack: ActionStack, wheel: ToolWheel) {
     this.actionStack = actionStack;
@@ -17,25 +43,92 @@ export class CaddieMenu {
 
     this.el = this.createMenu();
 
-    this.pointer = { x: 0, y: 0 };
+    this.state = STATES.IDLE;
+
+    this.target = new Vector2D(CORNER_PADDING, PAGE_PADDING);
+    this.pos = this.target;
+    this.v = new Vector2D(0, 0);
+    this.opacity = MAX_OPACITY;
     this.lastUpdate = performance.now();
     requestAnimationFrame(() => this.update());
   }
 
   update() {
     const t = performance.now();
-    const dt = t - this.lastUpdate;
+    const dt = (t - this.lastUpdate) / MS_PER_TIME_UNIT;
 
-    const DIST = 1; // inc
-    this.el.style.top = this.pointer.y - this.el.getBoundingClientRect().height / 2 - DIST * Display.DPI() + "px";
-    this.el.style.left = this.pointer.x - this.el.getBoundingClientRect().width / 2 - DIST * Display.DPI() + "px";
+    const target_pull = () => (this.pos = this.pos.add(this.target.sub(this.pos).mul(5).mul(dt)));
+
+    if (this.state == STATES.IDLE) {
+      if (this.pointer) {
+        if (this.pos.dist(this.target) > TELEPORT_THRESHOLD) {
+          this.state = STATES.FADE_OUT;
+        } else {
+          this.state = STATES.FOLLOWING;
+        }
+        this.el.style.pointerEvents = "none";
+      } else {
+        this.opacity = Math.min(MAX_OPACITY, this.opacity + dt * OPACITY_SPEED);
+        target_pull();
+      }
+    } else if (this.state == STATES.FOLLOWING) {
+      target_pull();
+
+      if (this.opacity < MIN_OPACITY) {
+        this.opacity = Math.min(MIN_OPACITY, this.opacity + dt * OPACITY_SPEED);
+      } else {
+        this.opacity = Math.max(MIN_OPACITY, this.opacity - dt * OPACITY_SPEED);
+      }
+
+      if (!this.pointer) {
+        this.el.style.pointerEvents = "all";
+        this.state = STATES.IDLE;
+      }
+    } else if (this.state == STATES.FADE_OUT) {
+      if (this.opacity > 0) {
+        this.opacity -= dt * OPACITY_SPEED;
+      } else {
+        this.pos = this.target;
+        this.state = STATES.FOLLOWING;
+      }
+    }
+
+    this.el.style.top = this.pos.y * Display.DPI() + "px";
+    this.el.style.left = this.pos.x * Display.DPI() + "px";
+    this.el.style.opacity = this.opacity + "%";
 
     this.lastUpdate = t;
     requestAnimationFrame(() => this.update());
   }
 
-  updatePointer(x: number, y: number) {
-    this.pointer = { x, y };
+  updatePointer(pointer: Vector2D) {
+    this.pointer = pointer;
+
+    if (pointer) {
+      pointer = pointer.div(Display.DPI());
+
+      const offset = new Vector2D(
+        this.el.getBoundingClientRect().width / 2 / Display.DPI(),
+        this.el.getBoundingClientRect().height / 2 / Display.DPI()
+      );
+      const displacement = new Vector2D(DIST_FROM_CURSOR, 0);
+
+      this.target = pointer.sub(offset).add(displacement.rot(Math.PI * 1.35));
+
+      this.target = new Vector2D(Math.max(this.target.x, PAGE_PADDING), Math.max(this.target.y, PAGE_PADDING));
+      if (this.target.norm() < CORNER_PADDING) {
+        this.target = this.target.mul(CORNER_PADDING / this.target.norm());
+      }
+
+      if (this.target.add(offset).dist(pointer) < DIST_FROM_CURSOR / Math.SQRT2) {
+        this.target = pointer.sub(offset).add(displacement.rot(Math.PI * 0.65));
+
+        this.target = new Vector2D(
+          Math.max(this.target.x, PAGE_PADDING),
+          Math.min(this.target.y, Display.Height() / Display.DPI() - PAGE_PADDING)
+        );
+      }
+    }
   }
 
   private createMenu() {
