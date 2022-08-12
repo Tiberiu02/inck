@@ -32,5 +32,6 @@ export class MutableObservableNumber extends ObservableNumber {
 
   set(newValue: number) {
     this.value = newValue;
+    super.registerUpdate();
   }
 }

@@ -1,3 +1,4 @@
+import { FingerEvent, FingerEventTypes } from "../PointerTracker";
 import { Vector2D } from "../types";
 import { MutableView, View } from "./View";
 
@@ -7,12 +8,12 @@ export class ViewManager {
   private inertia: ScrollInertia;
   private averagePointerPos: Vector2D;
   private averagePointerDist: number;
-  private touches: any[];
+  private pointers: Vector2D[];
 
   constructor() {
     this.view = new MutableView();
 
-    this.touches = [];
+    this.pointers = [];
 
     this.mouse = new Vector2D(0, 0);
 
@@ -39,68 +40,55 @@ export class ViewManager {
     document.body.style.overscrollBehavior = "none";
   }
 
-  private updateTouches(touches: TouchList) {
-    // Update touches
-    this.touches = [];
-    for (let i = 0; i < touches.length; i++) {
-      const t = touches.item(i);
-      this.touches.push({ x: t.clientX, y: t.clientY });
-    }
+  private updatePointers(pointers: Vector2D[]) {
+    const N = pointers.length;
+    this.pointers = pointers;
 
-    const N = this.touches.length;
     if (N > 0) {
       // Compute average position and radius
-      let xAvg = 0,
-        yAvg = 0,
-        rAvg = 0;
-      for (let { x, y } of Object.values(this.touches)) {
-        xAvg += x;
-        yAvg += y;
-      }
-      xAvg /= N;
-      yAvg /= N;
-      for (let { x, y } of Object.values(this.touches)) {
-        rAvg += Math.sqrt((x - xAvg) ** 2 + (y - yAvg) ** 2);
-      }
+      let center = new Vector2D(0, 0);
+      let radius = 0;
 
-      this.averagePointerPos = new Vector2D(xAvg, yAvg);
-      this.averagePointerDist = N > 1 ? rAvg / N : 1;
+      for (const p of Object.values(pointers)) {
+        center = center.add(p);
+      }
+      center = center.div(N);
+
+      for (const p of Object.values(pointers)) {
+        radius += p.dist(center);
+      }
+      radius /= N;
+
+      this.averagePointerPos = center;
+      this.averagePointerDist = N > 1 ? radius : 1;
     }
   }
 
-  handleTouchEvent(e: TouchEvent) {
+  handleFingerEvent(e: FingerEvent) {
     e.preventDefault();
 
-    const { type, touches, timeStamp } = e;
+    const { type, fingers, timeStamp } = e;
+    const pointers = fingers.map(f => new Vector2D(f.x, f.y));
 
-    if (!this.touches || !this.touches.length)
-      // Reset inertia on touch start
-      this.inertia.reset();
-
-    if (type != "touchmove" || touches.length != this.touches.length) {
-      // Touch started/ended
-      this.updateTouches(touches);
-      if (touches.length) {
-        this.inertia.reset();
-      }
-    } else {
+    if (type == FingerEventTypes.MOVE) {
       const [x0, y0, r0] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
-      this.updateTouches(touches);
+      this.updatePointers(pointers);
       const [x1, y1, r1] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
 
       const [dx, dy] = this.view.getCanvasCoords(x0 - x1, y0 - y1, true);
 
-      // scroll
-      this.view.applyTranslation(dx, dy);
-      // zoom
-      this.view.applyZoom(x1, y1, r1 / r0);
+      this.view.applyTranslation(dx, dy); // scroll
+      this.view.applyZoom(x1, y1, r1 / r0); // zoom
 
       this.inertia.update(dx, dy, timeStamp);
+    } else {
+      if (fingers.length) {
+        this.inertia.reset();
+      } else if (this.pointers.length) {
+        this.inertia.release();
+      }
+      this.updatePointers(pointers);
     }
-
-    if (!this.touches.length)
-      // Release view on touch end
-      this.inertia.release();
   }
 
   handleWheelEvent(e: WheelEvent) {
@@ -169,6 +157,7 @@ class ScrollInertia {
 
   reset() {
     delete this.velocity;
+    delete this.t;
     if (this.interval) {
       clearInterval(this.interval);
       delete this.interval;

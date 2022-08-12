@@ -1,3 +1,4 @@
+import { off } from "process";
 import tailwind from "../../tailwind.config";
 import { ActionStack } from "../ActionsStack";
 import { Vector2D } from "../types";
@@ -15,13 +16,16 @@ const DIST_FROM_CURSOR = 1.5; //inc
 const PAGE_PADDING = 0.1; //inc
 const CORNER_PADDING = 1; //inc
 const TELEPORT_THRESHOLD = 2;
+const DRAG_START = 0.1;
 
 const MIN_OPACITY = 30; //inc
 const MAX_OPACITY = 80; //inc
 
 const PULL_FORCE = 5;
 
-const OPACITY_SPEED = 400; // % / s
+const OPACITY_SPEED = 500; // % / s
+const OPACITY_SPEED_SLOW = 100; // % / s
+const FADE_IN_DELAY = 200; // ms
 
 export class CaddieMenu {
   private el: HTMLElement;
@@ -31,22 +35,21 @@ export class CaddieMenu {
 
   private pointer: Vector2D;
   private pos: Vector2D;
-  private v: Vector2D;
   private target: Vector2D;
   private opacity: number;
   private state: STATES;
+  private enteredIdle: number;
 
   constructor(actionStack: ActionStack, wheel: ToolWheel) {
     this.actionStack = actionStack;
     this.wheel = wheel;
 
-    this.el = this.createMenu();
+    this.createMenu();
 
     this.state = STATES.IDLE;
 
     this.target = new Vector2D(CORNER_PADDING, PAGE_PADDING);
     this.pos = this.target;
-    this.v = new Vector2D(0, 0);
     this.opacity = MAX_OPACITY;
     this.lastUpdate = performance.now();
     requestAnimationFrame(() => this.update());
@@ -56,7 +59,9 @@ export class CaddieMenu {
     const t = performance.now();
     const dt = (t - this.lastUpdate) / MS_PER_TIME_UNIT;
 
-    const target_pull = () => (this.pos = this.pos.add(this.target.sub(this.pos).mul(PULL_FORCE).mul(dt)));
+    const target_pull = () => {
+      this.pos = this.pos.add(this.target.sub(this.pos).mul(PULL_FORCE).mul(dt));
+    };
 
     if (this.state == STATES.IDLE) {
       if (this.pointer) {
@@ -67,21 +72,24 @@ export class CaddieMenu {
         }
         this.el.style.pointerEvents = "none";
       } else {
-        this.opacity = Math.min(MAX_OPACITY, this.opacity + dt * OPACITY_SPEED);
+        if (performance.now() - this.enteredIdle > FADE_IN_DELAY) {
+          this.opacity = Math.min(MAX_OPACITY, this.opacity + dt * OPACITY_SPEED);
+        }
         target_pull();
       }
     } else if (this.state == STATES.FOLLOWING) {
       target_pull();
 
       if (this.opacity < MIN_OPACITY) {
-        this.opacity = Math.min(MIN_OPACITY, this.opacity + dt * OPACITY_SPEED);
+        this.opacity = Math.min(MIN_OPACITY, this.opacity + dt * OPACITY_SPEED_SLOW);
       } else {
-        this.opacity = Math.max(MIN_OPACITY, this.opacity - dt * OPACITY_SPEED);
+        this.opacity = Math.max(MIN_OPACITY, this.opacity - dt * OPACITY_SPEED_SLOW);
       }
 
       if (!this.pointer) {
         this.el.style.pointerEvents = "all";
         this.state = STATES.IDLE;
+        this.enteredIdle = performance.now();
       }
     } else if (this.state == STATES.FADE_OUT) {
       if (this.opacity > 0) {
@@ -104,28 +112,22 @@ export class CaddieMenu {
     this.pointer = pointer;
 
     if (pointer) {
-      pointer = pointer.div(Display.DPI());
-
-      const offset = new Vector2D(
-        this.el.getBoundingClientRect().width / 2 / Display.DPI(),
-        this.el.getBoundingClientRect().height / 2 / Display.DPI()
-      );
       const displacement = new Vector2D(DIST_FROM_CURSOR, 0);
+      const offset = new Vector2D(this.el.getBoundingClientRect().width, this.el.getBoundingClientRect().height).div(2);
 
-      this.target = pointer.sub(offset).add(displacement.rot(Math.PI * 1.35));
+      pointer = pointer.sub(offset).div(Display.DPI());
 
-      this.target = new Vector2D(Math.max(this.target.x, PAGE_PADDING), Math.max(this.target.y, PAGE_PADDING));
-      if (this.target.norm() < CORNER_PADDING) {
-        this.target = this.target.mul(CORNER_PADDING / this.target.norm());
-      }
-
-      if (this.target.add(offset).dist(pointer) < DIST_FROM_CURSOR / Math.SQRT2) {
-        this.target = pointer.sub(offset).add(displacement.rot(Math.PI * 0.65));
-
-        this.target = new Vector2D(
-          Math.max(this.target.x, PAGE_PADDING),
-          Math.min(this.target.y, Display.Height() / Display.DPI() - PAGE_PADDING)
-        );
+      if (pointer.norm() < CORNER_PADDING + DIST_FROM_CURSOR) {
+        const t = pointer.add(displacement.rot(Math.PI / 2));
+        this.target = new Vector2D(Math.max(t.x, PAGE_PADDING), t.y);
+      } else {
+        let angle = Math.PI * 1.35;
+        if (pointer.add(displacement.rot(angle)).x < PAGE_PADDING) {
+          angle = Math.PI + Math.acos((pointer.x - PAGE_PADDING) / DIST_FROM_CURSOR);
+        } else if (pointer.add(displacement.rot(angle)).y < PAGE_PADDING) {
+          angle = Math.PI + Math.asin((pointer.y - PAGE_PADDING) / DIST_FROM_CURSOR);
+        }
+        this.target = pointer.add(displacement.rot(angle));
       }
     }
   }
@@ -134,24 +136,27 @@ export class CaddieMenu {
     const primary = tailwind.theme.extend.colors["primary"];
     const primaryDark = tailwind.theme.extend.colors["primary-dark"];
 
-    const div = document.createElement("div");
-    div.style.zIndex = "20";
-    div.style.position = "fixed";
-    div.style.boxShadow = "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);";
-    div.style.opacity = "0.8";
-    div.style.color = "#FFF";
-    div.style.backgroundColor = primary;
-    div.style.borderRadius = "1rem";
-    div.style.overflow = "hidden";
-    div.style.display = "flex";
-    div.style.top = "0.5rem";
-    div.style.left = "5rem";
+    this.el = document.createElement("div");
+    this.el.style.zIndex = "20";
+    this.el.style.position = "fixed";
+    this.el.style.boxShadow = "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);";
+    this.el.style.opacity = "0.8";
+    this.el.style.color = "#FFF";
+    this.el.style.backgroundColor = primary;
+    this.el.style.borderRadius = "1rem";
+    this.el.style.overflow = "hidden";
+    this.el.style.display = "flex";
+    this.el.style.top = "0.5rem";
+    this.el.style.left = "5rem";
+
+    // Add buttons
 
     const button = () => {
       const div = document.createElement("div");
       div.style.padding = "0.75rem";
       div.style.cursor = "pointer";
       div.addEventListener("pointerdown", () => (div.style.backgroundColor = primaryDark));
+      div.addEventListener("pointermove", () => (div.style.backgroundColor = dragging ? primary : primaryDark));
       div.addEventListener("pointerup", () => (div.style.backgroundColor = primary));
       div.addEventListener("pointerout", () => (div.style.backgroundColor = primary));
       return div;
@@ -159,8 +164,8 @@ export class CaddieMenu {
 
     const undoBtn = button();
     undoBtn.innerHTML = CaddieMenu.UndoIcon();
-    undoBtn.addEventListener("pointerup", () => this.actionStack.undo());
-    div.appendChild(undoBtn);
+    undoBtn.addEventListener("pointerup", () => !dragging && this.actionStack.undo());
+    this.el.appendChild(undoBtn);
 
     const toolBtn = button();
     toolBtn.style.borderWidth = "2px";
@@ -168,37 +173,69 @@ export class CaddieMenu {
     toolBtn.style.borderStyle = "none solid";
     toolBtn.innerHTML = CaddieMenu.MenuIcon();
     toolBtn.addEventListener("pointerup", (e: PointerEvent) => {
-      if (lastTool) {
-        this.wheel.setTool(lastTool);
-        lastTool = null;
-        eraseBtn.innerHTML = CaddieMenu.EraserIcon();
+      if (!dragging) {
+        if (lastTool) {
+          this.wheel.setTool(lastTool);
+          lastTool = null;
+          eraseBtn.innerHTML = CaddieMenu.EraserIcon();
+        }
+        this.el.style.display = "none";
+        this.wheel.show(e.x, e.y);
       }
-      div.style.visibility = "hidden";
-      this.wheel.show(e.x, e.y);
     });
-    this.wheel.onClose.addListener(() => (div.style.visibility = "visible"));
-    div.appendChild(toolBtn);
+    this.wheel.onClose.addListener(() => (this.el.style.display = "flex"));
+    this.el.appendChild(toolBtn);
 
     const eraseBtn = button();
     eraseBtn.innerHTML = CaddieMenu.EraserIcon();
     let lastTool = null;
     eraseBtn.addEventListener("pointerup", () => {
-      console.log(lastTool);
-      if (lastTool) {
-        this.wheel.setTool(lastTool);
-        lastTool = null;
-        eraseBtn.innerHTML = CaddieMenu.EraserIcon();
-      } else {
-        lastTool = this.wheel.tool;
-        this.wheel.setTool("eraser");
-        eraseBtn.innerHTML = CaddieMenu.EraserOffIcon();
+      if (!dragging) {
+        console.log(lastTool);
+        if (lastTool) {
+          this.wheel.setTool(lastTool);
+          lastTool = null;
+          eraseBtn.innerHTML = CaddieMenu.EraserIcon();
+        } else {
+          lastTool = this.wheel.tool;
+          this.wheel.setTool("eraser");
+          eraseBtn.innerHTML = CaddieMenu.EraserOffIcon();
+        }
       }
     });
-    div.appendChild(eraseBtn);
+    this.el.appendChild(eraseBtn);
 
-    document.body.appendChild(div);
+    // Add dragging functionality
 
-    return div;
+    let relativePos: Vector2D;
+    let initialClick: Vector2D;
+    let dragging: boolean = false;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      initialClick = new Vector2D(e.x, e.y).div(Display.DPI());
+      relativePos = this.target.sub(initialClick);
+    };
+    const handlePointerMove = (e: PointerEvent) => {
+      if (relativePos) {
+        e.stopPropagation();
+
+        const pointer = new Vector2D(e.x, e.y).div(Display.DPI());
+        dragging = dragging || pointer.dist(initialClick) > DRAG_START;
+        console.log(dragging);
+        this.target = this.pos = pointer.add(relativePos);
+      }
+    };
+    const handlePointerUp = (e: PointerEvent) => {
+      if (relativePos) {
+        dragging = false;
+        relativePos = null;
+      }
+    };
+    this.el.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("pointermove", handlePointerMove, true);
+    window.addEventListener("pointerup", handlePointerUp);
+
+    document.body.appendChild(this.el);
   }
 
   private static UndoIcon() {

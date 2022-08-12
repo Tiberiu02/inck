@@ -11,6 +11,16 @@ import { StrokeEraser } from "./Tools/Eraser";
 import { Pen } from "./Tools/Pen";
 import { iosTouch, SimplePointerEvent, Vector2D } from "./types";
 import { CaddieMenu } from "./UI/CaddieMenu";
+import { PenEvent, PenEventTypes, PointerTracker } from "./PointerTracker";
+
+function TestFastRenderingSupport() {
+  const ua = navigator.userAgent;
+  return (
+    navigator.vendor != "Apple Computer, Inc." &&
+    !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua) &&
+    /Chrome/i.test(ua)
+  );
+}
 
 export default class App {
   canvas: HTMLCanvasElement;
@@ -22,7 +32,6 @@ export default class App {
   wheel: ToolWheel;
   rerender: boolean;
   skipResizeFrames: any;
-  openingWheel: any;
   drawing: boolean;
   activeTool?: Tool;
   rendering: boolean;
@@ -30,9 +39,13 @@ export default class App {
   network: NetworkConnection;
   actionStack: ActionStack;
   caddie: CaddieMenu;
+  supportsFastRender: boolean;
+  pointerInput: PointerTracker;
 
-  constructor(canvas) {
-    this.canvas = canvas;
+  constructor() {
+    this.canvas = document.createElement("canvas");
+    document.body.appendChild(this.canvas);
+
     Object.assign(document.body.style, {
       width: "100vw",
       height: "100vh",
@@ -44,6 +57,7 @@ export default class App {
       "user-select": "none" /* Likely future */,
 
       "-webkit-touch-callout": "none",
+      "-webkit-tap-highlight-color": "transparent",
 
       overflow: "hidden",
     });
@@ -54,6 +68,10 @@ export default class App {
 
     this.network = new NetworkConnection();
     this.network.onUpdate(() => this.scheduleRender());
+
+    this.pointerInput = new PointerTracker();
+    this.pointerInput.onPenEvent.addListener(e => this.handlePenEvent(e));
+    this.pointerInput.onFingerEvent.addListener(e => this.viewManager.handleFingerEvent(e));
 
     // Create canvas manager
     this.canvasManager = new NetworkCanvasManager(this.canvas, this.viewManager.getView(), this.network);
@@ -68,31 +86,7 @@ export default class App {
     window.addEventListener("wheel", e => this.viewManager.handleWheelEvent(e), { passive: false });
     window.addEventListener("mousemove", e => this.viewManager.handleMouseEvent(e));
 
-    // Add event listeners
-    // Different listeners for Apple devices
-    // because pointer events API is broken in Safari (yay!)
-    if (navigator.vendor == "Apple Computer, Inc.") {
-      window.addEventListener("mousedown", this.handleMouseEvent.bind(this));
-      window.addEventListener("mousemove", this.handleMouseEvent.bind(this));
-      window.addEventListener("mouseup", this.handleMouseEvent.bind(this));
-
-      window.addEventListener("touchdown", this.handleTouchEvent.bind(this));
-      window.addEventListener("touchmove", this.handleTouchEvent.bind(this));
-      window.addEventListener("touchend", this.handleTouchEvent.bind(this));
-    } else {
-      window.addEventListener("pointerdown", this.handlePointerEvent.bind(this));
-      window.addEventListener("pointermove", this.handlePointerEvent.bind(this));
-      window.addEventListener("pointerup", this.handlePointerEvent.bind(this));
-      window.addEventListener("pointerleave", this.handlePointerEvent.bind(this));
-      window.addEventListener("pointerout", this.handlePointerEvent.bind(this));
-    }
-
-    const viewManagerTouchHandler = (e: TouchEvent) =>
-      !this.drawing && (e.changedTouches[0] as iosTouch).touchType != "stylus" && this.viewManager.handleTouchEvent(e);
-    this.canvas.addEventListener("touchstart", viewManagerTouchHandler);
-    this.canvas.addEventListener("touchend", viewManagerTouchHandler);
-    this.canvas.addEventListener("touchcancel", viewManagerTouchHandler);
-    this.canvas.addEventListener("touchmove", viewManagerTouchHandler);
+    this.supportsFastRender = TestFastRenderingSupport();
 
     window.addEventListener("contextmenu", e => e.preventDefault());
 
@@ -143,93 +137,44 @@ export default class App {
     this.scheduleRender();
   }
 
-  // iOS
-  handleMouseEvent(e: MouseEvent) {
-    e.preventDefault();
-    let pointerEvent = {
-      pointerId: 0,
-      type: e.type.replace("touch", "pointer").replace("end", "up"),
-      x: e.x,
-      y: e.y,
-      pressure: e.buttons ? 0.5 : 0,
-      timeStamp: performance.now(),
-      target: e.target,
-      pointerType: "mouse",
-      preventDefault: () => e.preventDefault(),
-    };
-    this.handlePointerEvent(pointerEvent);
-  }
+  handlePenEvent(e: PenEvent) {
+    if (!e.pressure && !(this.activeTool && e.type == PenEventTypes.UP)) return;
 
-  // iOS
-  handleTouchEvent(e: TouchEvent) {
-    const t = e.changedTouches[0] as iosTouch;
-    const pointerEvent = {
-      pointerId: t.identifier,
-      type: e.type.replace("touch", "pointer").replace("end", "up"),
-      x: t.clientX,
-      y: t.clientY,
-      pressure: e.type == "touchend" ? 0 : t.touchType == "stylus" ? t.force : 0.5,
-      timeStamp: performance.now(),
-      target: t.target,
-      pointerType: t.touchType == "stylus" ? "pen" : "touch",
-      id: t.identifier,
-      preventDefault: () => e.preventDefault(),
-    };
+    // Hide tool wheel if open
+    if (e.pressure && this.wheel.isVisible()) this.wheel.close();
 
-    this.handlePointerEvent(pointerEvent);
-  }
+    let { type, pressure, timeStamp } = e;
+    let [x, y] = this.viewManager.getView().getCanvasCoords(e.x, e.y);
 
-  handlePointerEvent(e: SimplePointerEvent) {
-    //console.log(e, e.target);
-    this.scrollBars.handlePointerEvent(e);
-
-    if (!this.scrollBars.scrolling() && e.target == this.canvas) {
-      e.preventDefault();
-
-      if (e.pressure && this.wheel.isVisible() && this.openingWheel) return;
-
-      if (e.pressure && this.wheel.isVisible() && !this.openingWheel) this.wheel.close();
-
-      if (!e.pressure && this.openingWheel) this.openingWheel = false;
-
-      let { type, pressure, timeStamp, pointerType } = e;
-      let [x, y] = this.viewManager.getView().getCanvasCoords(e.x, e.y);
-
-      this.drawing = pressure > 0 && pointerType != "touch";
-
-      if (pointerType != "touch") {
-        if (pressure) {
-          // Writing
-          if (!this.activeTool) {
-            // New stroke
-            this.activeTool = this.wheel.NewTool();
-            if (!(this.activeTool instanceof StrokeEraser)) {
-              this.network.updateTool(this.activeTool);
-            }
-            console.log("new tool");
-          }
-
-          this.activeTool.update(x, y, pressure, timeStamp);
-          if (!(this.activeTool instanceof StrokeEraser)) {
-            this.network.updateInput(x, y, pressure, timeStamp);
-          }
-
-          this.render();
-          this.caddie.updatePointer(new Vector2D(e.x, e.y));
-        } else if (this.activeTool) {
-          // Finished stroke
-          this.activeTool.release();
-          this.activeTool = undefined;
-          this.network.updateTool(undefined);
-
-          this.render();
-          this.caddie.updatePointer(null);
-        }
-
-        const pointer = type == "pointerleave" || type == "pointerout" ? null : new Vector2D(x, y);
-        this.network.updatePointer(pointer);
+    // Create new tool
+    if (!this.activeTool) {
+      this.activeTool = this.wheel.NewTool();
+      if (!(this.activeTool instanceof StrokeEraser)) {
+        this.network.updateTool(this.activeTool);
       }
     }
+
+    if (type == PenEventTypes.UP) {
+      // Release tool
+      this.activeTool.release();
+      this.activeTool = undefined;
+      this.network.updateTool(undefined);
+    } else {
+      // Update tool
+      this.activeTool.update(x, y, pressure, timeStamp);
+      if (!(this.activeTool instanceof StrokeEraser)) {
+        this.network.updateInput(x, y, pressure, timeStamp);
+      }
+    }
+
+    // Render
+    if (pressure || type == PenEventTypes.UP) {
+      if (this.supportsFastRender) this.render();
+      else this.scheduleRender();
+    }
+
+    this.caddie.updatePointer(type == PenEventTypes.UP ? null : new Vector2D(e.x, e.y));
+    this.network.updatePointer(new Vector2D(e.x, e.y));
   }
 
   render() {
@@ -248,7 +193,7 @@ export default class App {
     }
     this.canvasManager.render();
 
-    this.nextRender = performance.now() * 2 - renderStart;
+    this.nextRender = performance.now() + (performance.now() - renderStart) * 3;
     this.rendering = false;
   }
 }

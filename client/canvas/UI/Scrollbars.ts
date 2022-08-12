@@ -3,16 +3,24 @@ import { ObservableNumber } from "../DesignPatterns/Observable";
 import { SimplePointerEvent } from "../types";
 import { Display } from "./DisplayProps";
 
+enum Direction {
+  HORIZONTAL,
+  VERTICAL,
+}
+
 export class ScrollBars {
   view: MutableView;
   width: any;
   margin: any;
-  pointers: { x: number; y: number }[];
   vertical: HTMLDivElement;
   horizontal: HTMLDivElement;
-  scrollDirection: any;
   yMax: ObservableNumber;
   vBarHeight: number;
+
+  scrolling: boolean;
+  scrollDirection: Direction;
+  pointer: { x: number; y: number };
+  pointerId: number;
 
   constructor(view: MutableView, yMax: ObservableNumber) {
     this.view = view;
@@ -20,7 +28,7 @@ export class ScrollBars {
     this.width = 10;
     this.margin = 0;
     this.yMax = yMax;
-    this.pointers = [];
+    this.scrolling = false;
 
     const style = {
       backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -40,42 +48,84 @@ export class ScrollBars {
 
     view.onUpdate(() => this.updateBars());
     yMax.onUpdate(() => this.updateBars());
+
+    window.addEventListener("resize", () => this.updateBars());
+
+    this.vertical.addEventListener("pointerdown", e => this.handlePointerDown(Direction.VERTICAL, e), true);
+    this.horizontal.addEventListener("pointerdown", e => this.handlePointerDown(Direction.HORIZONTAL, e), true);
+    window.addEventListener("pointermove", e => this.handlePointerMove(e), true);
+    window.addEventListener("pointerup", e => this.handlePointerUp(e), true);
   }
 
-  handlePointerEvent(e: SimplePointerEvent) {
-    if (e.target != this.horizontal && e.target != this.vertical && !this.scrolling()) {
-      return;
-    }
+  handlePointerDown(direction: Direction, e: PointerEvent) {
+    if (this.scrolling) return;
+    e.stopPropagation();
 
-    let { pointerId, x, y, pressure } = e;
+    this.scrolling = true;
+    this.scrollDirection = direction;
+    this.pointer = { x: e.x, y: e.y };
+    this.pointerId = e.pointerId;
+  }
 
-    if (pressure) {
-      e.preventDefault();
+  handlePointerMove(e: PointerEvent) {
+    if (this.scrolling) {
+      e.stopPropagation();
 
-      if (!this.scrollDirection) this.scrollDirection = e.target == this.horizontal ? "horizontal" : "vertical";
-
-      if (this.pointers[pointerId]) {
-        const p = this.pointers[pointerId];
-        if (this.scrollDirection == "vertical") {
-          const dy = ((y - p.y) / (innerHeight - 3 * this.margin - this.width)) * this.yMax.get();
+      if (this.pointerId == e.pointerId) {
+        const { x: px, y: py } = this.pointer;
+        if (this.scrollDirection == Direction.VERTICAL) {
+          const dy = ((e.y - py) / (innerHeight - 3 * this.margin - this.width)) * this.yMax.get();
           this.view.applyTranslation(0, dy);
         } else {
-          const dx = (x - p.x) / (innerWidth - 3 * this.margin - this.width);
+          const dx = (e.x - px) / (innerWidth - 3 * this.margin - this.width);
           this.view.applyTranslation(dx, 0);
         }
+        this.pointer = { x: e.x, y: e.y };
       }
-
-      this.pointers[pointerId] = { x, y };
-    } else {
-      this.pointers = [];
-      //delete this.yMax;
-      delete this.scrollDirection;
     }
   }
 
-  scrolling(): boolean {
-    return this.pointers.length > 0;
+  handlePointerUp(e: PointerEvent) {
+    if (this.scrolling) {
+      e.stopPropagation();
+
+      if (this.pointerId == e.pointerId) {
+        this.scrolling = false;
+      }
+    }
   }
+
+  // handlePointerEvent(e: PointerEvent) {
+  //   if (e.target != this.horizontal && e.target != this.vertical && !this.scrolling()) {
+  //     return;
+  //   }
+
+  //   e.stopPropagation();
+
+  //   let { pointerId, x, y, pressure } = e;
+
+  //   if (pressure) {
+  //     e.preventDefault();
+
+  //     if (!this.scrollDirection) this.scrollDirection = e.target == this.horizontal ? "horizontal" : "vertical";
+
+  //     if (this.pointers[pointerId]) {
+  //       const p = this.pointers[pointerId];
+  //       if (this.scrollDirection == "vertical") {
+  //         const dy = ((y - p.y) / (innerHeight - 3 * this.margin - this.width)) * this.yMax.get();
+  //         this.view.applyTranslation(0, dy);
+  //       } else {
+  //         const dx = (x - p.x) / (innerWidth - 3 * this.margin - this.width);
+  //         this.view.applyTranslation(dx, 0);
+  //       }
+  //     }
+
+  //     this.pointers[pointerId] = { x, y };
+  //   } else {
+  //     this.pointers = [];
+  //     delete this.scrollDirection;
+  //   }
+  // }
 
   getYMax() {
     return Math.max(this.yMax.get(), this.view.getCanvasCoords(0, innerHeight)[1]);

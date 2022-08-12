@@ -1,4 +1,4 @@
-import { LineSegment, Rectangle, RGB, StrokePoint } from "../types";
+import { LineSegment, Rectangle, RGB, StrokePoint, Vector2D } from "../types";
 import { FillPath } from "../Math/Vectorization";
 import { Drawable } from "./Drawable";
 import { LineBoundingBox, RectangleIntersectsRectangle } from "../Math/Geometry";
@@ -28,7 +28,10 @@ export class Fill implements Drawable {
   vectorize(active: boolean = false): number[] {
     const color = active ? [0.95, 0.95, 0.95, 1] : [1, 1, 1, 1];
 
-    return FillPath(this.points, color);
+    return FillPath(
+      this.points.map(p => new Vector2D(p.x, p.y)),
+      color
+    );
   }
 
   push(point: StrokePoint) {

@@ -23,6 +23,7 @@ export class ActionStack {
   }
 
   undo() {
+    console.log("undoing");
     if (this.indexOfLastActionDone >= 0) {
       const success = this.actions[this.indexOfLastActionDone].undo();
       if (success) {
