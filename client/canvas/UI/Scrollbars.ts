@@ -54,7 +54,6 @@ export class ScrollBars {
     this.horizontal.addEventListener("pointerdown", e => this.handlePointerDown(Direction.HORIZONTAL, e));
     window.addEventListener("pointermove", e => this.handlePointerMove(e));
     window.addEventListener("pointerup", e => this.handlePointerUp(e));
-    //window.addEventListener("pointerleave", e => this.handlePointerUp(e), true);
   }
 
   handlePointerDown(direction: Direction, e: PointerEvent) {

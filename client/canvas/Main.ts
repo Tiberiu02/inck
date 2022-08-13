@@ -7,8 +7,6 @@ import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
 import { ActionStack } from "./ActionsStack";
 import { Tool } from "./Tools/Tool";
-import { StrokeEraser } from "./Tools/Eraser";
-import { Pen } from "./Tools/Pen";
 import { Vector2D } from "./types";
 import { CaddieMenu } from "./UI/CaddieMenu";
 import { PenEvent, PointerTracker } from "./PointerTracker";
@@ -31,7 +29,6 @@ export default class App {
   scrollBars: ScrollBars;
   wheel: ToolWheel;
   rerender: boolean;
-  skipResizeFrames: any;
   drawing: boolean;
   activeTool?: Tool;
   rendering: boolean;
@@ -85,9 +82,6 @@ export default class App {
     // Create scroll bars
     this.scrollBars = new ScrollBars(this.viewManager.getMutableView(), this.canvasManager.getYMax());
 
-    // Adjust canvas size
-    this.resizeCanvas();
-
     window.addEventListener("wheel", e => this.viewManager.handleWheelEvent(e), { passive: false });
     window.addEventListener("mousemove", e => this.viewManager.handleMouseEvent(e));
 
@@ -110,36 +104,12 @@ export default class App {
   }
 
   renderLoop() {
-    const isCorrectSize =
-      this.canvas.width == Math.round(document.documentElement.clientWidth * devicePixelRatio) &&
-      this.canvas.height == Math.round(document.documentElement.clientHeight * devicePixelRatio);
-
-    if (!isCorrectSize && !this.skipResizeFrames) {
-      console.log("detected resize");
-      this.resizeCanvas();
-    }
-
-    if (this.skipResizeFrames > 0) this.skipResizeFrames--;
-
     if (this.rerender) {
       delete this.rerender;
       this.render();
-      // For some reason, drawing and resizing very fast causes black screen.
-      // Skipping resize for a few frames.
-      this.skipResizeFrames = 5;
     }
 
     requestAnimationFrame(() => this.renderLoop());
-  }
-
-  resizeCanvas() {
-    this.canvas.style.width = document.documentElement.clientWidth + "px";
-    this.canvas.style.height = document.documentElement.clientHeight + "px";
-    this.canvas.width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
-    this.canvas.height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
-    this.canvasManager.viewport(0, 0, this.canvas.width, this.canvas.height);
-
-    this.scheduleRender();
   }
 
   handlePenEvent(e: PenEvent) {
@@ -158,9 +128,7 @@ export default class App {
     // Create new tool
     if (!this.activeTool) {
       this.activeTool = this.wheel.NewTool();
-      if (!(this.activeTool instanceof StrokeEraser)) {
-        this.network.updateTool(this.activeTool);
-      }
+      this.network.updateTool(this.activeTool);
     }
 
     if (!pressure) {
@@ -171,14 +139,11 @@ export default class App {
     } else {
       // Update tool
       this.activeTool.update(x, y, pressure, timeStamp);
-      if (!(this.activeTool instanceof StrokeEraser)) {
-        this.network.updateInput(x, y, pressure, timeStamp);
-      }
+      this.network.updateInput(x, y, pressure, timeStamp);
     }
 
     // Render
-    if (this.supportsFastRender) this.render();
-    else this.scheduleRender();
+    this.supportsFastRender ? this.render() : this.scheduleRender();
 
     this.caddie.updatePointer(pressure ? new Vector2D(e.x, e.y) : null);
   }
@@ -192,7 +157,7 @@ export default class App {
     this.rendering = true;
     const renderStart = performance.now();
 
-    if (this.activeTool && !(this.activeTool instanceof StrokeEraser)) {
+    if (this.activeTool) {
       Profiler.start("active stroke");
       this.activeTool.render();
       Profiler.stop("active stroke");

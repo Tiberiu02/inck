@@ -35,4 +35,8 @@ export class StrokeEraser extends Tool {
         });
       });
   }
+
+  serialize() {
+    return null;
+  }
 }

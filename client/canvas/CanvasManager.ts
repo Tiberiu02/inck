@@ -129,6 +129,7 @@ class StrokeCluster {
 }
 
 export class CanvasManager extends Observable {
+  private canvas: HTMLCanvasElement;
   private gl: WebGL2RenderingContext;
   private layers: StrokeCluster[];
   private buffer: WebGLBuffer;
@@ -142,6 +143,7 @@ export class CanvasManager extends Observable {
   constructor(canvas: HTMLCanvasElement, view: View) {
     super();
 
+    this.canvas = canvas;
     this.gl = GL.initWebGL(canvas);
     this.program = GL.createProgram(this.gl);
     this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(this.gl, this.program, view));
@@ -150,6 +152,10 @@ export class CanvasManager extends Observable {
     this.activeStrokes = [];
     this.yMax = new MutableObservableNumber(0);
     this.strokes = {};
+
+    // Adjust canvas size
+    this.resizeCanvas();
+    window.addEventListener("resize", () => this.resizeCanvas());
   }
 
   addStroke(stroke: Drawable): void {
@@ -216,12 +222,22 @@ export class CanvasManager extends Observable {
     Profiler.stop("drawing");
   }
 
-  viewport(x: number, y: number, width: number, height: number) {
+  getYMax(): ObservableNumber {
+    return this.yMax;
+  }
+
+  private viewport(x: number, y: number, width: number, height: number) {
     this.gl.viewport(x, y, width, height);
   }
 
-  getYMax(): ObservableNumber {
-    return this.yMax;
+  private resizeCanvas() {
+    this.canvas.style.width = document.documentElement.clientWidth + "px";
+    this.canvas.style.height = document.documentElement.clientHeight + "px";
+    this.canvas.width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
+    this.canvas.height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
+    this.viewport(0, 0, this.canvas.width, this.canvas.height);
+
+    super.registerUpdate();
   }
 
   private clearCanvas() {
