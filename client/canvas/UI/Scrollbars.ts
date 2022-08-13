@@ -73,8 +73,7 @@ export class ScrollBars {
         const { x: px, y: py } = this.pointer;
         if (this.scrollDirection == Direction.VERTICAL) {
           const pageHeight = Math.max(this.yMax.get() - this.view.getHeight(), this.vAnchor);
-          const getY = (y: number) => (y / (innerHeight - 3 * this.margin - this.width - this.vBarHeight)) * pageHeight;
-          let dy = getY(e.y) - getY(py);
+          let dy = ((e.y - py) / (innerHeight - 3 * this.margin - this.width - this.vBarHeight)) * pageHeight;
           dy = Math.min(dy, pageHeight - this.view.getTop());
           this.view.applyTranslation(0, dy);
         } else {
