@@ -140,6 +140,8 @@ export default class App {
   handlePenEvent(e: PenEvent) {
     if (!e.pressure && !(this.activeTool && e.type == PenEventTypes.UP)) return;
 
+    e.preventDefault(); // hide touch callout on iOS
+
     // Hide tool wheel if open
     if (e.pressure && this.wheel.isVisible()) this.wheel.close();
 
