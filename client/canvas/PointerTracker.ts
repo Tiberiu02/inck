@@ -1,18 +1,11 @@
 import { CreateEvent, EventCore, EventTrigger } from "./DesignPatterns/EventDriven";
 
-export enum PenEventTypes {
-  DOWN,
-  MOVE,
-  UP,
-}
-
 export enum PenTypes {
   MOUSE,
   STYLUS,
 }
 
 export interface PenEvent {
-  type: PenEventTypes;
   x: number;
   y: number;
   pressure: number;
@@ -30,14 +23,7 @@ export interface Finger {
   target: EventTarget;
 }
 
-export enum FingerEventTypes {
-  DOWN,
-  MOVE,
-  UP,
-}
-
 export interface FingerEvent {
-  type: FingerEventTypes;
   timeStamp: number;
   fingers: Finger[];
   changedFingers: Finger[];
@@ -94,7 +80,6 @@ export class PointerTracker {
   // iOS
   private handleMouseEvent(e: MouseEvent) {
     let penEvent: PenEvent = {
-      type: e.type == "mousedown" ? PenEventTypes.DOWN : e.type == "mousemove" ? PenEventTypes.MOVE : PenEventTypes.UP,
       x: e.x,
       y: e.y,
       pressure: e.buttons ? 0.5 : 0,
@@ -113,8 +98,6 @@ export class PointerTracker {
       const t = e.changedTouches[0] as iosTouch;
 
       const pointerEvent: PenEvent = {
-        type:
-          e.type == "touchstart" ? PenEventTypes.DOWN : e.type == "touchmove" ? PenEventTypes.MOVE : PenEventTypes.UP,
         x: t.clientX,
         y: t.clientY,
         pressure: t.touchType == "stylus" ? t.force : 0.5,
@@ -143,12 +126,6 @@ export class PointerTracker {
       }
 
       const fingerEvent: FingerEvent = {
-        type:
-          e.type == "touchstart"
-            ? FingerEventTypes.DOWN
-            : e.type == "touchmove"
-            ? FingerEventTypes.MOVE
-            : FingerEventTypes.UP,
         timeStamp: e.timeStamp,
         fingers: [...e.touches].map(touchToFinger),
         changedFingers: [...e.changedTouches].map(touchToFinger),
@@ -163,12 +140,6 @@ export class PointerTracker {
   private handlePointerEvent(e: PointerEvent) {
     if (e.pointerType == "mouse" || e.pointerType == "pen") {
       const penEvent: PenEvent = {
-        type:
-          e.type == "pointerdown"
-            ? PenEventTypes.DOWN
-            : e.type == "pointermove"
-            ? PenEventTypes.MOVE
-            : PenEventTypes.UP,
         x: e.clientX,
         y: e.clientY,
         pressure: e.pressure,
@@ -195,12 +166,6 @@ export class PointerTracker {
       }
 
       const fingerEvent: FingerEvent = {
-        type:
-          e.type == "pointerdown"
-            ? FingerEventTypes.DOWN
-            : e.type == "pointermove"
-            ? FingerEventTypes.MOVE
-            : FingerEventTypes.UP,
         timeStamp: e.timeStamp,
         fingers: Object.values(this.fingers).map(Clone),
         changedFingers: [Clone(finger)],

@@ -9,9 +9,9 @@ import { ActionStack } from "./ActionsStack";
 import { Tool } from "./Tools/Tool";
 import { StrokeEraser } from "./Tools/Eraser";
 import { Pen } from "./Tools/Pen";
-import { iosTouch, SimplePointerEvent, Vector2D } from "./types";
+import { Vector2D } from "./types";
 import { CaddieMenu } from "./UI/CaddieMenu";
-import { PenEvent, PenEventTypes, PointerTracker } from "./PointerTracker";
+import { PenEvent, PointerTracker } from "./PointerTracker";
 
 function TestFastRenderingSupport() {
   const ua = navigator.userAgent;
@@ -40,7 +40,7 @@ export default class App {
   actionStack: ActionStack;
   caddie: CaddieMenu;
   supportsFastRender: boolean;
-  pointerInput: PointerTracker;
+  pointerTracker: PointerTracker;
 
   constructor() {
     this.canvas = document.createElement("canvas");
@@ -66,12 +66,17 @@ export default class App {
     this.viewManager = new ViewManager();
     this.viewManager.getView().onUpdate(() => this.scheduleRender());
 
+    // Pointer tracker
+    this.pointerTracker = new PointerTracker();
+    this.pointerTracker.onPenEvent.addListener(e => this.handlePenEvent(e));
+    this.pointerTracker.onFingerEvent.addListener(e => this.viewManager.handleFingerEvent(e));
+
+    // Network
     this.network = new NetworkConnection();
     this.network.onUpdate(() => this.scheduleRender());
-
-    this.pointerInput = new PointerTracker();
-    this.pointerInput.onPenEvent.addListener(e => this.handlePenEvent(e));
-    this.pointerInput.onFingerEvent.addListener(e => this.viewManager.handleFingerEvent(e));
+    window.addEventListener("pointermove", e =>
+      this.network.updatePointer(new Vector2D(...this.viewManager.getView().getCanvasCoords(e.x, e.y)))
+    );
 
     // Create canvas manager
     this.canvasManager = new NetworkCanvasManager(this.canvas, this.viewManager.getView(), this.network);
@@ -138,14 +143,16 @@ export default class App {
   }
 
   handlePenEvent(e: PenEvent) {
-    if (!e.pressure && !(this.activeTool && e.type == PenEventTypes.UP)) return;
+    if (this.scrollBars.scrolling) return;
+
+    if (!e.pressure && !this.activeTool) return;
 
     e.preventDefault(); // hide touch callout on iOS
 
     // Hide tool wheel if open
     if (e.pressure && this.wheel.isVisible()) this.wheel.close();
 
-    let { type, pressure, timeStamp } = e;
+    let { pressure, timeStamp } = e;
     let [x, y] = this.viewManager.getView().getCanvasCoords(e.x, e.y);
 
     // Create new tool
@@ -156,7 +163,7 @@ export default class App {
       }
     }
 
-    if (type == PenEventTypes.UP) {
+    if (!pressure) {
       // Release tool
       this.activeTool.release();
       this.activeTool = undefined;
@@ -170,13 +177,10 @@ export default class App {
     }
 
     // Render
-    if (pressure || type == PenEventTypes.UP) {
-      if (this.supportsFastRender) this.render();
-      else this.scheduleRender();
-    }
+    if (this.supportsFastRender) this.render();
+    else this.scheduleRender();
 
-    this.caddie.updatePointer(type == PenEventTypes.UP ? null : new Vector2D(e.x, e.y));
-    this.network.updatePointer(new Vector2D(e.x, e.y));
+    this.caddie.updatePointer(pressure ? new Vector2D(e.x, e.y) : null);
   }
 
   render() {

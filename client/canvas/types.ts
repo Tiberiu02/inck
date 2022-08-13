@@ -68,20 +68,4 @@ export interface StrokePoint {
   timestamp: number;
 }
 
-export interface SimplePointerEvent {
-  pointerId: number;
-  type: string;
-  x: number;
-  y: number;
-  pressure: number;
-  timeStamp: number;
-  target: EventTarget;
-  pointerType: string;
-  preventDefault: () => void;
-}
-
-export interface iosTouch extends Touch {
-  touchType: string;
-}
-
 export type RGB = [number, number, number];

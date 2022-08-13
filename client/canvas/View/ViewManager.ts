@@ -1,4 +1,4 @@
-import { FingerEvent, FingerEventTypes } from "../PointerTracker";
+import { FingerEvent } from "../PointerTracker";
 import { Vector2D } from "../types";
 import { MutableView, View } from "./View";
 
@@ -67,10 +67,12 @@ export class ViewManager {
   handleFingerEvent(e: FingerEvent) {
     e.preventDefault();
 
-    const { type, fingers, timeStamp } = e;
+    const { fingers, timeStamp } = e;
     const pointers = fingers.map(f => new Vector2D(f.x, f.y));
 
-    if (type == FingerEventTypes.MOVE) {
+    //console.log(type);
+
+    if (pointers.length == this.pointers.length && pointers.length > 0) {
       const [x0, y0, r0] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
       this.updatePointers(pointers);
       const [x1, y1, r1] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];

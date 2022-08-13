@@ -58,6 +58,12 @@ export class View extends Observable {
   getZoom() {
     return this.zoom;
   }
+  getWidth() {
+    return 1 / this.zoom;
+  }
+  getHeight() {
+    return 1 / this.zoom / Display.AspectRatio();
+  }
 
   // Map screen coordinates to canvas coordinates
   getCanvasCoords(x: number, y: number, isDistance: boolean = false): [number, number] {

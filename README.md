@@ -29,6 +29,9 @@ Open your browser and go to https://localhost:3080.
 
 # To-do list
 
+### Bugs
+
+
 ### Landing page
 * [X] Design
 * [X] Code
