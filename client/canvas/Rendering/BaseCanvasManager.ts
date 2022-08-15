@@ -42,7 +42,9 @@ class StrokeBuffer {
   }
 
   add(id: string, array: number[]): void {
-    this.array.push(...array);
+    for (const x of array) {
+      this.array.push(x);
+    }
     this.synced = false;
     this.strokes.push({ id, size: array.length });
   }
