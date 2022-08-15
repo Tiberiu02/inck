@@ -52,7 +52,7 @@ export function DeserializeStroke(stroke: SerializedStroke): Stroke {
 }
 
 export function DeserializeStrokeLegacy(data: any): Stroke {
-  const color = data.color.slice(0, 3);
+  const color = data.color && Array.isArray(data.color) ? data.color.slice(0, 3) : [0, 0, 0];
   const zIndex = data.type == "h" ? 0 : data.zIndex ?? 1;
   const { width, timestamp, path, id } = data;
 
