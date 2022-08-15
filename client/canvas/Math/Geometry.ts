@@ -1,4 +1,4 @@
-import { LineSegment, Rectangle } from "../types";
+import { LineSegment, Rectangle, Vector3D } from "../types";
 
 export function RectangleIntersectsRectangle(a: Rectangle, b: Rectangle, padding: number = 0): boolean {
   return (
@@ -22,4 +22,65 @@ export function Distance(x1: number, y1: number, x2: number, y2: number) {
 
 export function DistanceSq(x1: number, y1: number, x2: number, y2: number) {
   return (x1 - x2) ** 2 + (y1 - y2) ** 2;
+}
+
+export interface Geometry {
+  readonly boundingBox: Rectangle;
+
+  intersectsLine(line: LineSegment): boolean;
+}
+
+export class PolyLine implements Geometry {
+  readonly points: Vector3D[];
+
+  readonly boundingBox: Rectangle;
+
+  constructor(points: Vector3D[]) {
+    this.points = points;
+
+    this.boundingBox = {
+      xMin: Infinity,
+      xMax: -Infinity,
+      yMin: Infinity,
+      yMax: -Infinity,
+    };
+
+    for (const p of points) {
+      this.boundingBox = {
+        xMin: Math.min(this.boundingBox.xMin, p.x - p.z),
+        xMax: Math.max(this.boundingBox.xMax, p.x + p.z),
+        yMin: Math.min(this.boundingBox.yMin, p.y - p.z),
+        yMax: Math.max(this.boundingBox.yMax, p.y + p.z),
+      };
+    }
+  }
+
+  intersectsLine(line: LineSegment): boolean {
+    const rect = LineBoundingBox(line);
+
+    if (!RectangleIntersectsRectangle(this.boundingBox, rect)) {
+      return false;
+    }
+
+    for (let i = 1; i < this.points.length; i++) {
+      const line: LineSegment = {
+        x1: this.points[i].x,
+        y1: this.points[i].y,
+        x2: this.points[i - 1].x,
+        y2: this.points[i - 1].y,
+      };
+
+      if (RectangleIntersectsRectangle(rect, LineBoundingBox(line))) {
+        return true;
+      }
+    }
+
+    for (const p of this.points) {
+      if (DistanceSq(p.x, p.y, line.x1, line.y1) < p.z ** 2 || DistanceSq(p.x, p.y, line.x2, line.y2) < p.z ** 2) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

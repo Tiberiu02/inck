@@ -30,3 +30,12 @@ export class Display {
     return document.documentElement.clientWidth / document.documentElement.clientHeight;
   }
 }
+
+export function TestFastRenderingSupport(): boolean {
+  const ua = navigator.userAgent;
+  return (
+    navigator.vendor != "Apple Computer, Inc." &&
+    !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua) &&
+    /Chrome/i.test(ua)
+  );
+}

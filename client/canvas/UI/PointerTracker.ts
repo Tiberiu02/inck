@@ -1,4 +1,4 @@
-import { CreateEvent, EventCore, EventTrigger } from "./DesignPatterns/EventDriven";
+import { CreateEvent, EventCore, EventTrigger } from "../DesignPatterns/EventDriven";
 
 export enum PenTypes {
   MOUSE,

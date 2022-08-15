@@ -1,5 +1,8 @@
 import { CanvasManager } from "../CanvasManager";
-import { DeserializeDrawable } from "../Drawables/DeserializeDrawable";
+import { DeserializeDrawable, Drawable, SerializedDrawable, SerializeDrawable } from "../Drawing/Drawable";
+import { RenderLoop } from "../Rendering/RenderLoop";
+import { DeserializeTool, SerializedTool, Tool } from "../Tooling/Tool";
+import { Vector2D } from "../types";
 import { View } from "../View/View";
 import { NetworkConnection } from "./NetworkConnection";
 
@@ -10,13 +13,16 @@ function hsl2rgb(h, s, l) {
   return [f(0), f(8), f(4)];
 }
 
-export class NetworkCanvasManager extends CanvasManager {
+type Collaborator = { pointer?: Vector2D; tool?: Tool; el?: HTMLElement; id: string };
+
+export class NetworkCanvasManager implements CanvasManager {
+  private baseCanvas: CanvasManager;
   private network: NetworkConnection;
+  private collabs: { [id: number]: Collaborator };
   private collabsContainer: HTMLDivElement;
 
-  constructor(canvas: HTMLCanvasElement, view: View, network: NetworkConnection) {
-    super(canvas, view);
-
+  constructor(baseCanvas: CanvasManager, network: NetworkConnection) {
+    this.baseCanvas = baseCanvas;
     this.network = network;
 
     const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/);
@@ -28,7 +34,7 @@ export class NetworkCanvasManager extends CanvasManager {
       window.userId = userId;
     });
 
-    network.on("load strokes", (data: object[]) => {
+    network.on("load strokes", (data: SerializedDrawable[]) => {
       console.log("loaded strokes", data);
 
       for (let s of data) {
@@ -36,20 +42,19 @@ export class NetworkCanvasManager extends CanvasManager {
 
         const stroke = DeserializeDrawable(s);
         if (stroke) {
-          super.addStroke(stroke);
+          this.baseCanvas.add(stroke);
         }
       }
 
-      this.render();
+      RenderLoop.scheduleRender();
     });
 
     network.on("unload strokes", (ids: string[]) => {
-      ids.forEach(id => super.removeStroke(id));
-      this.render();
+      ids.forEach(id => this.baseCanvas.remove(id));
+      RenderLoop.scheduleRender();
     });
 
     this.collabsContainer = document.createElement("div");
-
     Object.assign(this.collabsContainer.style, {
       width: "100vw",
       height: "100vh",
@@ -61,20 +66,53 @@ export class NetworkCanvasManager extends CanvasManager {
       left: "opx",
     });
     document.body.appendChild(this.collabsContainer);
+
+    this.collabs = {};
+
+    this.network.on("new collaborator", (id: string) => {
+      this.collabs[id] = { id };
+
+      this.network.on(`collaborator pointer ${id}`, pointer => {
+        this.collabs[id].pointer = pointer;
+        RenderLoop.scheduleRender();
+      });
+      this.network.on(`collaborator tool ${id}`, (tool: SerializedTool) => {
+        this.collabs[id].tool = tool ? DeserializeTool(tool, this.baseCanvas) : undefined;
+        RenderLoop.scheduleRender();
+      });
+      this.network.on(`collaborator input ${id}`, (x, y, p, t) => {
+        if (this.collabs[id].tool) {
+          this.collabs[id].tool.update(x, y, p, t);
+          RenderLoop.scheduleRender();
+        }
+      });
+      this.network.on(`collaborator remove ${id}`, () => {
+        delete this.collabs[id];
+        RenderLoop.scheduleRender();
+      });
+    });
   }
 
-  addStroke(stroke: any): void {
-    super.addStroke(stroke);
-    this.network.emit("new stroke", stroke.serialize());
+  add(drawable: Drawable): void {
+    this.baseCanvas.add(drawable);
+    this.network.emit("new stroke", SerializeDrawable(drawable));
   }
 
-  removeStroke(id: string): boolean {
+  remove(id: string): boolean {
     this.network.emit("remove stroke", id);
-    return super.removeStroke(id);
+    return this.baseCanvas.remove(id);
+  }
+
+  getAll(): Drawable[] {
+    return this.baseCanvas.getAll();
+  }
+
+  addForNextRender(drawable: Drawable): void {
+    this.baseCanvas.addForNextRender(drawable);
   }
 
   render(): void {
-    for (let c of this.network.getCollaborators()) {
+    for (let c of Object.values(this.collabs)) {
       if (!c.el) {
         c.el = document.createElement("div");
         Object.assign(c.el.style, {
@@ -94,9 +132,7 @@ export class NetworkCanvasManager extends CanvasManager {
       c.el.style.display = "none";
 
       if (c.pointer) {
-        const [x, y] = this.view.getScreenCoords(c.pointer.x, c.pointer.y);
-        //const x = (c.pointer.x - this.view.left) * this.view.zoom * innerWidth;
-        //const y = (c.pointer.y - this.view.top) * this.view.zoom * innerWidth;
+        const [x, y] = View.getScreenCoords(c.pointer.x, c.pointer.y);
 
         if (x >= 0 && x < innerWidth - 15 && y >= 0 && y < innerHeight - 21)
           Object.assign(c.el.style, {
@@ -106,12 +142,11 @@ export class NetworkCanvasManager extends CanvasManager {
           });
       }
 
-      if (c.activeStroke) {
-        console.log("rendering active stroke...");
-        c.activeStroke.render();
+      if (c.tool) {
+        c.tool.render();
       }
     }
 
-    super.render();
+    this.baseCanvas.render();
   }
 }

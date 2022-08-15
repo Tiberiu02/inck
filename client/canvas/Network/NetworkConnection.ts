@@ -1,22 +1,16 @@
 import { io } from "socket.io-client";
-import { Observable } from "../DesignPatterns/Observable";
-import { DeserializeTool } from "../Tools/DeserializeTool";
-import { Tool } from "../Tools/Tool";
+import { Tool } from "../Tooling/Tool";
 import { Vector2D } from "../types";
+import { View } from "../View/View";
 
 const SERVER_PORT = 8080;
 
-type Collaborator = { pointer?: Vector2D; activeStroke?: Tool; el?: HTMLElement; id: string };
-
-export class NetworkConnection extends Observable {
+export class NetworkConnection {
   private socket: any;
-  private collabs: { [id: number]: Collaborator };
   private onConnect: () => void;
   private connected: boolean;
 
   constructor() {
-    super();
-
     this.socket = io(`${window.location.host.split(":")[0]}:${SERVER_PORT}`);
 
     this.onConnect = () => {};
@@ -27,34 +21,7 @@ export class NetworkConnection extends Observable {
       this.onConnect();
     });
 
-    this.collabs = {};
-
-    this.socket.on("new collaborator", (id: string) => {
-      this.collabs[id] = { id };
-
-      this.socket.on(`collaborator pointer ${id}`, pointer => {
-        this.collabs[id].pointer = pointer;
-        this.registerUpdate();
-      });
-      this.socket.on(`collaborator tool ${id}`, tool => {
-        this.collabs[id].activeStroke = tool ? DeserializeTool(tool, window.app.canvasManager) : undefined;
-        this.registerUpdate();
-      });
-      this.socket.on(`collaborator input ${id}`, (x, y, p, t) => {
-        //console.log("collab input", this.collabs[id].activeStroke);
-        if (this.collabs[id].activeStroke) {
-          this.collabs[id].activeStroke.update(x, y, p, t);
-          this.registerUpdate();
-        }
-      });
-      this.socket.on(`collaborator remove ${id}`, () => {
-        delete this.collabs[id];
-      });
-    });
-  }
-
-  getCollaborators(): Collaborator[] {
-    return Object.values(this.collabs);
+    window.addEventListener("pointermove", e => this.updatePointer(new Vector2D(...View.getCanvasCoords(e.x, e.y))));
   }
 
   emit(name: string, ...args: any[]) {

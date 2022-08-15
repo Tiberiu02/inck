@@ -1,13 +1,7 @@
-import { ActionStack } from "../ActionsStack";
-import { CanvasManager } from "../CanvasManager";
-import { View } from "../View/View";
-import { StrokeEraser } from "../Tools/Eraser";
-import { Pen } from "../Tools/Pen";
 import { RGB } from "../types";
-import { Display } from "./DisplayProps";
+import { Display } from "../DeviceProps";
 import { CreateEvent, EventCore, EventTrigger } from "../DesignPatterns/EventDriven";
-import { Observable } from "../DesignPatterns/Observable";
-import { EventsDescription } from "mongodb";
+import { ToolManager } from "../Tooling/ToolManager";
 
 const RES_ROOT = "/wheel/";
 
@@ -40,25 +34,21 @@ export default class ToolWheel {
   onOpenSettings: EventCore;
   private registerOpenSettings: EventTrigger;
 
-  view: View;
-  canvasManager: CanvasManager;
-  actionStack: ActionStack;
-  R: number;
-  wheel: any;
-  widthsWheels: { pen: any; highlighter: any; shapes: any };
-  width: any;
-  widthsContainer: HTMLDivElement;
-  color: string;
-  tool: string;
-  shape: any;
+  private toolManager: ToolManager;
+  private R: number;
+  private wheel: any;
+  private widthsWheels: { pen: any; highlighter: any; shapes: any };
+  private width: any;
+  private widthsContainer: HTMLDivElement;
+  private color: string;
+  private tool: string;
+  private shape: any;
 
-  constructor(view: View, canvasManager: CanvasManager, actionStack: ActionStack) {
+  constructor(toolManager: ToolManager) {
     [this.onClose, this.registerClose] = CreateEvent();
     [this.onOpenSettings, this.registerOpenSettings] = CreateEvent();
 
-    this.view = view;
-    this.canvasManager = canvasManager;
-    this.actionStack = actionStack;
+    this.toolManager = toolManager;
     this.R = Math.min(3 * Display.DPI(), innerWidth / 2, innerHeight / 2);
 
     this.wheel = this.buildToolWheel(this.R);
@@ -67,7 +57,6 @@ export default class ToolWheel {
     this.hide();
     document.body.appendChild(this.wheel);
 
-    //*
     this.widthsWheels = {
       pen: this.buildWidthsWheel(this.R, "pen", w => (this.width.pen = w)),
       highlighter: this.buildWidthsWheel(this.R, "highlighter", w => (this.width.highlighter = w)),
@@ -95,32 +84,28 @@ export default class ToolWheel {
       highlighter: 3,
       shapes: 3,
     };
+
+    this.toolManager.selectPen([0, 0, 0], WIDTHS[this.width.pen], 1);
   }
 
   NewTool() {
-    const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i
+    const color = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i
       .exec(this.color)
       .slice(1)
-      .map(v => parseInt(v, 16) / 255);
+      .map(v => parseInt(v, 16) / 255) as RGB;
 
     if (this.tool == "pen") {
-      const width = this.view.getCanvasCoords(Display.DPI() * WIDTHS[this.width.pen], 0, true)[0];
-      return new Pen(width, rgb as RGB, 1, this.canvasManager, this.actionStack);
+      this.toolManager.selectPen(color, WIDTHS[this.width.pen], 1);
     } else if (this.tool == "highlighter") {
-      const width = this.view.getCanvasCoords(Display.DPI() * H_WIDTHS[this.width.highlighter], 0, false)[0];
-      return new Pen(width, rgb as RGB, 0, this.canvasManager, this.actionStack);
+      this.toolManager.selectPen(color, H_WIDTHS[this.width.highlighter], 0);
     } else if (this.tool == "eraser") {
-      return new StrokeEraser(this.canvasManager, this.actionStack);
-    } else if (this.tool == "shapes") {
-      const width = this.view.getCanvasCoords(Display.DPI() * WIDTHS[this.width.pen], 0, false)[0];
-      return new Pen(width, rgb as RGB, 1, this.canvasManager, this.actionStack);
+      this.toolManager.enableEraser();
     } else if (this.tool == "selection") {
-      const width = this.view.getCanvasCoords(Display.DPI() * WIDTHS[this.width.pen], 0, false)[0];
-      return new Pen(width, rgb as RGB, 1, this.canvasManager, this.actionStack);
+      // TODO
     }
   }
 
-  setColor(color) {
+  setColor(color: string) {
     this.color = color;
   }
 
@@ -468,9 +453,9 @@ export default class ToolWheel {
       menu.appendChild(option);
     }
 
-    AddOptionButton(RES_ROOT + "Redo.png", Math.PI * 1.37, () => this.actionStack.redo());
+    AddOptionButton(RES_ROOT + "Redo.png", Math.PI * 1.37, () => this.toolManager.redo());
     AddOptionButton(RES_ROOT + "Tool_Settings.png", Math.PI * 1.5, () => this.registerOpenSettings());
-    AddOptionButton(RES_ROOT + "Undo.png", Math.PI * 1.63, () => this.actionStack.undo());
+    AddOptionButton(RES_ROOT + "Undo.png", Math.PI * 1.63, () => this.toolManager.undo());
 
     return menu;
   }
@@ -551,12 +536,14 @@ export default class ToolWheel {
 
     menu.addEventListener("pointerleave", () => {
       menu.style.display = "none";
+      this.NewTool();
       this.registerClose();
     });
     menu.addEventListener("pointerup", e => {
       const w = getHoverW(e.x, e.y);
       if (w >= 0 && w < N_WIDTHS) setW(w);
       menu.style.display = "none";
+      this.NewTool();
       this.registerClose();
     });
     menu.addEventListener("pointermove", e => {

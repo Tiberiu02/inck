@@ -16,21 +16,21 @@ export class Observable {
   }
 }
 
-export class ObservableNumber extends Observable {
-  protected value: number;
+export class ObservableProperty<Type> extends Observable {
+  protected value: Type;
 
-  get() {
+  get(): Type {
     return this.value;
   }
 }
 
-export class MutableObservableNumber extends ObservableNumber {
-  constructor(initialValue: number) {
+export class MutableObservableProperty<Type> extends ObservableProperty<Type> {
+  constructor(initialValue: Type) {
     super();
     this.value = initialValue;
   }
 
-  set(newValue: number) {
+  set(newValue: Type) {
     this.value = newValue;
     super.registerUpdate();
   }

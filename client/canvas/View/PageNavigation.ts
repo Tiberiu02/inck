@@ -1,9 +1,8 @@
-import { FingerEvent } from "../PointerTracker";
+import { FingerEvent } from "../UI/PointerTracker";
 import { Vector2D } from "../types";
 import { MutableView, View } from "./View";
 
-export class ViewManager {
-  private view: MutableView;
+export class PageNavigation {
   private mouse: Vector2D;
   private inertia: ScrollInertia;
   private averagePointerPos: Vector2D;
@@ -11,23 +10,16 @@ export class ViewManager {
   private pointers: Vector2D[];
 
   constructor() {
-    this.view = new MutableView();
-
     this.pointers = [];
 
     this.mouse = new Vector2D(0, 0);
 
-    this.inertia = new ScrollInertia(this.view);
+    this.inertia = new ScrollInertia();
 
     this.disableWindowOverscrolling();
-  }
 
-  getView(): View {
-    return this.view;
-  }
-
-  getMutableView(): MutableView {
-    return this.view;
+    window.addEventListener("wheel", e => this.handleWheelEvent(e), { passive: false });
+    window.addEventListener("mousemove", e => this.handleMouseEvent(e));
   }
 
   private disableWindowOverscrolling() {
@@ -77,10 +69,10 @@ export class ViewManager {
       this.updatePointers(pointers);
       const [x1, y1, r1] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
 
-      const [dx, dy] = this.view.getCanvasCoords(x0 - x1, y0 - y1, true);
+      const [dx, dy] = View.getCanvasCoords(x0 - x1, y0 - y1, true);
 
-      this.view.applyTranslation(dx, dy); // scroll
-      this.view.applyZoom(x1, y1, r1 / r0); // zoom
+      MutableView.applyTranslation(dx, dy); // scroll
+      MutableView.applyZoom(x1, y1, r1 / r0); // zoom
 
       this.inertia.update(dx, dy, timeStamp);
     } else {
@@ -93,13 +85,13 @@ export class ViewManager {
     }
   }
 
-  handleWheelEvent(e: WheelEvent) {
+  private handleWheelEvent(e: WheelEvent) {
     e.preventDefault();
 
     let { deltaX, deltaY, deltaMode } = e;
 
     if (deltaMode == WheelEvent.DOM_DELTA_PIXEL) {
-      [deltaX, deltaY] = this.view.getCanvasCoords(deltaX, deltaY, true);
+      [deltaX, deltaY] = View.getCanvasCoords(deltaX, deltaY, true);
     }
 
     if (e.ctrlKey) {
@@ -109,18 +101,18 @@ export class ViewManager {
         OUT: 45,
       };
       const zoomFactor = 1 - deltaY * (deltaY < 0 ? ZOOM_SPEED.IN : ZOOM_SPEED.OUT);
-      this.view.applyZoom(this.mouse.x, this.mouse.y, zoomFactor);
+      MutableView.applyZoom(this.mouse.x, this.mouse.y, zoomFactor);
     } else {
       // scroll
       if (e.shiftKey && !deltaX) {
-        this.view.applyTranslation(deltaY, 0);
+        MutableView.applyTranslation(deltaY, 0);
       } else {
-        this.view.applyTranslation(deltaX, deltaY);
+        MutableView.applyTranslation(deltaX, deltaY);
       }
     }
   }
 
-  handleMouseEvent(e: MouseEvent) {
+  private handleMouseEvent(e: MouseEvent) {
     this.mouse = new Vector2D(e.clientX, e.clientY);
   }
 }
@@ -131,14 +123,11 @@ const SMOOTH_AVG = 0.5;
 const MINIMUM_VELOCITY = 0.5; // px
 
 class ScrollInertia {
-  private view: MutableView;
   private t: number;
   private interval: number;
   private velocity: Vector2D;
 
-  constructor(view: MutableView) {
-    this.view = view;
-  }
+  constructor() {}
 
   update(dx: number, dy: number, t: number) {
     if (this.t && this.t != t) {
@@ -176,9 +165,9 @@ class ScrollInertia {
     const dt = t - this.t;
 
     if (this.velocity) {
-      const [vx, vy] = this.view.getScreenCoords(this.velocity.x, this.velocity.y, true);
+      const [vx, vy] = View.getScreenCoords(this.velocity.x, this.velocity.y, true);
       if (Math.sqrt(vx ** 2 + vy ** 2) > MINIMUM_VELOCITY) {
-        this.view.applyTranslation(this.velocity.x * dt, this.velocity.y * dt);
+        MutableView.applyTranslation(this.velocity.x * dt, this.velocity.y * dt);
 
         this.velocity = this.velocity.mul(1 - Math.min(1, dt * INERTIA_DECAY_PER_MS));
 

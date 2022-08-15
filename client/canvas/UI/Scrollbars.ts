@@ -1,6 +1,6 @@
-import { MutableView } from "../View/View";
-import { ObservableNumber } from "../DesignPatterns/Observable";
-import { Display } from "./DisplayProps";
+import { MutableView, View } from "../View/View";
+import { ObservableProperty } from "../DesignPatterns/Observable";
+import { Display } from "../DeviceProps";
 
 enum Direction {
   HORIZONTAL,
@@ -8,22 +8,20 @@ enum Direction {
 }
 
 export class ScrollBars {
-  view: MutableView;
-  width: any;
-  margin: any;
-  vertical: HTMLDivElement;
-  horizontal: HTMLDivElement;
-  yMax: ObservableNumber;
-  vAnchor: number;
-  vBarHeight: number;
+  private width: any;
+  private margin: any;
+  private vertical: HTMLDivElement;
+  private horizontal: HTMLDivElement;
+  private yMax: ObservableProperty<number>;
+  private vAnchor: number;
+  private vBarHeight: number;
 
-  scrolling: boolean;
-  scrollDirection: Direction;
-  pointer: { x: number; y: number };
-  pointerId: number;
+  private scrollDirection: Direction;
+  private pointer: { x: number; y: number };
+  private pointerId: number;
+  private scrolling: boolean;
 
-  constructor(view: MutableView, yMax: ObservableNumber) {
-    this.view = view;
+  constructor(yMax: ObservableProperty<number>) {
     this.yMax = yMax;
     this.width = 10;
     this.margin = 0;
@@ -45,7 +43,7 @@ export class ScrollBars {
     Object.assign(this.horizontal.style, style);
     document.body.appendChild(this.horizontal);
 
-    view.onUpdate(() => this.updateBars());
+    View.onUpdate(() => this.updateBars());
     yMax.onUpdate(() => this.updateBars());
 
     window.addEventListener("resize", () => this.updateBars());
@@ -56,35 +54,39 @@ export class ScrollBars {
     window.addEventListener("pointerup", e => this.handlePointerUp(e));
   }
 
-  handlePointerDown(direction: Direction, e: PointerEvent) {
+  public isScrolling() {
+    return this.scrolling;
+  }
+
+  private handlePointerDown(direction: Direction, e: PointerEvent) {
     if (this.scrolling) return;
 
     this.scrolling = true;
     this.scrollDirection = direction;
     this.pointer = { x: e.x, y: e.y };
     this.pointerId = e.pointerId;
-    this.vAnchor = this.view.getTop();
+    this.vAnchor = View.getTop();
   }
 
-  handlePointerMove(e: PointerEvent) {
+  private handlePointerMove(e: PointerEvent) {
     if (this.scrolling) {
       if (this.pointerId == e.pointerId) {
         const { x: px, y: py } = this.pointer;
         if (this.scrollDirection == Direction.VERTICAL) {
-          const pageHeight = Math.max(this.yMax.get() - this.view.getHeight(), this.vAnchor);
+          const pageHeight = Math.max(this.yMax.get() - View.getHeight(), this.vAnchor);
           let dy = ((e.y - py) / (innerHeight - 3 * this.margin - this.width - this.vBarHeight)) * pageHeight;
-          dy = Math.min(dy, pageHeight - this.view.getTop());
-          this.view.applyTranslation(0, dy);
+          dy = Math.min(dy, pageHeight - View.getTop());
+          MutableView.applyTranslation(0, dy);
         } else {
           const dx = (e.x - px) / (innerWidth - 3 * this.margin - this.width);
-          this.view.applyTranslation(dx, 0);
+          MutableView.applyTranslation(dx, 0);
         }
         this.pointer = { x: e.x, y: e.y };
       }
     }
   }
 
-  handlePointerUp(e: PointerEvent) {
+  private handlePointerUp(e: PointerEvent) {
     if (this.scrolling) {
       if (this.pointerId == e.pointerId) {
         this.scrolling = false;
@@ -94,45 +96,9 @@ export class ScrollBars {
     }
   }
 
-  // handlePointerEvent(e: PointerEvent) {
-  //   if (e.target != this.horizontal && e.target != this.vertical && !this.scrolling()) {
-  //     return;
-  //   }
-
-  //   e.stopPropagation();
-
-  //   let { pointerId, x, y, pressure } = e;
-
-  //   if (pressure) {
-  //     e.preventDefault();
-
-  //     if (!this.scrollDirection) this.scrollDirection = e.target == this.horizontal ? "horizontal" : "vertical";
-
-  //     if (this.pointers[pointerId]) {
-  //       const p = this.pointers[pointerId];
-  //       if (this.scrollDirection == "vertical") {
-  //         const dy = ((y - p.y) / (innerHeight - 3 * this.margin - this.width)) * this.yMax.get();
-  //         this.view.applyTranslation(0, dy);
-  //       } else {
-  //         const dx = (x - p.x) / (innerWidth - 3 * this.margin - this.width);
-  //         this.view.applyTranslation(dx, 0);
-  //       }
-  //     }
-
-  //     this.pointers[pointerId] = { x, y };
-  //   } else {
-  //     this.pointers = [];
-  //     delete this.scrollDirection;
-  //   }
-  // }
-
-  getYMax() {
-    return Math.max(this.yMax.get(), this.view.getCanvasCoords(0, innerHeight)[1]);
-  }
-
   private updateBars() {
-    const hLen = 1 / this.view.getZoom();
-    const hStart = this.view.getLeft();
+    const hLen = View.getWidth();
+    const hStart = View.getLeft();
     const hFullLen = Display.Width() - 3 * this.margin - this.width;
 
     Object.assign(this.horizontal.style, {
@@ -143,9 +109,9 @@ export class ScrollBars {
       width: `${hLen * hFullLen}px`,
     });
 
-    const vSize = Math.max(this.getYMax(), (this.vAnchor ?? this.view.getTop()) + this.view.getHeight());
+    const vSize = Math.max(this.yMax.get(), (this.vAnchor ?? View.getTop()) + View.getHeight());
     const vLen = hLen / Display.AspectRatio() / vSize;
-    const vStart = this.view.getTop() / vSize;
+    const vStart = View.getTop() / vSize;
     let vFullLen = Display.Height() - 2 * this.margin - this.margin - this.width;
 
     this.vBarHeight = vLen * vFullLen;

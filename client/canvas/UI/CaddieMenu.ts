@@ -1,9 +1,8 @@
-import { off } from "process";
-import tailwind from "../../tailwind.config";
-import { ActionStack } from "../ActionsStack";
+import { ToolManager } from "../Tooling/ToolManager";
 import { Vector2D } from "../types";
-import { Display } from "./DisplayProps";
+import { Display } from "../DeviceProps";
 import ToolWheel from "./ToolWheel";
+import tailwind from "../../tailwind.config";
 
 enum STATES {
   IDLE,
@@ -29,7 +28,7 @@ const FADE_IN_DELAY = 200; // ms
 
 export class CaddieMenu {
   private el: HTMLElement;
-  private actionStack: ActionStack;
+  private toolManager: ToolManager;
   private wheel: ToolWheel;
   private lastUpdate: number;
 
@@ -40,8 +39,10 @@ export class CaddieMenu {
   private state: STATES;
   private enteredIdle: number;
 
-  constructor(actionStack: ActionStack, wheel: ToolWheel) {
-    this.actionStack = actionStack;
+  private draggging: boolean;
+
+  constructor(toolManager: ToolManager, wheel: ToolWheel) {
+    this.toolManager = toolManager;
     this.wheel = wheel;
 
     this.createMenu();
@@ -55,7 +56,35 @@ export class CaddieMenu {
     requestAnimationFrame(() => this.update());
   }
 
-  update() {
+  isDragging() {
+    return this.draggging;
+  }
+
+  updatePointer(pointer: Vector2D) {
+    this.pointer = pointer;
+
+    if (pointer) {
+      const displacement = new Vector2D(DIST_FROM_CURSOR, 0);
+      const offset = new Vector2D(this.el.getBoundingClientRect().width, this.el.getBoundingClientRect().height).div(2);
+
+      pointer = pointer.sub(offset).div(Display.DPI());
+
+      if (pointer.norm() < CORNER_PADDING + DIST_FROM_CURSOR) {
+        const t = pointer.add(displacement.rot(Math.PI / 2));
+        this.target = new Vector2D(Math.max(t.x, PAGE_PADDING), t.y);
+      } else {
+        let angle = Math.PI * 1.35;
+        if (pointer.add(displacement.rot(angle)).x < PAGE_PADDING) {
+          angle = Math.PI + Math.acos((pointer.x - PAGE_PADDING) / DIST_FROM_CURSOR);
+        } else if (pointer.add(displacement.rot(angle)).y < PAGE_PADDING) {
+          angle = Math.PI + Math.asin((pointer.y - PAGE_PADDING) / DIST_FROM_CURSOR);
+        }
+        this.target = pointer.add(displacement.rot(angle));
+      }
+    }
+  }
+
+  private update() {
     const t = performance.now();
     const dt = (t - this.lastUpdate) / MS_PER_TIME_UNIT;
 
@@ -108,30 +137,6 @@ export class CaddieMenu {
     requestAnimationFrame(() => this.update());
   }
 
-  updatePointer(pointer: Vector2D) {
-    this.pointer = pointer;
-
-    if (pointer) {
-      const displacement = new Vector2D(DIST_FROM_CURSOR, 0);
-      const offset = new Vector2D(this.el.getBoundingClientRect().width, this.el.getBoundingClientRect().height).div(2);
-
-      pointer = pointer.sub(offset).div(Display.DPI());
-
-      if (pointer.norm() < CORNER_PADDING + DIST_FROM_CURSOR) {
-        const t = pointer.add(displacement.rot(Math.PI / 2));
-        this.target = new Vector2D(Math.max(t.x, PAGE_PADDING), t.y);
-      } else {
-        let angle = Math.PI * 1.35;
-        if (pointer.add(displacement.rot(angle)).x < PAGE_PADDING) {
-          angle = Math.PI + Math.acos((pointer.x - PAGE_PADDING) / DIST_FROM_CURSOR);
-        } else if (pointer.add(displacement.rot(angle)).y < PAGE_PADDING) {
-          angle = Math.PI + Math.asin((pointer.y - PAGE_PADDING) / DIST_FROM_CURSOR);
-        }
-        this.target = pointer.add(displacement.rot(angle));
-      }
-    }
-  }
-
   private createMenu() {
     const primary = tailwind.theme.extend.colors["primary"];
     const primaryDark = tailwind.theme.extend.colors["primary-dark"];
@@ -164,7 +169,7 @@ export class CaddieMenu {
 
     const undoBtn = button();
     undoBtn.innerHTML = CaddieMenu.UndoIcon();
-    undoBtn.addEventListener("pointerup", () => !dragging && this.actionStack.undo());
+    undoBtn.addEventListener("pointerup", () => !dragging && this.toolManager.undo());
     this.el.appendChild(undoBtn);
 
     const toolBtn = button();
@@ -174,9 +179,8 @@ export class CaddieMenu {
     toolBtn.innerHTML = CaddieMenu.MenuIcon();
     toolBtn.addEventListener("pointerup", (e: PointerEvent) => {
       if (!dragging) {
-        if (lastTool) {
-          this.wheel.setTool(lastTool);
-          lastTool = null;
+        if (this.toolManager.isErasing) {
+          this.toolManager.disableEraser();
           eraseBtn.innerHTML = CaddieMenu.EraserIcon();
         }
         this.el.style.display = "none";
@@ -188,17 +192,13 @@ export class CaddieMenu {
 
     const eraseBtn = button();
     eraseBtn.innerHTML = CaddieMenu.EraserIcon();
-    let lastTool = null;
     eraseBtn.addEventListener("pointerup", () => {
       if (!dragging) {
-        console.log(lastTool);
-        if (lastTool) {
-          this.wheel.setTool(lastTool);
-          lastTool = null;
+        if (this.toolManager.isErasing) {
+          this.toolManager.disableEraser();
           eraseBtn.innerHTML = CaddieMenu.EraserIcon();
         } else {
-          lastTool = this.wheel.tool;
-          this.wheel.setTool("eraser");
+          this.toolManager.enableEraser();
           eraseBtn.innerHTML = CaddieMenu.EraserOffIcon();
         }
       }
@@ -214,11 +214,10 @@ export class CaddieMenu {
     const handlePointerDown = (e: PointerEvent) => {
       initialClick = new Vector2D(e.x, e.y).div(Display.DPI());
       relativePos = this.target.sub(initialClick);
+      this.draggging = true;
     };
     const handlePointerMove = (e: PointerEvent) => {
       if (relativePos) {
-        e.stopPropagation();
-
         const pointer = new Vector2D(e.x, e.y).div(Display.DPI());
         dragging = dragging || pointer.dist(initialClick) > DRAG_START;
         console.log(dragging);
@@ -229,10 +228,11 @@ export class CaddieMenu {
       if (relativePos) {
         dragging = false;
         relativePos = null;
+        this.draggging = false;
       }
     };
     this.el.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointermove", handlePointerMove, true);
+    window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
 
     document.body.appendChild(this.el);

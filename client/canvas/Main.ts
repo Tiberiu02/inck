@@ -1,48 +1,36 @@
-import Profiler from "./Profiler";
-import { ViewManager } from "./View/ViewManager";
+import { PageNavigation } from "./View/PageNavigation";
 import { ScrollBars } from "./UI/Scrollbars";
 import ToolWheel from "./UI/ToolWheel";
 import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
-import { ActionStack } from "./ActionsStack";
-import { Tool } from "./Tools/Tool";
 import { Vector2D } from "./types";
 import { CaddieMenu } from "./UI/CaddieMenu";
-import { PenEvent, PointerTracker } from "./PointerTracker";
-
-function TestFastRenderingSupport() {
-  const ua = navigator.userAgent;
-  return (
-    navigator.vendor != "Apple Computer, Inc." &&
-    !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua) &&
-    /Chrome/i.test(ua)
-  );
-}
+import { PenEvent, PointerTracker } from "./UI/PointerTracker";
+import { ToolManager } from "./Tooling/ToolManager";
+import { BaseCanvasManager } from "./Rendering/BaseCanvasManager";
+import { View } from "./View/View";
+import { MutableObservableProperty, ObservableProperty } from "./DesignPatterns/Observable";
+import { RenderLoop } from "./Rendering/RenderLoop";
+import { PageSizeTracker } from "./Drawing/PageSizeTracker";
+import { TestFastRenderingSupport } from "./DeviceProps";
 
 export default class App {
-  canvas: HTMLCanvasElement;
-  gl: WebGL2RenderingContext;
-  canvasManager: CanvasManager;
-  animationFrameRequestId: number;
-  viewManager: ViewManager;
-  scrollBars: ScrollBars;
-  wheel: ToolWheel;
-  rerender: boolean;
-  drawing: boolean;
-  activeTool?: Tool;
-  rendering: boolean;
-  nextRender: number;
-  network: NetworkConnection;
-  actionStack: ActionStack;
-  caddie: CaddieMenu;
-  supportsFastRender: boolean;
-  pointerTracker: PointerTracker;
+  private canvasManager: CanvasManager;
+
+  private network: NetworkConnection;
+  private toolManager: ToolManager;
+
+  private pageNavigation: PageNavigation;
+  private pointerTracker: PointerTracker;
+
+  private scrollBars: ScrollBars;
+  private wheel: ToolWheel;
+  private caddie: CaddieMenu;
+
+  private supportsFastRender: boolean;
 
   constructor() {
-    this.canvas = document.createElement("canvas");
-    document.body.appendChild(this.canvas);
-
     Object.assign(document.body.style, {
       width: "100vw",
       height: "100vh",
@@ -58,113 +46,56 @@ export default class App {
 
       overflow: "hidden",
     });
+    window.addEventListener("contextmenu", e => e.preventDefault());
+    this.supportsFastRender = TestFastRenderingSupport();
 
-    // Create view
-    this.viewManager = new ViewManager();
-    this.viewManager.getView().onUpdate(() => this.scheduleRender());
+    // Canvas
+    this.canvasManager = new BaseCanvasManager();
+
+    // Horizontal page size
+    const yMax = new MutableObservableProperty<number>(0);
+    this.canvasManager = new PageSizeTracker(this.canvasManager, yMax);
+
+    // Network
+    this.network = new NetworkConnection();
+    this.canvasManager = new NetworkCanvasManager(this.canvasManager, this.network);
 
     // Pointer tracker
     this.pointerTracker = new PointerTracker();
     this.pointerTracker.onPenEvent.addListener(e => this.handlePenEvent(e));
-    this.pointerTracker.onFingerEvent.addListener(e => this.viewManager.handleFingerEvent(e));
 
-    // Network
-    this.network = new NetworkConnection();
-    this.network.onUpdate(() => this.scheduleRender());
-    window.addEventListener("pointermove", e =>
-      this.network.updatePointer(new Vector2D(...this.viewManager.getView().getCanvasCoords(e.x, e.y)))
-    );
+    // Enable navigation
+    this.pageNavigation = new PageNavigation();
+    this.pointerTracker.onFingerEvent.addListener(e => this.pageNavigation.handleFingerEvent(e));
+    View.onUpdate(() => RenderLoop.scheduleRender());
 
-    // Create canvas manager
-    this.canvasManager = new NetworkCanvasManager(this.canvas, this.viewManager.getView(), this.network);
-    this.canvasManager.onUpdate(() => this.scheduleRender());
+    // Enable tooling
+    this.toolManager = new ToolManager(this.canvasManager, this.network);
 
-    // Create scroll bars
-    this.scrollBars = new ScrollBars(this.viewManager.getMutableView(), this.canvasManager.getYMax());
+    // Create UI
+    this.scrollBars = new ScrollBars(yMax as ObservableProperty<number>);
+    this.wheel = new ToolWheel(this.toolManager);
+    this.caddie = new CaddieMenu(this.toolManager, this.wheel);
 
-    window.addEventListener("wheel", e => this.viewManager.handleWheelEvent(e), { passive: false });
-    window.addEventListener("mousemove", e => this.viewManager.handleMouseEvent(e));
-
-    this.supportsFastRender = TestFastRenderingSupport();
-
-    window.addEventListener("contextmenu", e => e.preventDefault());
-
-    this.actionStack = new ActionStack();
-
-    // Create tool wheel
-    this.wheel = new ToolWheel(this.viewManager.getView(), this.canvasManager, this.actionStack);
-
-    this.caddie = new CaddieMenu(this.actionStack, this.wheel);
-
-    requestAnimationFrame(() => this.renderLoop());
-  }
-
-  scheduleRender() {
-    this.rerender = true;
-  }
-
-  renderLoop() {
-    if (this.rerender) {
-      delete this.rerender;
-      this.render();
-    }
-
-    requestAnimationFrame(() => this.renderLoop());
+    // Enable rendering
+    RenderLoop.onRender(() => this.toolManager.render());
+    RenderLoop.onRender(() => this.canvasManager.render());
   }
 
   handlePenEvent(e: PenEvent) {
-    if (this.scrollBars.scrolling) return;
-
-    if (!e.pressure && !this.activeTool) return;
+    if (this.scrollBars.isScrolling() || this.caddie.isDragging()) return;
 
     e.preventDefault(); // hide touch callout on iOS
 
     // Hide tool wheel if open
     if (e.pressure && this.wheel.isVisible()) this.wheel.close();
 
-    let { pressure, timeStamp } = e;
-    let [x, y] = this.viewManager.getView().getCanvasCoords(e.x, e.y);
+    let [x, y] = View.getCanvasCoords(e.x, e.y);
 
-    // Create new tool
-    if (!this.activeTool) {
-      this.activeTool = this.wheel.NewTool();
-      this.network.updateTool(this.activeTool);
-    }
-
-    if (!pressure) {
-      // Release tool
-      this.activeTool.release();
-      this.activeTool = undefined;
-      this.network.updateTool(undefined);
-    } else {
-      // Update tool
-      this.activeTool.update(x, y, pressure, timeStamp);
-      this.network.updateInput(x, y, pressure, timeStamp);
-    }
+    this.toolManager.update(x, y, e.pressure, e.timeStamp);
+    this.caddie.updatePointer(e.pressure ? new Vector2D(e.x, e.y) : null);
 
     // Render
-    this.supportsFastRender ? this.render() : this.scheduleRender();
-
-    this.caddie.updatePointer(pressure ? new Vector2D(e.x, e.y) : null);
-  }
-
-  render() {
-    if (this.rendering || (this.nextRender && performance.now() < this.nextRender)) {
-      this.scheduleRender();
-      return;
-    }
-
-    this.rendering = true;
-    const renderStart = performance.now();
-
-    if (this.activeTool) {
-      Profiler.start("active stroke");
-      this.activeTool.render();
-      Profiler.stop("active stroke");
-    }
-    this.canvasManager.render();
-
-    this.nextRender = performance.now() + (performance.now() - renderStart) * 3;
-    this.rendering = false;
+    this.supportsFastRender ? RenderLoop.render() : RenderLoop.scheduleRender();
   }
 }

@@ -1,6 +1,7 @@
-import { GetStrokeRadius } from "../Drawables/Stroke";
-import { ELEMENTS_PER_VERTEX } from "../gl/GL";
-import { PathPoint, StrokePoint, Vector2D } from "../types";
+import { DrawableTypes } from "./Drawable";
+import { PathPoint, RGB, StrokePoint, Vector3D } from "../types";
+import { PolyLine } from "../Math/Geometry";
+import { Stroke } from "./Stroke";
 
 const D_T = 5;
 const STIFFNESS = 0.005;
@@ -8,12 +9,19 @@ const STIFFNESS_P = STIFFNESS * 0.05;
 const DRAG = 0.1;
 const A_STEP_DENSITY = 0.05; // rounded tip angular distance between vertices
 
-export class DynamicStroke {
-  private firstStrokePoint: StrokePoint;
-  private lastStrokePoint: StrokePoint;
+const GetStrokeRadius = (width: number, p: number): number => (width * (p + 1)) / 3;
+
+export class StrokeBuilder {
+  private id: string;
+  private timestamp: number;
+  private zIndex: number;
+
+  private width: number;
+  private color: RGB;
+  private points: StrokePoint[];
+
   private path: PathPoint[];
   private array: number[];
-
   private mass?: {
     x: number;
     y: number;
@@ -23,14 +31,37 @@ export class DynamicStroke {
     vy: number;
     vp: number;
   };
-  width: number;
-  color: number[];
 
-  constructor(width: number, color: number[]) {
-    this.path = [];
-    this.array = [];
+  constructor(id: string, timestamp: number, zIndex: number, color: RGB, width: number, points: StrokePoint[] = []) {
+    this.id = id;
+    this.timestamp = timestamp;
+    this.zIndex = zIndex;
+
     this.width = width;
     this.color = color;
+    this.points = [];
+
+    this.path = [];
+    this.array = [];
+
+    for (const p of points) {
+      this.push(p);
+    }
+  }
+
+  getStroke(): Stroke {
+    return {
+      id: this.id,
+      type: DrawableTypes.VECTOR,
+      color: this.color,
+      width: this.width,
+      points: [...this.points],
+      timestamp: this.timestamp,
+      zIndex: this.zIndex,
+      vector: this.getArray(),
+      serializer: "stroke",
+      geometry: new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, (this.width * (p.pressure + 1)) / 3))),
+    };
   }
 
   private getMassPathPoint({ x, y, p, vx, vy, t }): PathPoint {
@@ -44,26 +75,26 @@ export class DynamicStroke {
     return { x, y, t, nx, ny, r, angleStep };
   }
 
-  getArray() {
+  private getArray() {
     if (!this.path.length) {
-      if (!this.firstStrokePoint) return [];
+      if (!this.points.length) return [];
 
-      const p = this.firstStrokePoint;
+      const p = this.points[0];
       const { r, angleStep } = this.getMassPathPoint({ x: p.x, y: p.y, p: p.pressure, vx: 1, vy: 1, t: p.timestamp });
 
       let array = [];
       for (let a = 0; a < Math.PI; a += angleStep) {
         const [sin, cos] = [Math.sin(a), Math.cos(a)];
-        array.push(p.x + r * cos, p.y + r * sin, ...this.color);
-        array.push(p.x + r * cos, p.y - r * sin, ...this.color);
+        array.push(p.x + r * cos, p.y + r * sin, ...this.color, 1);
+        array.push(p.x + r * cos, p.y - r * sin, ...this.color, 1);
       }
-      array.push(p.x - r, p.y, ...this.color);
-      array.push(p.x - r, p.y, ...this.color);
+      array.push(p.x - r, p.y, ...this.color, 1);
+      array.push(p.x - r, p.y, ...this.color, 1);
       return array;
     }
 
     const dt = 1;
-    const p0 = this.lastStrokePoint;
+    const p0 = this.points[this.points.length - 1];
 
     let { x, y, p, vx, vy, vp, t } = this.mass;
     let lastPathPoint: PathPoint = this.getMassPathPoint(this.mass);
@@ -101,11 +132,11 @@ export class DynamicStroke {
       let { x, y, nx, ny, r, angleStep } = this.path[0];
       const ix = -ny;
       const iy = nx;
-      arrayPrefix.push(x + r * ix, y + r * iy, ...this.color);
+      arrayPrefix.push(x + r * ix, y + r * iy, ...this.color, 1);
       for (let a = 0; a < Math.PI / 2; a += angleStep) {
         const [sin, cos] = [Math.sin(a), Math.cos(a)];
-        arrayPrefix.push(x + r * ix * cos + r * nx * sin, y + r * iy * cos + r * ny * sin, ...this.color);
-        arrayPrefix.push(x + r * ix * cos - r * nx * sin, y + r * iy * cos - r * ny * sin, ...this.color);
+        arrayPrefix.push(x + r * ix * cos + r * nx * sin, y + r * iy * cos + r * ny * sin, ...this.color, 1);
+        arrayPrefix.push(x + r * ix * cos - r * nx * sin, y + r * iy * cos - r * ny * sin, ...this.color, 1);
       }
     }
 
@@ -119,8 +150,8 @@ export class DynamicStroke {
       for (let i = steps; i >= 0; i--) {
         const a = i * angleStep;
         const [sin, cos] = [Math.sin(a), Math.cos(a)];
-        arraySuffix.push(x + r * ix * cos + r * nx * sin, y + r * iy * cos + r * ny * sin, ...this.color);
-        arraySuffix.push(x + r * ix * cos - r * nx * sin, y + r * iy * cos - r * ny * sin, ...this.color);
+        arraySuffix.push(x + r * ix * cos + r * nx * sin, y + r * iy * cos + r * ny * sin, ...this.color, 1);
+        arraySuffix.push(x + r * ix * cos - r * nx * sin, y + r * iy * cos - r * ny * sin, ...this.color, 1);
       }
     }
 
@@ -138,9 +169,8 @@ export class DynamicStroke {
         vy: 0,
         vp: 0,
       };
-      this.firstStrokePoint = p;
     } else {
-      const p0 = this.lastStrokePoint;
+      const p0 = this.points[this.points.length - 1];
 
       while (this.mass.t < p.timestamp) {
         const k = (this.mass.t - p0.timestamp) / (p.timestamp - p0.timestamp);
@@ -166,7 +196,7 @@ export class DynamicStroke {
       }
     }
 
-    this.lastStrokePoint = p;
+    this.points.push(p);
   }
 
   private addPathPoint(p: PathPoint) {
@@ -212,35 +242,10 @@ export class DynamicStroke {
       path = [p];
 
       array = [];
-      array.push(p.x + p.nx * p.r, p.y + p.ny * p.r, ...this.color);
-      array.push(p.x - p.nx * p.r, p.y - p.ny * p.r, ...this.color);
+      array.push(p.x + p.nx * p.r, p.y + p.ny * p.r, ...this.color, 1);
+      array.push(p.x - p.nx * p.r, p.y - p.ny * p.r, ...this.color, 1);
     }
 
     return [path, array];
   }
-}
-
-export function FillPath(path: Vector2D[], color: number[]): number[] {
-  if (!path.length) {
-    return [];
-  }
-
-  let vertices = [];
-  let i = 0;
-  let j = 0;
-  let turnJ = true;
-  do {
-    if (turnJ) {
-      vertices.push(path[j].x, path[j].y, ...color);
-      j = (j - 1 + path.length) % path.length;
-    } else {
-      vertices.push(path[i].x, path[i].y, ...color);
-      i += 1;
-    }
-    turnJ = !turnJ;
-  } while (i <= j);
-
-  vertices.push(...vertices.slice(-ELEMENTS_PER_VERTEX));
-
-  return vertices;
 }

@@ -33,40 +33,60 @@
  * The view has the same aspect ratio as the screen.
  */
 
-import { Observable } from "../DesignPatterns/Observable";
-import { Display } from "../UI/DisplayProps";
+import { Display } from "../DeviceProps";
 
-export class View extends Observable {
-  protected top: number;
-  protected left: number;
-  protected zoom: number;
+export class View {
+  protected static top: number;
+  protected static left: number;
+  protected static zoom: number;
+  private static listeners: (() => void)[];
 
-  constructor() {
-    super();
-
-    this.top = 0;
-    this.left = 0;
-    this.zoom = 1;
+  protected static ensureInstance() {
+    if (!this.listeners) {
+      this.top = 0;
+      this.left = 0;
+      this.zoom = 1;
+      this.listeners = [];
+    }
   }
 
-  getTop() {
+  static onUpdate(listener: () => void) {
+    this.ensureInstance();
+    this.listeners.push(listener);
+  }
+
+  protected static registerUpdate() {
+    this.ensureInstance();
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+
+  static getTop() {
+    this.ensureInstance();
     return this.top;
   }
-  getLeft() {
+  static getLeft() {
+    this.ensureInstance();
     return this.left;
   }
-  getZoom() {
+  static getZoom() {
+    this.ensureInstance();
     return this.zoom;
   }
-  getWidth() {
+  static getWidth() {
+    this.ensureInstance();
     return 1 / this.zoom;
   }
-  getHeight() {
+  static getHeight() {
+    this.ensureInstance();
     return 1 / this.zoom / Display.AspectRatio();
   }
 
   // Map screen coordinates to canvas coordinates
-  getCanvasCoords(x: number, y: number, isDistance: boolean = false): [number, number] {
+  static getCanvasCoords(x: number, y: number, isDistance: boolean = false): [number, number] {
+    this.ensureInstance();
+
     x /= Display.Width() * this.zoom;
     y /= Display.Width() * this.zoom;
     if (!isDistance) {
@@ -76,7 +96,9 @@ export class View extends Observable {
     return [x, y];
   }
 
-  getScreenCoords(x: number, y: number, isDistance: boolean = false): [number, number] {
+  static getScreenCoords(x: number, y: number, isDistance: boolean = false): [number, number] {
+    this.ensureInstance();
+
     if (!isDistance) {
       x -= this.left;
       y -= this.top;
@@ -88,28 +110,32 @@ export class View extends Observable {
 }
 
 export class MutableView extends View {
-  private clip() {
-    this.top = Math.max(0, this.top);
-    this.left = Math.max(0, Math.min(1 - 1 / this.zoom, this.left));
-    this.zoom = Math.max(1, Math.min(10, this.zoom));
+  private static clip() {
+    View.top = Math.max(0, View.top);
+    View.left = Math.max(0, Math.min(1 - 1 / View.zoom, View.left));
+    View.zoom = Math.max(1, Math.min(10, View.zoom));
   }
 
-  applyZoom(centerX: number, centerY: number, zoomFactor: number) {
-    const [x0, y0] = this.getCanvasCoords(centerX, centerY);
-    this.zoom = Math.max(1, Math.min(10, this.zoom * zoomFactor));
-    const [x1, y1] = this.getCanvasCoords(centerX, centerY);
-    this.left -= x1 - x0;
-    this.top -= y1 - y0;
+  static applyZoom(centerX: number, centerY: number, zoomFactor: number) {
+    View.ensureInstance();
+
+    const [x0, y0] = View.getCanvasCoords(centerX, centerY);
+    View.zoom = Math.max(1, Math.min(10, View.zoom * zoomFactor));
+    const [x1, y1] = View.getCanvasCoords(centerX, centerY);
+    View.left -= x1 - x0;
+    View.top -= y1 - y0;
     this.clip();
 
-    this.registerUpdate();
+    View.registerUpdate();
   }
 
-  applyTranslation(deltaX: number, deltaY: number) {
-    this.top += deltaY;
-    this.left += deltaX;
+  static applyTranslation(deltaX: number, deltaY: number) {
+    View.ensureInstance();
+
+    View.top += deltaY;
+    View.left += deltaX;
     this.clip();
 
-    this.registerUpdate();
+    View.registerUpdate();
   }
 }

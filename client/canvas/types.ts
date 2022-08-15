@@ -37,11 +37,23 @@ export class Vector2D {
   }
 }
 
+export class Vector3D {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+
+  constructor(x: number, y: number, z: number) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+}
+
 export interface Rectangle {
-  xMin: number;
-  yMin: number;
-  xMax: number;
-  yMax: number;
+  readonly xMin: number;
+  readonly yMin: number;
+  readonly xMax: number;
+  readonly yMax: number;
 }
 
 export interface PathPoint {
@@ -62,10 +74,11 @@ export interface LineSegment {
 }
 
 export interface StrokePoint {
-  x: number;
-  y: number;
-  pressure: number;
-  timestamp: number;
+  readonly x: number;
+  readonly y: number;
+  readonly pressure: number;
+  readonly timestamp: number;
 }
 
 export type RGB = [number, number, number];
+export type RGBA = [number, number, number, number];
