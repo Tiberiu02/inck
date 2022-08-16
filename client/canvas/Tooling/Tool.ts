@@ -9,6 +9,7 @@ export interface SerializedTool {
 export interface Tool {
   update(x: number, y: number, pressure: number, timestamp: number): void;
   render(): void;
+  release(): void;
   serialize(): SerializedTool;
 }
 

@@ -22,6 +22,7 @@ export class Pen implements Tool {
   private canvasManager: CanvasManager;
   private actionStack: ActionStack;
 
+  private drawing: boolean;
   private strokeBuilder: StrokeBuilder;
 
   constructor(color: RGB, width: number, zIndex: number, canvasManager: CanvasManager, actionStack?: ActionStack) {
@@ -35,25 +36,17 @@ export class Pen implements Tool {
 
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (pressure) {
-      if (!this.strokeBuilder) {
+      if (!this.drawing) {
         const id = window.userId + "-" + Date.now();
         const width = View.getCanvasCoords(Display.DPI() * this.width, 0, true)[0];
         this.strokeBuilder = new StrokeBuilder(id, timestamp, this.zIndex, this.color, width);
+        this.drawing = true;
       }
 
       this.strokeBuilder.push({ x, y, pressure, timestamp });
     } else {
-      if (this.strokeBuilder) {
-        if (this.actionStack) {
-          const stroke = this.strokeBuilder.getStroke();
-          this.canvasManager.add(stroke);
-          this.actionStack.push({
-            undo: (): boolean => this.canvasManager.remove(stroke.id),
-            redo: () => this.canvasManager.add(stroke),
-          });
-        }
-
-        this.strokeBuilder = null;
+      if (this.drawing) {
+        this.release();
       }
     }
   }
@@ -72,6 +65,22 @@ export class Pen implements Tool {
       zIndex: this.zIndex,
       stroke: this.strokeBuilder ? SerializeStroke(this.strokeBuilder.getStroke()) : null,
     };
+  }
+
+  release() {
+    if (this.drawing) {
+      if (this.actionStack) {
+        const stroke = this.strokeBuilder.getStroke();
+        this.canvasManager.add(stroke);
+        this.actionStack.push({
+          undo: (): boolean => this.canvasManager.remove(stroke.id),
+          redo: () => this.canvasManager.add(stroke),
+        });
+      }
+
+      this.strokeBuilder = null;
+      this.drawing = false;
+    }
   }
 
   static deserialize(data: SerializedPen, canvasManager: CanvasManager, actionStack?: ActionStack): Pen {

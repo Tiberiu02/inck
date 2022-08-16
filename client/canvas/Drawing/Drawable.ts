@@ -1,5 +1,12 @@
 import { Geometry } from "../Math/Geometry";
-import { DeserializeStroke, DeserializeStrokeLegacy, SerializedStroke, SerializeStroke, Stroke } from "./Stroke";
+import {
+  DeserializeStroke,
+  DeserializeStrokeLegacy,
+  SerializedStroke,
+  SerializeStroke,
+  Stroke,
+  TranslateStroke,
+} from "./Stroke";
 
 export enum DrawableTypes {
   VECTOR,
@@ -35,4 +42,12 @@ export function DeserializeDrawable(data: SerializedDrawable) {
     }
   } catch {}
   return drawable;
+}
+
+export function TranslateDrawable(drawable: Drawable, dx: number, dy: number) {
+  if (drawable.serializer == "stroke") {
+    return TranslateStroke(drawable as Stroke, dx, dy);
+  } else {
+    return drawable;
+  }
 }

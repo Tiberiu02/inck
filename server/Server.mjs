@@ -113,10 +113,10 @@ class Server {
 
           const [uId, sId] = stroke.id.split("-");
 
-          if (uId != user.id) {
-            console.log(`Invalid stroke on ${user.docId}. User id = ${user.id} (received ${uId})`);
-            return;
-          }
+          // if (uId != user.id) {
+          //   console.log(`Invalid stroke on ${user.docId}. User id = ${user.id} (received ${uId})`);
+          //   return;
+          // }
 
           for (let other of this.docs[user.docId].users) {
             if (other != user) {

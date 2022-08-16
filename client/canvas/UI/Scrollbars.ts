@@ -1,6 +1,7 @@
 import { MutableView, View } from "../View/View";
 import { ObservableProperty } from "../DesignPatterns/Observable";
 import { Display } from "../DeviceProps";
+import { PointerTracker } from "./PointerTracker";
 
 enum Direction {
   HORIZONTAL,
@@ -54,10 +55,6 @@ export class ScrollBars {
     window.addEventListener("pointerup", e => this.handlePointerUp(e));
   }
 
-  public isScrolling() {
-    return this.scrolling;
-  }
-
   private handlePointerDown(direction: Direction, e: PointerEvent) {
     if (this.scrolling) return;
 
@@ -66,6 +63,7 @@ export class ScrollBars {
     this.pointer = { x: e.x, y: e.y };
     this.pointerId = e.pointerId;
     this.vAnchor = View.getTop();
+    PointerTracker.pause();
   }
 
   private handlePointerMove(e: PointerEvent) {
@@ -92,6 +90,7 @@ export class ScrollBars {
         this.scrolling = false;
         this.vAnchor = null;
         this.updateBars();
+        PointerTracker.unpause();
       }
     }
   }

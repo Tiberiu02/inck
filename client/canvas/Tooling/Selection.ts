@@ -1,0 +1,321 @@
+import { CanvasManager } from "../CanvasManager";
+import { Display } from "../DeviceProps";
+import { Drawable, DrawableTypes, TranslateDrawable } from "../Drawing/Drawable";
+import { VectorGraphic } from "../Drawing/VectorGraphic";
+import { Stroke } from "../Drawing/Stroke";
+import { StrokeBuilder } from "../Drawing/StrokeBuilder";
+import { PolyLine, UniteRectangles } from "../Math/Geometry";
+import { RGB, StrokePoint, Vector2D, Vector3D } from "../types";
+import { View } from "../View/View";
+import { ActionStack } from "./ActionsStack";
+import { SerializedTool, Tool } from "./Tool";
+import { BUFFER_SIZE, NUM_LAYERS } from "../Rendering/BaseCanvasManager";
+import { RenderLoop } from "../Rendering/RenderLoop";
+import { PointerTracker } from "../UI/PointerTracker";
+
+const LASSO_WIDTH = 0.05; // in
+const LASSO_COLOR: RGB = [0.4, 0.6, 1];
+
+const SHADOW_SIZE = 0.2; // in
+const SHADOW_COLOR: RGB = [0.7, 0.9, 1];
+
+export class Selection implements Tool {
+  private canvasManager: CanvasManager;
+  private actionStack: ActionStack;
+  private strokeBuilder: DottedStrokeBuilder;
+
+  private selecting: boolean;
+  private points: StrokePoint[];
+  private selected: Drawable[];
+  private active: Drawable[];
+  private ui: HTMLDivElement;
+  private toTranslateBy: Vector2D;
+
+  constructor(canvasManager: CanvasManager, actionStack?: ActionStack) {
+    this.canvasManager = canvasManager;
+    this.actionStack = actionStack;
+    this.selected = [];
+    this.active = [];
+    this.points = [];
+    this.ui = this.createUI();
+
+    this.toTranslateBy = new Vector2D(0, 0);
+    RenderLoop.onRender(() => {
+      if (this.toTranslateBy.norm() > 0) {
+        const { x, y } = this.toTranslateBy;
+        this.selected = this.selected.map(d => TranslateDrawable(d, x, y));
+        this.active = this.active.map(d => TranslateDrawable(d, x, y));
+        this.toTranslateBy = new Vector2D(0, 0);
+      }
+    });
+  }
+
+  update(x: number, y: number, pressure: number, timestamp: number): void {
+    if (pressure) {
+      const width = View.getCanvasCoords(Display.DPI() * LASSO_WIDTH, 0, true)[0];
+
+      if (!this.selecting) {
+        this.release();
+
+        this.strokeBuilder = new DottedStrokeBuilder(LASSO_COLOR, width);
+        this.selecting = true;
+        this.points = [];
+      }
+
+      this.strokeBuilder.push({ x, y, pressure, timestamp });
+      this.points.push({ x, y, pressure, timestamp });
+
+      const connector = new DottedStrokeBuilder(LASSO_COLOR, width / 2);
+      connector.push(this.points[0]);
+      connector.push({ x, y, pressure, timestamp });
+
+      this.active = this.strokeBuilder.getStrokes().concat(connector.getStrokes());
+    } else {
+      if (this.selecting) {
+        const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
+        this.selected = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
+        this.selected.forEach(d => this.canvasManager.remove(d.id));
+
+        const shadows = this.selected.map(d => GetShadow(d));
+        this.active = OptimizeDrawables([].concat(shadows, this.selected));
+
+        this.selecting = false;
+      }
+    }
+  }
+
+  private createUI(): HTMLDivElement {
+    const div = document.createElement("div");
+    div.style.position = "fixed";
+    div.style.display = "none";
+    div.style.outline = `0.05in solid rgba(${LASSO_COLOR.map(c => c * 256)}, 0.8)`;
+    div.style.borderRadius = "0.02in";
+    div.style.cursor = "move";
+
+    let pointer: Vector2D;
+    div.addEventListener("pointerdown", e => {
+      pointer = new Vector2D(e.x, e.y);
+      PointerTracker.pause();
+    });
+    window.addEventListener("pointermove", e => {
+      if (pointer) {
+        const newPointer = new Vector2D(e.x, e.y);
+        this.translateSelection(newPointer.sub(pointer));
+        pointer = newPointer;
+      }
+    });
+    window.addEventListener("pointerup", e => {
+      if (pointer) {
+        pointer = null;
+        PointerTracker.unpause();
+      }
+    });
+    document.body.appendChild(div);
+
+    const menu = document.createElement("div");
+    menu.style.display = "flex";
+    menu.style.flexDirection = "row";
+    menu.style.backgroundColor = "rgba(255, 255, 255, 1)";
+    menu.style.position = "absolute";
+    menu.style.overflow = "hidden";
+    menu.style.top = "0px";
+    menu.style.left = "50%";
+    menu.style.transform = "translate(-50%, -50%)";
+    menu.style.borderRadius = "9999em";
+    menu.style.filter = "drop-shadow(0 7px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 3px 5px rgb(0 0 0 / 0.25))";
+    div.appendChild(menu);
+
+    const createBtn = (first: boolean, last: boolean, cb: Function) => {
+      const btn = document.createElement("div");
+      btn.style.padding = `0.5em ${last ? "1em" : "0.7em"} 0.5em ${first ? "1em" : "0.7em"}`;
+      btn.style.cursor = "pointer";
+      if (!first) {
+        btn.style.borderLeft = "1px solid #aaa";
+      }
+      menu.appendChild(btn);
+
+      let pressed = false;
+      btn.addEventListener("pointerdown", e => {
+        e.stopPropagation();
+        btn.style.backgroundColor = "rgba(240, 240, 240, 1)";
+        pressed = true;
+      });
+      btn.addEventListener("pointerout", e => {
+        btn.style.backgroundColor = "";
+        pressed = false;
+      });
+      btn.addEventListener("pointerup", e => {
+        btn.style.backgroundColor = "";
+        if (pressed) {
+          cb();
+          pressed = false;
+        }
+      });
+      return btn;
+    };
+
+    const deleteBtn = createBtn(true, false, () => this.deleteSelection());
+    deleteBtn.innerHTML = "🗑️&nbsp;Delete";
+
+    const deselectBtn = createBtn(false, true, () => this.release());
+    deselectBtn.innerHTML = "❌&nbsp;Deselect";
+
+    //const copyBtn = createBtn(false, true);
+    //copyBtn.innerHTML = "📋&nbsp;Copy";
+
+    return div;
+  }
+
+  render(): void {
+    this.active.forEach(s => this.canvasManager.addForNextRender(s));
+
+    if (this.selected.length) {
+      const box = this.selected.map(d => d.geometry.boundingBox).reduce(UniteRectangles);
+      const [x1, y1] = View.getScreenCoords(box.xMin, box.yMin);
+      const [x2, y2] = View.getScreenCoords(box.xMax, box.yMax);
+      const w = SHADOW_SIZE * Display.DPI() * 2;
+
+      this.ui.style.left = `${x1 - w}px`;
+      this.ui.style.top = `${y1 - w}px`;
+      this.ui.style.width = `${x2 - x1 + 2 * w}px`;
+      this.ui.style.height = `${y2 - y1 + 2 * w}px`;
+      this.ui.style.display = "";
+    } else {
+      this.ui.style.display = "none";
+    }
+  }
+
+  release(): void {
+    this.selected.forEach(d => this.canvasManager.add(d));
+    this.selected = [];
+    this.active = [];
+    RenderLoop.scheduleRender();
+  }
+
+  deleteSelection(): void {
+    this.selected = [];
+    this.active = [];
+    RenderLoop.scheduleRender();
+  }
+
+  translateSelection({ x, y }: Vector2D) {
+    [x, y] = View.getCanvasCoords(x, y, true);
+    this.toTranslateBy = this.toTranslateBy.add(new Vector2D(x, y));
+    RenderLoop.scheduleRender();
+  }
+
+  serialize(): SerializedTool {
+    return null;
+  }
+}
+
+const DOT_LEN = 1;
+const BREAK_LEN = 2;
+const SP_DIST = 0.1;
+
+class DottedStrokeBuilder {
+  private color: RGB;
+  private width: number;
+  private strokes: Stroke[];
+  private currentStroke: StrokeBuilder;
+  private lastPoint: StrokePoint;
+  private lastKeyPoint: StrokePoint;
+  private isDotting: boolean;
+  private timestamp: number;
+
+  constructor(color: RGB, width: number) {
+    this.color = color;
+    this.width = width;
+    this.strokes = [];
+  }
+
+  push(p: StrokePoint): void {
+    if (!this.lastPoint) {
+      this.timestamp = p.timestamp;
+      this.lastPoint = this.lastKeyPoint = p;
+      this.isDotting = true;
+      this.currentStroke = new StrokeBuilder("", p.timestamp, 1, this.color, this.width);
+      this.currentStroke.push(p);
+      return;
+    }
+
+    while (Vector2D.dist(p, this.lastPoint) > SP_DIST * this.width) {
+      this.push({
+        x: (p.x + this.lastPoint.x) / 2,
+        y: (p.y + this.lastPoint.y) / 2,
+        timestamp: (p.timestamp + this.lastPoint.timestamp) / 2,
+        pressure: (p.pressure + this.lastPoint.pressure) / 2,
+      });
+    }
+
+    if (this.isDotting) {
+      if (Vector2D.dist(p, this.lastKeyPoint) <= DOT_LEN * this.width) {
+        this.currentStroke.push(p);
+      } else {
+        this.currentStroke.push({ ...this.lastPoint, timestamp: this.lastPoint.timestamp + 10 });
+
+        this.strokes = OptimizeDrawables(this.strokes.concat([this.currentStroke.getStroke()])) as Stroke[];
+        this.lastKeyPoint = this.lastPoint;
+        this.isDotting = false;
+      }
+    } else {
+      if (Vector2D.dist(p, this.lastKeyPoint) > BREAK_LEN * this.width) {
+        this.currentStroke = new StrokeBuilder("", Date.now(), 1, this.color, this.width);
+        this.currentStroke.push(p);
+        this.lastKeyPoint = p;
+        this.isDotting = true;
+      }
+    }
+
+    this.lastPoint = p;
+  }
+
+  getStrokes() {
+    return this.strokes.concat(this.isDotting ? [this.currentStroke.getStroke()] : []);
+  }
+}
+
+function GetShadow(drawable: Drawable) {
+  console.log(drawable);
+  if (drawable.serializer == "stroke") {
+    const s = drawable as Stroke;
+    const shadowWidth = View.getCanvasCoords(Display.DPI() * SHADOW_SIZE, 0, true)[0];
+    const builder = new StrokeBuilder(
+      s.id,
+      s.timestamp,
+      s.zIndex,
+      SHADOW_COLOR,
+      s.width + shadowWidth / (1 + s.zIndex),
+      s.points
+    );
+    return builder.getStroke();
+  }
+  return null;
+}
+
+function OptimizeDrawables(drawables: Drawable[]): Drawable[] {
+  const vectors: VectorGraphic[] = drawables.filter(d => d.type == DrawableTypes.VECTOR) as VectorGraphic[];
+  const nonVectors = drawables.filter(d => d.type != DrawableTypes.VECTOR);
+
+  const optimized = [];
+  for (let layer = 0; layer < NUM_LAYERS; layer++) {
+    const v = vectors.filter(g => g.zIndex == layer);
+    if (v.length) {
+      let compounded = v[0];
+      for (let i = 1; i < v.length; i++) {
+        if (compounded.vector.length + v[i].vector.length < BUFFER_SIZE)
+          compounded = {
+            ...compounded,
+            vector: compounded.vector.concat(v[i].vector),
+          };
+        else {
+          optimized.push(compounded);
+          compounded = v[i];
+        }
+      }
+      optimized.push(compounded);
+    }
+  }
+
+  return optimized.concat(nonVectors);
+}

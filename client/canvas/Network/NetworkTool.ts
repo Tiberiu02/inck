@@ -15,6 +15,9 @@ export class NetworkTool implements Tool {
   }
 
   setTool(tool: Tool) {
+    if (this.baseTool) {
+      this.baseTool.release();
+    }
     this.baseTool = tool;
   }
 
@@ -37,6 +40,12 @@ export class NetworkTool implements Tool {
   render(): void {
     if (this.baseTool) {
       this.baseTool.render();
+    }
+  }
+
+  release(): void {
+    if (this.baseTool) {
+      this.baseTool.release();
     }
   }
 

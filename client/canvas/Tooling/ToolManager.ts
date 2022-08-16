@@ -6,6 +6,7 @@ import { RGB } from "../types";
 import { StrokeEraser } from "./Eraser";
 import { Pen } from "./Pen";
 import { Tool } from "./Tool";
+import { Selection } from "./Selection";
 
 export class ToolManager {
   private tool: NetworkTool;
@@ -33,6 +34,11 @@ export class ToolManager {
   selectPen(color: RGB, width: number, zIndex: number) {
     this.isErasing = false;
     this.tool.setTool(new Pen(color, width, zIndex, this.canvasManager, this.actionStack));
+  }
+
+  selectSelection() {
+    this.isErasing = false;
+    this.tool.setTool(new Selection(this.canvasManager, this.actionStack));
   }
 
   enableEraser() {

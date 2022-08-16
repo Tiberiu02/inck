@@ -3,6 +3,7 @@ import { Vector2D } from "../types";
 import { Display } from "../DeviceProps";
 import ToolWheel from "./ToolWheel";
 import tailwind from "../../tailwind.config";
+import { PointerTracker } from "./PointerTracker";
 
 enum STATES {
   IDLE,
@@ -39,8 +40,6 @@ export class CaddieMenu {
   private state: STATES;
   private enteredIdle: number;
 
-  private draggging: boolean;
-
   constructor(toolManager: ToolManager, wheel: ToolWheel) {
     this.toolManager = toolManager;
     this.wheel = wheel;
@@ -54,10 +53,6 @@ export class CaddieMenu {
     this.opacity = MAX_OPACITY;
     this.lastUpdate = performance.now();
     requestAnimationFrame(() => this.update());
-  }
-
-  isDragging() {
-    return this.draggging;
   }
 
   updatePointer(pointer: Vector2D) {
@@ -214,7 +209,7 @@ export class CaddieMenu {
     const handlePointerDown = (e: PointerEvent) => {
       initialClick = new Vector2D(e.x, e.y).div(Display.DPI());
       relativePos = this.target.sub(initialClick);
-      this.draggging = true;
+      PointerTracker.pause();
     };
     const handlePointerMove = (e: PointerEvent) => {
       if (relativePos) {
@@ -228,7 +223,7 @@ export class CaddieMenu {
       if (relativePos) {
         dragging = false;
         relativePos = null;
-        this.draggging = false;
+        PointerTracker.unpause();
       }
     };
     this.el.addEventListener("pointerdown", handlePointerDown);

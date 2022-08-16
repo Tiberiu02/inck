@@ -44,6 +44,8 @@ export class StrokeEraser implements Tool {
 
   render(): void {}
 
+  release(): void {}
+
   serialize() {
     return null;
   }

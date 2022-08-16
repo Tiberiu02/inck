@@ -1,3 +1,5 @@
+export type Point2D = { readonly x: number; readonly y: number };
+
 export class Vector2D {
   readonly x: number;
   readonly y: number;
@@ -33,7 +35,11 @@ export class Vector2D {
   }
 
   dist(other: Vector2D): number {
-    return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+    return Vector2D.dist(this, other);
+  }
+
+  static dist(a: Point2D, b: Point2D) {
+    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
   }
 }
 

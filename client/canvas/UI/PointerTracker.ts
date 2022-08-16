@@ -77,6 +77,14 @@ export class PointerTracker {
     }
   }
 
+  private static isPaused: boolean;
+  static pause() {
+    this.isPaused = true;
+  }
+  static unpause() {
+    this.isPaused = false;
+  }
+
   // iOS
   private handleMouseEvent(e: MouseEvent) {
     let penEvent: PenEvent = {
@@ -89,7 +97,9 @@ export class PointerTracker {
       preventDefault: () => e.preventDefault(),
     };
 
-    this.triggerPenEvent(penEvent);
+    if (!PointerTracker.isPaused) {
+      this.triggerPenEvent(penEvent);
+    }
   }
 
   // iOS
@@ -132,7 +142,9 @@ export class PointerTracker {
         preventDefault: () => e.preventDefault(),
       };
 
-      this.triggerFingerEvent(fingerEvent);
+      if (!PointerTracker.isPaused) {
+        this.triggerFingerEvent(fingerEvent);
+      }
     }
   }
 
@@ -149,7 +161,9 @@ export class PointerTracker {
         preventDefault: () => e.preventDefault(),
       };
 
-      this.triggerPenEvent(penEvent);
+      if (!PointerTracker.isPaused) {
+        this.triggerPenEvent(penEvent);
+      }
     } else {
       const finger: Finger = {
         id: e.pointerId,
@@ -172,7 +186,9 @@ export class PointerTracker {
         preventDefault: () => e.preventDefault(),
       };
 
-      this.triggerFingerEvent(fingerEvent);
+      if (!PointerTracker.isPaused) {
+        this.triggerFingerEvent(fingerEvent);
+      }
     }
   }
 

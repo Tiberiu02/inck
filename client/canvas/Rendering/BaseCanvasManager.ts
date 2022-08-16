@@ -8,8 +8,8 @@ import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { CanvasManager } from "../CanvasManager";
 import { RenderLoop } from "./RenderLoop";
 
-const BUFFER_SIZE = 5e4;
-const NUM_LAYERS = 2;
+export const BUFFER_SIZE = 5e4;
+export const NUM_LAYERS = 2;
 
 function GetUniforms() {
   return {

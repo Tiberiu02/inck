@@ -86,6 +86,7 @@ export default class ToolWheel {
     };
 
     this.toolManager.selectPen([0, 0, 0], WIDTHS[this.width.pen], 1);
+    //this.toolManager.selectSelection();
   }
 
   NewTool() {
@@ -101,7 +102,7 @@ export default class ToolWheel {
     } else if (this.tool == "eraser") {
       this.toolManager.enableEraser();
     } else if (this.tool == "selection") {
-      // TODO
+      this.toolManager.selectSelection();
     }
   }
 
@@ -361,6 +362,7 @@ export default class ToolWheel {
       let selection = createElement("g", { class: "tool_button" });
       selection.addEventListener("pointerdown", () => {
         this.setTool("selection");
+        this.NewTool();
         this.hide();
         this.registerClose();
       });

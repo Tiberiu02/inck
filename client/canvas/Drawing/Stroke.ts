@@ -1,6 +1,6 @@
 import { StrokeBuilder } from "./StrokeBuilder";
 import { RGB, StrokePoint } from "../types";
-import { SerializedVectorGraphic, VectorGraphic } from "./VectorGraphic";
+import { SerializedVectorGraphic, TranslateVectorArray, VectorGraphic } from "./VectorGraphic";
 
 export const ELEMENTS_PER_INPUT = 4;
 export const OFFSET_INPUT = {
@@ -66,4 +66,13 @@ export function DeserializeStrokeLegacy(data: any): Stroke {
     });
 
   return builder.getStroke();
+}
+
+export function TranslateStroke(stroke: Stroke, dx: number, dy: number): Stroke {
+  return {
+    ...stroke,
+    geometry: stroke.geometry.translate(dx, dy),
+    vector: TranslateVectorArray(stroke.vector, dx, dy),
+    points: stroke.points.map(p => ({ ...p, x: p.x + dx, y: p.y + dy })),
+  };
 }

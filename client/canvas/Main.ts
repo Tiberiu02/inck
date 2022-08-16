@@ -83,8 +83,6 @@ export default class App {
   }
 
   handlePenEvent(e: PenEvent) {
-    if (this.scrollBars.isScrolling() || this.caddie.isDragging()) return;
-
     e.preventDefault(); // hide touch callout on iOS
 
     // Hide tool wheel if open

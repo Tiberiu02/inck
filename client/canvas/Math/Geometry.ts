@@ -1,4 +1,4 @@
-import { LineSegment, Rectangle, Vector3D } from "../types";
+import { LineSegment, Rectangle, Vector2D, Vector3D } from "../types";
 
 export function RectangleIntersectsRectangle(a: Rectangle, b: Rectangle, padding: number = 0): boolean {
   return (
@@ -24,15 +24,34 @@ export function DistanceSq(x1: number, y1: number, x2: number, y2: number) {
   return (x1 - x2) ** 2 + (y1 - y2) ** 2;
 }
 
+export function UniteRectangles(a: Rectangle, b: Rectangle): Rectangle {
+  return {
+    xMin: Math.min(a.xMin, b.xMin),
+    xMax: Math.max(a.xMax, b.xMax),
+    yMin: Math.min(a.yMin, b.yMin),
+    yMax: Math.max(a.yMax, b.yMax),
+  };
+}
+
+export function TranslateRectangle(rec: Rectangle, dx: number, dy: number) {
+  return {
+    xMin: rec.xMin + dx,
+    xMax: rec.xMax + dx,
+    yMin: rec.yMin + dy,
+    yMax: rec.yMax + dy,
+  };
+}
+
 export interface Geometry {
   readonly boundingBox: Rectangle;
 
+  translate(dx: number, dy: number): Geometry;
   intersectsLine(line: LineSegment): boolean;
+  overlapsPoly(poly: PolyLine): boolean;
 }
 
 export class PolyLine implements Geometry {
   readonly points: Vector3D[];
-
   readonly boundingBox: Rectangle;
 
   constructor(points: Vector3D[]) {
@@ -53,6 +72,10 @@ export class PolyLine implements Geometry {
         yMax: Math.max(this.boundingBox.yMax, p.y + p.z),
       };
     }
+  }
+
+  translate(dx: number, dy: number): PolyLine {
+    return new PolyLine(this.points.map(p => new Vector3D(p.x + dx, p.y + dy, p.z)));
   }
 
   intersectsLine(line: LineSegment): boolean {
@@ -77,6 +100,36 @@ export class PolyLine implements Geometry {
 
     for (const p of this.points) {
       if (DistanceSq(p.x, p.y, line.x1, line.y1) < p.z ** 2 || DistanceSq(p.x, p.y, line.x2, line.y2) < p.z ** 2) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  contains(p: Vector2D): boolean {
+    let a = this.points[this.points.length - 1];
+    let contained = false;
+    for (const b of this.points) {
+      if (
+        (a.x <= p.x && p.x < b.x && b.y * (p.x - a.x) + a.y * (b.x - p.x) <= p.y * (b.x - a.x)) ||
+        (b.x <= p.x && p.x < a.x && a.y * (p.x - b.x) + b.y * (a.x - p.x) <= p.y * (a.x - b.x))
+      )
+        contained = !contained;
+
+      a = b;
+    }
+
+    return contained;
+  }
+
+  overlapsPoly(poly: PolyLine): boolean {
+    if (!RectangleIntersectsRectangle(this.boundingBox, poly.boundingBox)) {
+      return false;
+    }
+
+    for (const p of this.points) {
+      if (poly.contains(new Vector2D(p.x, p.y))) {
         return true;
       }
     }
