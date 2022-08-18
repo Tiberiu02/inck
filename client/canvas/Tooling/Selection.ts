@@ -1,27 +1,45 @@
 import { CanvasManager } from "../CanvasManager";
 import { Display } from "../DeviceProps";
-import { Drawable, DrawableTypes, TranslateDrawable } from "../Drawing/Drawable";
+import {
+  DeserializeDrawable,
+  Drawable,
+  DrawableTypes,
+  SerializedDrawable,
+  SerializeDrawable,
+  TranslateDrawable,
+} from "../Drawing/Drawable";
 import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { Stroke } from "../Drawing/Stroke";
 import { StrokeBuilder } from "../Drawing/StrokeBuilder";
 import { PolyLine, UniteRectangles } from "../Math/Geometry";
-import { RGB, StrokePoint, Vector2D, Vector3D } from "../types";
+import { Point2D, RGB, StrokePoint, Vector2D, Vector3D } from "../types";
 import { View } from "../View/View";
 import { ActionStack } from "./ActionsStack";
 import { SerializedTool, Tool } from "./Tool";
 import { BUFFER_SIZE, NUM_LAYERS } from "../Rendering/BaseCanvasManager";
 import { RenderLoop } from "../Rendering/RenderLoop";
 import { PointerTracker } from "../UI/PointerTracker";
+import { NetworkConnection } from "../Network/NetworkConnection";
 
 const LASSO_WIDTH = 0.05; // in
 const LASSO_COLOR: RGB = [0.4, 0.6, 1];
+const LASSO_COLOR_COLLAB: RGB = [0.4, 0.8, 0.8];
 
 const SHADOW_SIZE = 0.2; // in
 const SHADOW_COLOR: RGB = [0.7, 0.9, 1];
+const SHADOW_COLOR_COLLAB: RGB = [0.7, 1, 0.9];
+
+export interface SerializedSelection extends SerializedTool {
+  readonly selecting: boolean;
+  readonly points: StrokePoint[];
+  readonly selected: SerializedDrawable[];
+  readonly toTranslateBy: Point2D;
+}
 
 export class Selection implements Tool {
   private canvasManager: CanvasManager;
   private actionStack: ActionStack;
+  private network: NetworkConnection;
   private strokeBuilder: DottedStrokeBuilder;
 
   private selecting: boolean;
@@ -31,33 +49,27 @@ export class Selection implements Tool {
   private ui: HTMLDivElement;
   private toTranslateBy: Vector2D;
 
-  constructor(canvasManager: CanvasManager, actionStack?: ActionStack) {
+  constructor(canvasManager: CanvasManager, actionStack?: ActionStack, network?: NetworkConnection) {
     this.canvasManager = canvasManager;
     this.actionStack = actionStack;
+    this.network = network;
     this.selected = [];
     this.active = [];
     this.points = [];
     this.ui = this.createUI();
 
     this.toTranslateBy = new Vector2D(0, 0);
-    RenderLoop.onRender(() => {
-      if (this.toTranslateBy.norm() > 0) {
-        const { x, y } = this.toTranslateBy;
-        this.selected = this.selected.map(d => TranslateDrawable(d, x, y));
-        this.active = this.active.map(d => TranslateDrawable(d, x, y));
-        this.toTranslateBy = new Vector2D(0, 0);
-      }
-    });
   }
 
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (pressure) {
       const width = View.getCanvasCoords(Display.DPI() * LASSO_WIDTH, 0, true)[0];
+      const color = this.actionStack ? LASSO_COLOR : LASSO_COLOR_COLLAB;
 
       if (!this.selecting) {
         this.release();
 
-        this.strokeBuilder = new DottedStrokeBuilder(LASSO_COLOR, width);
+        this.strokeBuilder = new DottedStrokeBuilder(color, width);
         this.selecting = true;
         this.points = [];
       }
@@ -65,23 +77,31 @@ export class Selection implements Tool {
       this.strokeBuilder.push({ x, y, pressure, timestamp });
       this.points.push({ x, y, pressure, timestamp });
 
-      const connector = new DottedStrokeBuilder(LASSO_COLOR, width / 2);
+      const connector = new DottedStrokeBuilder(color, width / 2);
       connector.push(this.points[0]);
       connector.push({ x, y, pressure, timestamp });
 
       this.active = this.strokeBuilder.getStrokes().concat(connector.getStrokes());
     } else {
       if (this.selecting) {
-        const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
-        this.selected = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
-        this.selected.forEach(d => this.canvasManager.remove(d.id));
-
-        const shadows = this.selected.map(d => GetShadow(d));
-        this.active = OptimizeDrawables([].concat(shadows, this.selected));
-
         this.selecting = false;
+
+        if (this.actionStack) {
+          const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
+          this.selected = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
+          this.selected.forEach(d => this.canvasManager.remove(d.id));
+          this.network.updateTool(this);
+        }
+
+        this.computeShadows();
       }
     }
+  }
+
+  private computeShadows() {
+    const shadowColor = this.actionStack ? SHADOW_COLOR : SHADOW_COLOR_COLLAB;
+    const shadows = this.selected.map(d => GetShadow(d, shadowColor));
+    this.active = OptimizeDrawables([].concat(shadows, this.selected));
   }
 
   private createUI(): HTMLDivElement {
@@ -92,21 +112,25 @@ export class Selection implements Tool {
     div.style.borderRadius = "0.02in";
     div.style.cursor = "move";
 
+    // Moving selection
     let pointer: Vector2D;
+    let pointerId: number;
     div.addEventListener("pointerdown", e => {
       pointer = new Vector2D(e.x, e.y);
+      pointerId = e.pointerId;
       PointerTracker.pause();
     });
     window.addEventListener("pointermove", e => {
-      if (pointer) {
+      if (pointer && e.pointerId == pointerId) {
         const newPointer = new Vector2D(e.x, e.y);
         this.translateSelection(newPointer.sub(pointer));
         pointer = newPointer;
       }
     });
     window.addEventListener("pointerup", e => {
-      if (pointer) {
+      if (pointer && e.pointerId == pointerId) {
         pointer = null;
+        this.applyTranslation();
         PointerTracker.unpause();
       }
     });
@@ -118,11 +142,11 @@ export class Selection implements Tool {
     menu.style.backgroundColor = "rgba(255, 255, 255, 1)";
     menu.style.position = "absolute";
     menu.style.overflow = "hidden";
-    menu.style.top = "0px";
+    menu.style.bottom = "0px";
     menu.style.left = "50%";
-    menu.style.transform = "translate(-50%, -50%)";
+    menu.style.transform = "translate(-50%, 50%)";
     menu.style.borderRadius = "9999em";
-    menu.style.filter = "drop-shadow(0 7px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 3px 5px rgb(0 0 0 / 0.25))";
+    menu.style.filter = "drop-shadow(0 2px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 5px rgb(0 0 0 / 0.25))";
     div.appendChild(menu);
 
     const createBtn = (first: boolean, last: boolean, cb: Function) => {
@@ -160,33 +184,45 @@ export class Selection implements Tool {
     const deselectBtn = createBtn(false, true, () => this.release());
     deselectBtn.innerHTML = "❌&nbsp;Deselect";
 
-    //const copyBtn = createBtn(false, true);
-    //copyBtn.innerHTML = "📋&nbsp;Copy";
-
     return div;
   }
 
   render(): void {
-    this.active.forEach(s => this.canvasManager.addForNextRender(s));
+    this.active.forEach(s => this.canvasManager.addForNextRender({ ...s, glUniforms: this.GetUniforms() }));
 
-    if (this.selected.length) {
-      const box = this.selected.map(d => d.geometry.boundingBox).reduce(UniteRectangles);
-      const [x1, y1] = View.getScreenCoords(box.xMin, box.yMin);
-      const [x2, y2] = View.getScreenCoords(box.xMax, box.yMax);
-      const w = SHADOW_SIZE * Display.DPI() * 2;
+    if (this.actionStack) {
+      if (this.selected.length) {
+        const { x, y } = this.toTranslateBy;
+        const box = this.selected.map(d => d.geometry.boundingBox).reduce(UniteRectangles);
+        const [x1, y1] = View.getScreenCoords(box.xMin + x, box.yMin + y);
+        const [x2, y2] = View.getScreenCoords(box.xMax + x, box.yMax + y);
+        const w = SHADOW_SIZE * Display.DPI() * 2;
 
-      this.ui.style.left = `${x1 - w}px`;
-      this.ui.style.top = `${y1 - w}px`;
-      this.ui.style.width = `${x2 - x1 + 2 * w}px`;
-      this.ui.style.height = `${y2 - y1 + 2 * w}px`;
-      this.ui.style.display = "";
-    } else {
-      this.ui.style.display = "none";
+        this.ui.style.left = `${x1 - w}px`;
+        this.ui.style.top = `${y1 - w}px`;
+        this.ui.style.width = `${x2 - x1 + 2 * w}px`;
+        this.ui.style.height = `${y2 - y1 + 2 * w}px`;
+        this.ui.style.display = "";
+      } else {
+        this.ui.style.display = "none";
+      }
     }
   }
 
+  private GetUniforms() {
+    return {
+      u_AspectRatio: Display.AspectRatio(),
+      u_Left: View.getLeft() - this.toTranslateBy.x,
+      u_Top: View.getTop() - this.toTranslateBy.y,
+      u_Zoom: View.getZoom(),
+    };
+  }
+
   release(): void {
-    this.selected.forEach(d => this.canvasManager.add(d));
+    if (this.actionStack) {
+      this.network.updateTool(this);
+      this.selected.forEach(d => this.canvasManager.add(d));
+    }
     this.selected = [];
     this.active = [];
     RenderLoop.scheduleRender();
@@ -195,6 +231,7 @@ export class Selection implements Tool {
   deleteSelection(): void {
     this.selected = [];
     this.active = [];
+    this.network.updateTool(this);
     RenderLoop.scheduleRender();
   }
 
@@ -204,8 +241,35 @@ export class Selection implements Tool {
     RenderLoop.scheduleRender();
   }
 
-  serialize(): SerializedTool {
-    return null;
+  applyTranslation() {
+    const { x, y } = this.toTranslateBy;
+    this.selected = this.selected.map(d => TranslateDrawable(d, x, y));
+    this.active = this.active.map(d => TranslateDrawable(d, x, y));
+    this.toTranslateBy = new Vector2D(0, 0);
+  }
+
+  serialize(): SerializedSelection {
+    return {
+      deserializer: "selection",
+      selecting: this.selecting,
+      selected: this.selected.map(SerializeDrawable),
+      points: this.points,
+      toTranslateBy: { x: this.toTranslateBy.x, y: this.toTranslateBy.y },
+    };
+  }
+
+  static deserialize(data: SerializedSelection, canvasManager: CanvasManager, actionStack?: ActionStack): Selection {
+    const s = new Selection(canvasManager, actionStack);
+    s.selecting = data.selecting;
+    s.selected = data.selected.map(DeserializeDrawable);
+    if (data.selecting) {
+      for (const p of data.points) {
+        s.update(p.x, p.y, p.pressure, p.timestamp);
+      }
+    } else {
+      s.computeShadows();
+    }
+    return s;
   }
 }
 
@@ -275,7 +339,7 @@ class DottedStrokeBuilder {
   }
 }
 
-function GetShadow(drawable: Drawable) {
+function GetShadow(drawable: Drawable, shadowColor: RGB) {
   console.log(drawable);
   if (drawable.serializer == "stroke") {
     const s = drawable as Stroke;
@@ -284,7 +348,7 @@ function GetShadow(drawable: Drawable) {
       s.id,
       s.timestamp,
       s.zIndex,
-      SHADOW_COLOR,
+      shadowColor,
       s.width + shadowWidth / (1 + s.zIndex),
       s.points
     );

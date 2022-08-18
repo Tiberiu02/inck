@@ -17,6 +17,7 @@ export interface Drawable {
   readonly serializer: string;
   readonly type: DrawableTypes;
   readonly geometry: Geometry;
+  readonly glUniforms?: any;
 }
 
 export interface SerializedDrawable {

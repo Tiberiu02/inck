@@ -194,18 +194,13 @@ export class BaseCanvasManager implements CanvasManager {
       this.activeStrokes
         .filter(stroke => stroke.zIndex == ix)
         .forEach(stroke => {
-          Profiler.start("vectorization");
-          const array = stroke.vector;
-          Profiler.stop("vectorization");
-          Profiler.start("active rendering");
-          this.renderStroke(array);
-          Profiler.stop("active rendering");
+          this.renderStroke(stroke.vector, stroke.glUniforms);
         });
     });
     this.activeStrokes = [];
   }
 
-  private renderStroke(array: number[], program?: WebGLProgram): void {
+  private renderStroke(array: number[], uniforms?: any): void {
     Profiler.start("binding");
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
     Profiler.stop("binding");
@@ -216,7 +211,7 @@ export class BaseCanvasManager implements CanvasManager {
     Profiler.stop("buffering");
 
     Profiler.start("program");
-    GL.setProgram(this.gl, program ?? this.program, GetUniforms());
+    GL.setProgram(this.gl, this.program, uniforms ?? GetUniforms());
     Profiler.stop("program");
 
     Profiler.start("drawing");

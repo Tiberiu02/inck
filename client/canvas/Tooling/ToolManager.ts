@@ -38,7 +38,7 @@ export class ToolManager {
 
   selectSelection() {
     this.isErasing = false;
-    this.tool.setTool(new Selection(this.canvasManager, this.actionStack));
+    this.tool.setTool(new Selection(this.canvasManager, this.actionStack, this.network));
   }
 
   enableEraser() {
