@@ -10,6 +10,7 @@ import {
 
 export enum DrawableTypes {
   VECTOR,
+  IMAGE,
 }
 
 export interface Drawable {

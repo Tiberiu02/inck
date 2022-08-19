@@ -225,6 +225,7 @@ export class Selection implements Tool {
     }
     this.selected = [];
     this.active = [];
+    this.ui.style.display = "none";
     RenderLoop.scheduleRender();
   }
 

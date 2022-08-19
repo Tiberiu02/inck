@@ -1,5 +1,9 @@
-import VertexShader from "./Shaders/vertex.glsl";
-import FragmentShader from "./Shaders/fragment.glsl";
+import MainVertexShader from "./Shaders/Main/vertex.glsl";
+import MainFragmentShader from "./Shaders/Main/fragment.glsl";
+export const MainVertexShaderSource = MainVertexShader;
+export const MainFragmentShaderSource = MainFragmentShader;
 
-export const VertexShaderSource = VertexShader;
-export const FragmentShaderSource = FragmentShader;
+import ImageVertexShader from "./Shaders/Image/vertex.glsl";
+import ImageFragmentShader from "./Shaders/Image/fragment.glsl";
+export const ImageVertexShaderSource = ImageVertexShader;
+export const ImageFragmentShaderSource = ImageFragmentShader;

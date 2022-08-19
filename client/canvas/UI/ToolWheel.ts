@@ -128,7 +128,8 @@ export default class ToolWheel {
       const x1 = Math.max(this.R, Math.min(innerWidth - this.R, x));
       const y1 = Math.max(this.R, Math.min(innerHeight - this.R, y));
 
-      this.wheel.style.position = "absolute";
+      this.wheel.style.position = "fixed";
+      this.wheel.style.zIndex = "20";
       this.wheel.style.left = `${x - this.R}px`;
       this.wheel.style.top = `${y - this.R}px`;
 
@@ -136,7 +137,8 @@ export default class ToolWheel {
 
       for (const wheel of Object.values(this.widthsWheels)) {
         wheel.style.display = "none";
-        wheel.style.position = "absolute";
+        wheel.style.position = "fixed";
+        wheel.style.zIndex = "20";
         wheel.style.left = `${x1 - this.R}px`;
         wheel.style.top = `${y1 - this.R}px`;
       }

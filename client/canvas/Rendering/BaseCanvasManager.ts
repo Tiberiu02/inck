@@ -128,22 +128,76 @@ class StrokeCluster {
   }
 }
 
+import * as PDFJS from "pdfjs-dist";
+import { m4 } from "../Math/M4";
+
+import {
+  ImageFragmentShaderSource,
+  ImageVertexShaderSource,
+  MainFragmentShaderSource,
+  MainVertexShaderSource,
+} from "./Shaders";
+import { Image } from "../Drawing/Image";
+
+async function LoadPdf() {
+  const url = "/demo.pdf";
+  const currentPage = 1;
+  const scale = 1.5;
+
+  PDFJS.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.15.349/pdf.worker.js`;
+  const pdf = await PDFJS.getDocument(url).promise;
+
+  Profiler.start("rendering page");
+  const page = await pdf.getPage(currentPage);
+
+  console.log("Printing " + currentPage);
+  var viewport = page.getViewport({ scale });
+  var canvas = document.createElement("canvas"),
+    ctx = canvas.getContext("2d");
+  var renderContext = { canvasContext: ctx, viewport: viewport };
+
+  canvas.height = viewport.height;
+  canvas.width = viewport.width;
+  canvas.style.position = "fixed";
+  canvas.style.top = "0px";
+  canvas.style.left = "0px";
+
+  await page.render(renderContext).promise;
+  Profiler.stop("rendering page");
+  console.log("renering PDF page took (ms):", Profiler.getProfiler().performance("rendering page"));
+
+  const image: Image = {
+    pixels: canvas,
+    id: "",
+    serializer: "image",
+    type: DrawableTypes.IMAGE,
+    geometry: null,
+  };
+
+  return image;
+}
+
 export class BaseCanvasManager implements CanvasManager {
   private canvas: HTMLCanvasElement;
   private gl: WebGL2RenderingContext;
   private layers: StrokeCluster[];
   private buffer: WebGLBuffer;
-  private program: WebGLProgram;
+  private mainProgram: WebGLProgram;
+  private imageProgram: WebGLProgram;
   private activeStrokes: Stroke[];
   private strokes: { [id: string]: VectorGraphic };
+  private positionBuffer: WebGLBuffer;
+  private texcoordBuffer: WebGLBuffer;
+  private pdf: Image;
 
   constructor() {
     this.canvas = document.createElement("canvas");
     document.body.appendChild(this.canvas);
 
     this.gl = GL.initWebGL(this.canvas);
-    this.program = GL.createProgram(this.gl);
-    this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(this.gl, this.program));
+    this.mainProgram = GL.createProgram(this.gl, MainVertexShaderSource, MainFragmentShaderSource);
+    this.imageProgram = GL.createProgram(this.gl, ImageVertexShaderSource, ImageFragmentShaderSource);
+    this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster(this.gl, this.mainProgram));
     this.buffer = this.gl.createBuffer();
     this.activeStrokes = [];
     this.strokes = {};
@@ -151,6 +205,32 @@ export class BaseCanvasManager implements CanvasManager {
     // Adjust canvas size
     this.resizeCanvas();
     window.addEventListener("resize", () => this.resizeCanvas());
+
+    // Create a buffer.
+    this.positionBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+
+    // Put a unit quad in the buffer
+    const positions = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
+
+    // Create a buffer for texture coords
+    this.texcoordBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texcoordBuffer);
+
+    // Put texcoords in the buffer
+    const texcoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(texcoords), this.gl.STATIC_DRAW);
+
+    // Test PDF
+    const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/);
+    const docId = (wloc && wloc[1]) || "";
+    if (docId == "pdf") {
+      LoadPdf().then(pdf => {
+        this.pdf = pdf;
+        RenderLoop.scheduleRender();
+      });
+    }
   }
 
   add(drawable: Drawable): void {
@@ -184,39 +264,78 @@ export class BaseCanvasManager implements CanvasManager {
   addForNextRender(drawable: Drawable) {
     if (drawable.type == DrawableTypes.VECTOR) {
       this.activeStrokes.push(drawable as Stroke);
+    } else if (drawable.type == DrawableTypes.IMAGE) {
+      const image = drawable as Image;
+      if (!image.texture) {
+        image.texture = GL.createImageTextureInfo(this.gl, image.pixels);
+      }
+      this.renderTexture(image.texture, image.pixels.width, image.pixels.height, 0, 0);
     }
   }
 
   render(): void {
     this.clearCanvas();
+    if (this.pdf) {
+      this.addForNextRender(this.pdf);
+    }
     this.layers.forEach((layer, ix) => {
       layer.render();
       this.activeStrokes
         .filter(stroke => stroke.zIndex == ix)
         .forEach(stroke => {
-          this.renderStroke(stroke.vector, stroke.glUniforms);
+          this.renderVector(stroke.vector, stroke.glUniforms);
         });
     });
     this.activeStrokes = [];
   }
 
-  private renderStroke(array: number[], uniforms?: any): void {
-    Profiler.start("binding");
+  private renderVector(array: number[], uniforms?: any): void {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
-    Profiler.stop("binding");
-
-    Profiler.start("buffering");
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(array), this.gl.STREAM_DRAW);
-    // Note to self: don't bother with with gl.bufferSubData, doesn't work well on mobile
-    Profiler.stop("buffering");
-
-    Profiler.start("program");
-    GL.setProgram(this.gl, this.program, uniforms ?? GetUniforms());
-    Profiler.stop("program");
-
-    Profiler.start("drawing");
+    GL.setProgram(this.gl, this.mainProgram, uniforms ?? GetUniforms());
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
-    Profiler.stop("drawing");
+  }
+
+  private renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number) {
+    this.gl.bindTexture(this.gl.TEXTURE_2D, tex);
+
+    // Tell WebGL to use our shader program pair
+    this.gl.useProgram(this.imageProgram);
+
+    // look up where the vertex data needs to go.
+    var positionLocation = this.gl.getAttribLocation(this.imageProgram, "a_position");
+    var texcoordLocation = this.gl.getAttribLocation(this.imageProgram, "a_texcoord");
+
+    // lookup uniforms
+    var matrixLocation = this.gl.getUniformLocation(this.imageProgram, "u_matrix");
+    var textureLocation = this.gl.getUniformLocation(this.imageProgram, "u_texture");
+
+    // Setup the attributes to pull data from our buffers
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+    this.gl.enableVertexAttribArray(positionLocation);
+    this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texcoordBuffer);
+    this.gl.enableVertexAttribArray(texcoordLocation);
+    this.gl.vertexAttribPointer(texcoordLocation, 2, this.gl.FLOAT, false, 0, 0);
+
+    // this matrix will convert from pixels to clip space
+    let matrix = m4.orthographic(0, this.gl.canvas.width, this.gl.canvas.height, 0, -1, 1);
+
+    // this matrix will translate our quad to x, y
+    matrix = m4.translate(matrix, x, y, 0);
+
+    // this matrix will scale our 1 unit quad
+    // from 1 unit to width, height units
+    matrix = m4.scale(matrix, width, height, 1);
+
+    // Set the matrix.
+    this.gl.uniformMatrix4fv(matrixLocation, false, matrix);
+
+    // Tell the shader to get the texture from texture unit 0
+    this.gl.uniform1i(textureLocation, 0);
+
+    // draw the quad (2 triangles, 6 vertices)
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
   }
 
   private viewport(x: number, y: number, width: number, height: number) {

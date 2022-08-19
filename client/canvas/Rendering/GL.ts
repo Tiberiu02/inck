@@ -1,5 +1,3 @@
-import { VertexShaderSource, FragmentShaderSource } from "./Shaders";
-
 export const ELEMENTS_PER_VERTEX = 6;
 
 export function desynchronizedHintAvailable() {
@@ -24,20 +22,20 @@ export class GL {
 
     if (!gl) alert("Your browser does not support WebGL");
 
-    //gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-    //gl.enable(gl.BLEND);
-    //gl.disable(gl.DEPTH_TEST);
-
     return gl;
   }
 
-  static createProgram(gl: WebGL2RenderingContext): WebGLProgram {
+  static createProgram(
+    gl: WebGL2RenderingContext,
+    vertexShaderSource: string,
+    fragmentShaderSource: string
+  ): WebGLProgram {
     // Create Shaders
     let vertexShader = gl.createShader(gl.VERTEX_SHADER);
     let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 
-    gl.shaderSource(vertexShader, VertexShaderSource);
-    gl.shaderSource(fragmentShader, FragmentShaderSource);
+    gl.shaderSource(vertexShader, vertexShaderSource);
+    gl.shaderSource(fragmentShader, fragmentShaderSource);
 
     gl.compileShader(vertexShader);
     if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
@@ -86,13 +84,13 @@ export class GL {
     //gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(index), gl[drawType]);
   }
 
-  static setAttribute(gl, program, name, size, offset) {
+  static setAttribute(gl: WebGLRenderingContext, program: WebGLProgram, name: string, size: number, offset: number) {
     let location = gl.getAttribLocation(program, name);
     gl.vertexAttribPointer(
       location, // Attribute location
       size, // Number of elements per attribute
       gl.FLOAT, // Type of elements
-      gl.FLOAT_32_UNSIGNED_INT_24_8_REV,
+      false,
       ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
       offset * Float32Array.BYTES_PER_ELEMENT // Offset
     );
@@ -113,5 +111,23 @@ export class GL {
     for (let name in uniforms) {
       GL.setUniform1f(gl, program, name, uniforms[name]);
     }
+  }
+
+  // creates a texture info { width: w, height: h, texture: tex }
+  // The texture will start with 1x1 pixels and be updated
+  // when the image has loaded
+  static createImageTextureInfo(gl: WebGL2RenderingContext, img: HTMLCanvasElement | HTMLImageElement) {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // let's assume all images are not a power of 2
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+
+    return texture;
   }
 }
