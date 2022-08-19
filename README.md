@@ -29,6 +29,13 @@ Open your browser and go to https://localhost:3080.
 
 # To-do list
 
+### Refactorings
+* [ ] Drawable -> Graphic + PersistentGraphic
+* [ ] GL Context to it's on class (instance stored in BaseCanvasManager)
+* [ ] Network singleton
+* [ ] Network tools: 2 versions (local and collab, with seamless communication)
+* [ ] Method-less Vector class (move all methods to static class)
+
 ### Bugs
 
 
@@ -158,19 +165,26 @@ When professor opens lecture notes:
 * [ ] Pen prediction (very hard, requires neural nets), note: PointerEvent.getPredictedEvents() is absolute garbage
 
 ### Selection
-* [ ] Ability to select
-  * [ ] Draw selection lasso
-  * [ ] Find selected strokes on release
-  * [ ] Highlight selected strokes
-  * [ ] Draw boundry box
-* [ ] Ability to move
-  * [ ] Detect drag
-  * [ ] Move selection
+* [X] Ability to select
+  * [X] Draw selection lasso
+  * [X] Find selected strokes on release
+  * [X] Highlight selected strokes
+  * [X] Draw boundry box
+* [X] Ability to move
+  * [X] Detect drag
+  * [X] Move selection
 * [ ] Ability to transform
   * [ ] Draw control points
   * [ ] Draw rotation point
   * [ ] Detect drag on control points
   * [ ] Update selection
+
+### PDF import
+* [X] Render PDF to canvas
+* [ ] Render all pages with proper transform
+* [ ] Dynamic resolution
+* [ ] Highlighter transparency
+* [ ] Infinite zoom
 
 ### Tech debt
 * [ ] Send live collaboration update on scroll (not just on pointer move), so that pointer appears to move when scrolling
