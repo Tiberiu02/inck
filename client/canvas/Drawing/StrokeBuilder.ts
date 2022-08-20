@@ -1,7 +1,8 @@
-import { DrawableTypes } from "./Drawable";
+import { GraphicTypes, Serializers } from "./Graphic";
 import { PathPoint, RGB, StrokePoint, Vector3D } from "../types";
 import { PolyLine } from "../Math/Geometry";
 import { Stroke } from "./Stroke";
+import { VectorGraphic } from "./VectorGraphic";
 
 const D_T = 5;
 const STIFFNESS = 0.005;
@@ -12,7 +13,6 @@ const A_STEP_DENSITY = 0.05; // rounded tip angular distance between vertices
 const GetStrokeRadius = (width: number, p: number): number => (width * (p + 1)) / 3;
 
 export class StrokeBuilder {
-  private id: string;
   private timestamp: number;
   private zIndex: number;
 
@@ -32,8 +32,7 @@ export class StrokeBuilder {
     vp: number;
   };
 
-  constructor(id: string, timestamp: number, zIndex: number, color: RGB, width: number, points: StrokePoint[] = []) {
-    this.id = id;
+  constructor(timestamp: number, zIndex: number, color: RGB, width: number, points: StrokePoint[] = []) {
     this.timestamp = timestamp;
     this.zIndex = zIndex;
 
@@ -49,18 +48,25 @@ export class StrokeBuilder {
     }
   }
 
-  getStroke(): Stroke {
+  getStroke(id: string): Stroke {
     return {
-      id: this.id,
-      type: DrawableTypes.VECTOR,
+      id: id,
       color: this.color,
       width: this.width,
       points: [...this.points],
       timestamp: this.timestamp,
       zIndex: this.zIndex,
-      vector: this.getArray(),
-      serializer: "stroke",
+      serializer: Serializers.STROKE,
       geometry: new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, (this.width * (p.pressure + 1)) / 3))),
+      graphic: this.getGraphic(),
+    };
+  }
+
+  getGraphic(): VectorGraphic {
+    return {
+      type: GraphicTypes.VECTOR,
+      zIndex: this.zIndex,
+      vector: this.getArray(),
     };
   }
 

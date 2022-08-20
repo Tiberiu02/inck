@@ -14,6 +14,7 @@ import { MutableObservableProperty, ObservableProperty } from "./DesignPatterns/
 import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
 import { TestFastRenderingSupport } from "./DeviceProps";
+import { PdfCanvasManager } from "./PDF";
 
 export default class App {
   private canvasManager: CanvasManager;
@@ -59,6 +60,16 @@ export default class App {
     // Network
     this.network = new NetworkConnection();
     this.canvasManager = new NetworkCanvasManager(this.canvasManager, this.network);
+
+    // PDF import
+    const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/);
+    const docId = (wloc && wloc[1]) || "";
+    if (docId == "pdf") {
+      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo.pdf", yMax);
+    }
+    if (docId == "pdf2") {
+      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo2.pdf", yMax);
+    }
 
     // Pointer tracker
     this.pointerTracker = new PointerTracker();

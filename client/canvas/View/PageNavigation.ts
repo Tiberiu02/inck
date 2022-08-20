@@ -7,6 +7,7 @@ export class PageNavigation {
   private inertia: ScrollInertia;
   private averagePointerPos: Vector2D;
   private averagePointerDist: number;
+  private detectVerticalScroll: DetectVerticalScroll;
   private pointers: Vector2D[];
 
   constructor() {
@@ -69,7 +70,15 @@ export class PageNavigation {
       this.updatePointers(pointers);
       const [x1, y1, r1] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
 
-      const [dx, dy] = View.getCanvasCoords(x0 - x1, y0 - y1, true);
+      let [dx, dy] = View.getCanvasCoords(x0 - x1, y0 - y1, true);
+
+      // Forced vertical scroll
+      if (fingers.length == 1) {
+        this.detectVerticalScroll.update(x1, y1, timeStamp);
+        if (this.detectVerticalScroll.get()) {
+          dx = 0;
+        }
+      }
 
       MutableView.applyTranslation(dx, dy); // scroll
       MutableView.applyZoom(x1, y1, r1 / r0); // zoom
@@ -78,6 +87,10 @@ export class PageNavigation {
     } else {
       if (fingers.length) {
         this.inertia.reset();
+        if (fingers.length == 1) {
+          const { x, y } = fingers[0];
+          this.detectVerticalScroll = new DetectVerticalScroll(x, y, timeStamp);
+        }
       } else if (this.pointers.length) {
         this.inertia.release();
       }
@@ -176,5 +189,35 @@ class ScrollInertia {
         this.reset();
       }
     }
+  }
+}
+
+const TIME_WINDOW = 500;
+
+class DetectVerticalScroll {
+  private points: { x: number; y: number; timestamp: number }[];
+  private vertical: boolean;
+
+  constructor(x: number, y: number, timestamp: number) {
+    this.points = [{ x, y, timestamp }];
+    this.vertical = true;
+  }
+
+  update(x: number, y: number, timestamp: number) {
+    this.points.push({ x, y, timestamp });
+    while (timestamp - this.points[0].timestamp > TIME_WINDOW) {
+      this.points.shift();
+    }
+
+    const p0 = this.points[0];
+    const dx = x - p0.x;
+    const dy = y - p0.y;
+    if (Math.abs(dy) < Math.abs(dx) * 0.5) {
+      this.vertical = false;
+    }
+  }
+
+  get(): boolean {
+    return this.vertical;
   }
 }

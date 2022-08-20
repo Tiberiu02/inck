@@ -110,17 +110,22 @@ export class View {
 }
 
 export class MutableView extends View {
+  static maxWidth: number;
+
   private static clip() {
     View.top = Math.max(0, View.top);
-    View.left = Math.max(0, Math.min(1 - 1 / View.zoom, View.left));
-    View.zoom = Math.max(1, Math.min(10, View.zoom));
+    const W = this.maxWidth || 1;
+    View.left = Math.max(0.5 - W / 2, Math.min(0.5 + W / 2 - 1 / View.zoom, View.left));
+    View.zoom = Math.max(1 / W, Math.min(10, View.zoom));
   }
 
   static applyZoom(centerX: number, centerY: number, zoomFactor: number) {
     View.ensureInstance();
 
     const [x0, y0] = View.getCanvasCoords(centerX, centerY);
-    View.zoom = Math.max(1, Math.min(10, View.zoom * zoomFactor));
+    View.zoom *= zoomFactor;
+    this.clip();
+
     const [x1, y1] = View.getCanvasCoords(centerX, centerY);
     View.left -= x1 - x0;
     View.top -= y1 - y0;

@@ -37,9 +37,8 @@ export class Pen implements Tool {
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (pressure) {
       if (!this.drawing) {
-        const id = window.userId + "-" + Date.now();
         const width = View.getCanvasCoords(Display.DPI() * this.width, 0, true)[0];
-        this.strokeBuilder = new StrokeBuilder(id, timestamp, this.zIndex, this.color, width);
+        this.strokeBuilder = new StrokeBuilder(timestamp, this.zIndex, this.color, width);
         this.drawing = true;
       }
 
@@ -53,7 +52,7 @@ export class Pen implements Tool {
 
   render(): void {
     if (this.strokeBuilder) {
-      this.canvasManager.addForNextRender(this.strokeBuilder.getStroke());
+      this.canvasManager.addForNextRender(this.strokeBuilder.getGraphic());
     }
   }
 
@@ -63,14 +62,15 @@ export class Pen implements Tool {
       color: this.color,
       width: this.width,
       zIndex: this.zIndex,
-      stroke: this.strokeBuilder ? SerializeStroke(this.strokeBuilder.getStroke()) : null,
+      stroke: this.strokeBuilder ? SerializeStroke(this.strokeBuilder.getStroke(null)) : null,
     };
   }
 
   release() {
     if (this.drawing) {
       if (this.actionStack) {
-        const stroke = this.strokeBuilder.getStroke();
+        const id = window.userId + "-" + Date.now();
+        const stroke = this.strokeBuilder.getStroke(id);
         this.canvasManager.add(stroke);
         this.actionStack.push({
           undo: (): boolean => this.canvasManager.remove(stroke.id),

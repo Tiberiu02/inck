@@ -1,10 +1,16 @@
 import { CanvasManager } from "../CanvasManager";
-import { DeserializeDrawable, Drawable, SerializedDrawable, SerializeDrawable } from "../Drawing/Drawable";
 import { RenderLoop } from "../Rendering/RenderLoop";
 import { DeserializeTool, SerializedTool, Tool } from "../Tooling/Tool";
 import { Vector2D } from "../types";
 import { View } from "../View/View";
 import { NetworkConnection } from "./NetworkConnection";
+import {
+  Graphic,
+  PersistentGraphic,
+  SerializedGraphic,
+  SerializeGraphic,
+  DeserializeGraphic,
+} from "../Drawing/Graphic";
 
 // input: h as an angle in [0,360] and s,l in [0,1] - output: r,g,b in [0,1]
 function hsl2rgb(h, s, l) {
@@ -34,13 +40,13 @@ export class NetworkCanvasManager implements CanvasManager {
       window.userId = userId;
     });
 
-    network.on("load strokes", (data: SerializedDrawable[]) => {
+    network.on("load strokes", (data: SerializedGraphic[]) => {
       console.log("loaded strokes", data);
 
       for (let s of data) {
         if (!s) continue;
 
-        const stroke = DeserializeDrawable(s);
+        const stroke = DeserializeGraphic(s);
         if (stroke) {
           this.baseCanvas.add(stroke);
         }
@@ -93,9 +99,9 @@ export class NetworkCanvasManager implements CanvasManager {
     });
   }
 
-  add(drawable: Drawable): void {
-    this.baseCanvas.add(drawable);
-    this.network.emit("new stroke", SerializeDrawable(drawable));
+  add(graphic: PersistentGraphic): void {
+    this.baseCanvas.add(graphic);
+    this.network.emit("new stroke", SerializeGraphic(graphic));
   }
 
   remove(id: string): boolean {
@@ -103,11 +109,11 @@ export class NetworkCanvasManager implements CanvasManager {
     return this.baseCanvas.remove(id);
   }
 
-  getAll(): Drawable[] {
+  getAll(): PersistentGraphic[] {
     return this.baseCanvas.getAll();
   }
 
-  addForNextRender(drawable: Drawable): void {
+  addForNextRender(drawable: Graphic): void {
     this.baseCanvas.addForNextRender(drawable);
   }
 

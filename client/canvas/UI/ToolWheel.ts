@@ -7,7 +7,8 @@ const RES_ROOT = "/wheel/";
 
 const COLORS_NAMES = ["Black", "Red", "Orange", "Yellow", "Green", "Blue", "Purple"];
 const COLORS_PEN_HEX = ["#000000", "#ff0000", "#f8972c", "#fcfc00", "#149618", "#353eff", "#dd09bf"];
-const COLORS_HIGHLIGHTER_HEX = ["#b9b9b9", "#ffa3a3", "#fdca91", "#ffff94", "#9df19f", "#bdc0ff", "#f797e9"];
+//const COLORS_HIGHLIGHTER_HEX = ["#b9b9b9", "#ffa3a3", "#fdca91", "#ffff94", "#9df19f", "#bdc0ff", "#f797e9"];
+const COLORS_HIGHLIGHTER_HEX = ["#000000", "#ff0000", "#f8972c", "#fcfc00", "#2de032", "#353eff", "#dd09bf"];
 
 const SHAPES = ["Circle", "Arrow", "Triangle", "Rectangle"];
 

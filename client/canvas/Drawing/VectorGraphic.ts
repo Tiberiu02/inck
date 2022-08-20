@@ -1,18 +1,17 @@
 import { ELEMENTS_PER_VERTEX } from "../Rendering/GL";
-import { Drawable, SerializedDrawable } from "./Drawable";
+import { Graphic, PersistentGraphic, SerializedGraphic } from "./Graphic";
 
-export interface VectorGraphic extends Drawable {
-  readonly zIndex: number;
-  readonly timestamp: number;
+export interface VectorGraphic extends Graphic {
   readonly vector: number[];
+  readonly glUniforms?: any;
 }
 
-export interface SerializedVectorGraphic extends SerializedDrawable {
+export interface PersistentVectorGraphic extends PersistentGraphic {
   readonly zIndex: number;
-  readonly timestamp: number;
+  readonly graphic: VectorGraphic;
 }
 
-export function TranslateVectorArray(vector: number[], dx: number, dy: number): number[] {
+function TranslateVectorArray(vector: number[], dx: number, dy: number): number[] {
   const newVector = [];
   for (let i = 0; i < vector.length; i += ELEMENTS_PER_VERTEX) {
     const p = vector.slice(i, i + ELEMENTS_PER_VERTEX);
@@ -21,4 +20,8 @@ export function TranslateVectorArray(vector: number[], dx: number, dy: number): 
     newVector.push(...p);
   }
   return newVector;
+}
+
+export function TranslateVectorGraphic(graphic: VectorGraphic, dx: number, dy: number): VectorGraphic {
+  return { ...graphic, vector: TranslateVectorArray(graphic.vector, dx, dy) };
 }

@@ -1,6 +1,6 @@
 import { CanvasManager } from "../CanvasManager";
 import { MutableObservableProperty } from "../DesignPatterns/Observable";
-import { Drawable } from "./Drawable";
+import { Graphic, PersistentGraphic } from "./Graphic";
 
 export class PageSizeTracker implements CanvasManager {
   private canvas: CanvasManager;
@@ -11,19 +11,19 @@ export class PageSizeTracker implements CanvasManager {
     this.yMax = yMax;
   }
 
-  add(drawable: Drawable): void {
-    this.yMax.set(Math.max(this.yMax.get(), drawable.geometry.boundingBox.yMax));
-    this.canvas.add(drawable);
+  add(graphic: PersistentGraphic): void {
+    this.yMax.set(Math.max(this.yMax.get(), graphic.geometry.boundingBox.yMax));
+    this.canvas.add(graphic);
   }
 
   remove(id: string): boolean {
     return this.canvas.remove(id);
   }
-  getAll(): Drawable[] {
+  getAll(): PersistentGraphic[] {
     return this.canvas.getAll();
   }
-  addForNextRender(drawable: Drawable): void {
-    this.canvas.addForNextRender(drawable);
+  addForNextRender(graphic: Graphic): void {
+    this.canvas.addForNextRender(graphic);
   }
   render(): void {
     this.canvas.render();

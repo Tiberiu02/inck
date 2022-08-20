@@ -1,13 +1,16 @@
 import { CanvasManager } from "../CanvasManager";
 import { Display } from "../DeviceProps";
 import {
-  DeserializeDrawable,
-  Drawable,
-  DrawableTypes,
-  SerializedDrawable,
-  SerializeDrawable,
-  TranslateDrawable,
-} from "../Drawing/Drawable";
+  DeserializeGraphic,
+  Graphic,
+  GraphicTypes,
+  PersistentGraphic,
+  SerializedGraphic,
+  SerializeGraphic,
+  Serializers,
+  TranslateGraphic,
+  TranslatePersistentGraphic,
+} from "../Drawing/Graphic";
 import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { Stroke } from "../Drawing/Stroke";
 import { StrokeBuilder } from "../Drawing/StrokeBuilder";
@@ -32,7 +35,7 @@ const SHADOW_COLOR_COLLAB: RGB = [0.7, 1, 0.9];
 export interface SerializedSelection extends SerializedTool {
   readonly selecting: boolean;
   readonly points: StrokePoint[];
-  readonly selected: SerializedDrawable[];
+  readonly selected: SerializedGraphic[];
   readonly toTranslateBy: Point2D;
 }
 
@@ -44,8 +47,8 @@ export class Selection implements Tool {
 
   private selecting: boolean;
   private points: StrokePoint[];
-  private selected: Drawable[];
-  private active: Drawable[];
+  private selected: PersistentGraphic[];
+  private active: Graphic[];
   private ui: HTMLDivElement;
   private toTranslateBy: Vector2D;
 
@@ -100,8 +103,8 @@ export class Selection implements Tool {
 
   private computeShadows() {
     const shadowColor = this.actionStack ? SHADOW_COLOR : SHADOW_COLOR_COLLAB;
-    const shadows = this.selected.map(d => GetShadow(d, shadowColor));
-    this.active = OptimizeDrawables([].concat(shadows, this.selected));
+    const shadows: Graphic[] = this.selected.map(d => GetShadow(d, shadowColor));
+    this.active = OptimizeDrawables(shadows.concat(this.selected.map(s => s.graphic)));
   }
 
   private createUI(): HTMLDivElement {
@@ -188,7 +191,11 @@ export class Selection implements Tool {
   }
 
   render(): void {
-    this.active.forEach(s => this.canvasManager.addForNextRender({ ...s, glUniforms: this.GetUniforms() }));
+    this.active.forEach(s =>
+      this.canvasManager.addForNextRender(
+        s.type == GraphicTypes.VECTOR ? ({ ...s, glUniforms: this.GetUniforms() } as VectorGraphic) : s
+      )
+    );
 
     if (this.actionStack) {
       if (this.selected.length) {
@@ -244,16 +251,16 @@ export class Selection implements Tool {
 
   applyTranslation() {
     const { x, y } = this.toTranslateBy;
-    this.selected = this.selected.map(d => TranslateDrawable(d, x, y));
-    this.active = this.active.map(d => TranslateDrawable(d, x, y));
+    this.selected = this.selected.map(d => TranslatePersistentGraphic(d, x, y));
+    this.active = this.active.map(d => TranslateGraphic(d, x, y));
     this.toTranslateBy = new Vector2D(0, 0);
   }
 
   serialize(): SerializedSelection {
     return {
-      deserializer: "selection",
+      deserializer: Serializers.SELECTION,
       selecting: this.selecting,
-      selected: this.selected.map(SerializeDrawable),
+      selected: this.selected.map(SerializeGraphic),
       points: this.points,
       toTranslateBy: { x: this.toTranslateBy.x, y: this.toTranslateBy.y },
     };
@@ -262,7 +269,7 @@ export class Selection implements Tool {
   static deserialize(data: SerializedSelection, canvasManager: CanvasManager, actionStack?: ActionStack): Selection {
     const s = new Selection(canvasManager, actionStack);
     s.selecting = data.selecting;
-    s.selected = data.selected.map(DeserializeDrawable);
+    s.selected = data.selected.map(DeserializeGraphic);
     if (data.selecting) {
       for (const p of data.points) {
         s.update(p.x, p.y, p.pressure, p.timestamp);
@@ -281,7 +288,7 @@ const SP_DIST = 0.1;
 class DottedStrokeBuilder {
   private color: RGB;
   private width: number;
-  private strokes: Stroke[];
+  private strokes: Graphic[];
   private currentStroke: StrokeBuilder;
   private lastPoint: StrokePoint;
   private lastKeyPoint: StrokePoint;
@@ -299,7 +306,7 @@ class DottedStrokeBuilder {
       this.timestamp = p.timestamp;
       this.lastPoint = this.lastKeyPoint = p;
       this.isDotting = true;
-      this.currentStroke = new StrokeBuilder("", p.timestamp, 1, this.color, this.width);
+      this.currentStroke = new StrokeBuilder(p.timestamp, 1, this.color, this.width);
       this.currentStroke.push(p);
       return;
     }
@@ -319,13 +326,13 @@ class DottedStrokeBuilder {
       } else {
         this.currentStroke.push({ ...this.lastPoint, timestamp: this.lastPoint.timestamp + 10 });
 
-        this.strokes = OptimizeDrawables(this.strokes.concat([this.currentStroke.getStroke()])) as Stroke[];
+        this.strokes = OptimizeDrawables(this.strokes.concat([this.currentStroke.getGraphic()]));
         this.lastKeyPoint = this.lastPoint;
         this.isDotting = false;
       }
     } else {
       if (Vector2D.dist(p, this.lastKeyPoint) > BREAK_LEN * this.width) {
-        this.currentStroke = new StrokeBuilder("", Date.now(), 1, this.color, this.width);
+        this.currentStroke = new StrokeBuilder(Date.now(), 1, this.color, this.width);
         this.currentStroke.push(p);
         this.lastKeyPoint = p;
         this.isDotting = true;
@@ -335,32 +342,31 @@ class DottedStrokeBuilder {
     this.lastPoint = p;
   }
 
-  getStrokes() {
-    return this.strokes.concat(this.isDotting ? [this.currentStroke.getStroke()] : []);
+  getStrokes(): Graphic[] {
+    return this.strokes.concat(this.isDotting ? [this.currentStroke.getGraphic()] : []);
   }
 }
 
-function GetShadow(drawable: Drawable, shadowColor: RGB) {
+function GetShadow(drawable: PersistentGraphic, shadowColor: RGB): VectorGraphic {
   console.log(drawable);
-  if (drawable.serializer == "stroke") {
+  if (drawable.serializer == Serializers.STROKE) {
     const s = drawable as Stroke;
     const shadowWidth = View.getCanvasCoords(Display.DPI() * SHADOW_SIZE, 0, true)[0];
     const builder = new StrokeBuilder(
-      s.id,
       s.timestamp,
       s.zIndex,
       shadowColor,
       s.width + shadowWidth / (1 + s.zIndex),
       s.points
     );
-    return builder.getStroke();
+    return builder.getGraphic();
   }
   return null;
 }
 
-function OptimizeDrawables(drawables: Drawable[]): Drawable[] {
-  const vectors: VectorGraphic[] = drawables.filter(d => d.type == DrawableTypes.VECTOR) as VectorGraphic[];
-  const nonVectors = drawables.filter(d => d.type != DrawableTypes.VECTOR);
+function OptimizeDrawables(drawables: Graphic[]): Graphic[] {
+  const vectors: VectorGraphic[] = drawables.filter(d => d.type == GraphicTypes.VECTOR) as VectorGraphic[];
+  const nonVectors = drawables.filter(d => d.type != GraphicTypes.VECTOR);
 
   const optimized = [];
   for (let layer = 0; layer < NUM_LAYERS; layer++) {

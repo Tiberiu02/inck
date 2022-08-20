@@ -1,9 +1,9 @@
-import { Drawable } from "./Drawing/Drawable";
+import { Graphic, PersistentGraphic } from "./Drawing/Graphic";
 
 export interface CanvasManager {
-  add(drawable: Drawable): void;
+  add(graphic: PersistentGraphic): void;
   remove(id: string): boolean;
-  getAll(): Drawable[];
-  addForNextRender(drawable: Drawable): void;
+  getAll(): PersistentGraphic[];
+  addForNextRender(graphic: Graphic): void;
   render(): void;
 }

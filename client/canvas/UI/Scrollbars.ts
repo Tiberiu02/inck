@@ -101,7 +101,7 @@ export class ScrollBars {
     const hFullLen = Display.Width() - 3 * this.margin - this.width;
 
     Object.assign(this.horizontal.style, {
-      display: hLen == 1 ? "none" : "",
+      display: hLen == 1 || MutableView.maxWidth ? "none" : "",
       bottom: `${this.margin}px`,
       height: `${this.width}px`,
       left: `${this.margin + hStart * hFullLen}px`,
