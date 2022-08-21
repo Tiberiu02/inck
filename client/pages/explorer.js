@@ -1,7 +1,8 @@
 import Head from "next/head";
 import { setuid } from "process";
-import React, { useState, useEffect } from "react";
-
+import React, { useState, useEffect, useRef } from "react";
+import { useCallback } from 'react'
+import { useDropzone } from 'react-dropzone'
 import {
   FaAngleDown,
   FaAngleRight,
@@ -25,8 +26,20 @@ import Cookies from "universal-cookie";
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
 import GetApiPath from "../components/GetApiPath";
 
-function DirListing({ Symbol, symbolClassName, name, className, userPath, dirPath, style, onClick, children, link }) {
-  let [open, setOpen] = useState(false);
+function DirListing({
+  Symbol,
+  symbolClassName,
+  name,
+  className,
+  userPath,
+  dirPath,
+  style,
+  onClick,
+  children,
+  link,
+  openByDefault = false
+}) {
+  let [open, setOpen] = useState(openByDefault);
   const selected = userPath && dirPath && userPath.toString() == dirPath.toString();
   if (
     !open &&
@@ -63,7 +76,7 @@ function DirListing({ Symbol, symbolClassName, name, className, userPath, dirPat
         <Symbol className={symbolClassName + " text-2xl mr-1"} />
         <p className={"whitespace-nowrap mt-[0.15rem] font-bold " + (open ? "" : "")}>{name}</p>
       </button>
-      <div className={!open && "hidden"}>{children}</div>
+      <div className={open ? "" : "hidden"}>{children}</div>
     </div>
   );
 }
@@ -174,7 +187,7 @@ function FileTree({ className, files, path, setPath }) {
     "f/notes": FaBook,
   };
 
-  const buildDirListing = (dir, dirPath) => {
+  const buildDirListing = (dir, dirPath, openByDefault = false) => {
     return (
       <DirListing
         key={dir._id}
@@ -184,6 +197,7 @@ function FileTree({ className, files, path, setPath }) {
         dirPath={dirPath}
         style={{ paddingLeft: `${dirPath.length}rem` }}
         onClick={() => setPath(dirPath)}
+        openByDefault={openByDefault}
       >
         {dir.children.filter(f => f.type == "folder").map(f => buildDirListing(f, dirPath.concat(f._id)))}
       </DirListing>
@@ -192,15 +206,18 @@ function FileTree({ className, files, path, setPath }) {
 
   return (
     <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{ overflow: "overlay" }}>
+
       <div className="min-w-full w-fit">
+        {/*
         <DirListing Symbol={FaRegClock} symbolClassName="mt-[0.1rem]" name="Recent" link></DirListing>
         <DirListing Symbol={FaUsers} symbolClassName="mt-[0.1rem]" name="Shared with me" link></DirListing>
         <DirListing Symbol={FaBookmark} name="Homework" link></DirListing>
         <DirListing Symbol={FaTrash} name="Trash" link></DirListing>
-
         <div className="mt-5"></div>
+        */}
 
-        {files && buildDirListing(files["f/notes"], ["f/notes"])}
+
+        {files && buildDirListing(files["f/notes"], ["f/notes"], true)}
       </div>
     </div>
   );
@@ -382,7 +399,8 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
 function EditFileModal({ visible, setVisible, file, save }) {
   // menuType is either 'note' or 'folder'
   const [newName, setNewName] = useState("");
-  const [newNoteAccess, setNewNoteAccess] = useState(null);
+  const [newNoteAccess, setNewNoteAccess] = useState(file.defaultAccess || "private");
+
 
   const fileType = file !== undefined ? file.type : "";
   const isAccessVisible = fileType == "note";
@@ -395,9 +413,13 @@ function EditFileModal({ visible, setVisible, file, save }) {
 
   const saveEdits = () => {
     const trimmedNewName = newName.trim();
-    if (trimmedNewName != "") {
-      save(file._id, newName, newNoteAccess);
+    let name = ""
+    if (trimmedNewName == "") {
+      name = file.name
+    } else {
+      name = trimmedNewName
     }
+    save(file._id, name, newNoteAccess);
     hideModal();
   };
 
@@ -430,9 +452,9 @@ function EditFileModal({ visible, setVisible, file, save }) {
               onChange={e => setNewNoteAccess(e.target.value)}
               className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
             >
-              <option value="edit">View &amp; edit</option>
-              <option value="view">View only</option>
-              <option value="none">None</option>
+              <option value="read_write">View &amp; edit</option>
+              <option value="read_only">View only</option>
+              <option value="private">No public access</option>
             </select>
           </div>
         </div>
@@ -447,27 +469,320 @@ function EditFileModal({ visible, setVisible, file, save }) {
   );
 }
 
+function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex gap-4">
+        Name
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        />
+      </div>
+      <div className="flex gap-4">
+        Public&nbsp;access
+        <select
+          value={publicAccess}
+          onChange={e => setPublicAccess(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        >
+          <option value="read_write">View &amp; edit</option>
+          <option value="read_only">View only</option>
+          <option value="private">No public access</option>
+        </select>
+      </div>
+    </div>
+  )
+}
+
+function CreateFolderSubmodal({ name, setName, publicAccess, setPublicAccess }) {
+  return (
+    <div className="folder flex-col gap-6">
+      <div className="flex gap-4">
+        Name
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        />
+      </div>
+    </div>
+  )
+}
+
+
+
+function PDFDropZone({ setPdfContent, setFileSize }) {
+
+  const onDrop = useCallback(acceptedFiles => {
+    if (acceptedFiles.length > 0) {
+      const [file] = acceptedFiles
+      setFileSize(file.size)
+
+      const formData = new FormData()
+      formData.append("file", file)
+      setPdfContent(formData)
+    }
+
+  }, [])
+  const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+    }
+  })
+
+  const isFileSelected = acceptedFiles.length > 0
+
+  let dropZoneContent
+
+  if (isDragActive) {
+    dropZoneContent = "Drop the files here ..."
+  } else if (acceptedFiles.length == 0) {
+    dropZoneContent = "Drop file here, or click to select ..."
+  } else {
+
+    dropZoneContent = acceptedFiles[0].name
+  }
+
+  return (
+    <div {...getRootProps({
+      className: `rounded-md p-3 border-dashed border-slate-500 border-2 text-sm h-16 italic 
+                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${isDragActive ? "bg-slate-100" : ""}
+                  
+                  `
+    })}>
+      <input {...getInputProps()} />
+      <p className="truncate text-ellipsis">
+        {dropZoneContent}
+      </p>
+    </div>
+  )
+}
+
+function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess }) {
+
+  const [pdfContent, setPdfContent] = useState(null)
+  const [fileSize, setFileSize] = useState(0)
+  const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
+
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex gap-4">
+        Name
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        />
+      </div>
+
+      <div className="flex gap-4">
+        Public&nbsp;access
+        <select
+          value={publicAccess}
+          onChange={e => setPublicAccess(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        >
+          <option value="read_write">View &amp; edit</option>
+          <option value="read_only">View only</option>
+          <option value="private">No public access</option>
+        </select>
+      </div>
+
+      <div>
+        <PDFDropZone
+          setFileSize={setFileSize}
+          setPdfContent={setPdfContent}
+        />
+        {fileSize > 0.0 &&
+          <p className="text-sm text-right italic">
+            * File size: {fileSizeFormat} MB
+          </p>
+        }
+      </div>
+    </div>
+  )
+}
+
+function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, importNoteURL, setImportNoteURL }) {
+
+  return (<div>
+    <div className="flex flex-col gap-6">
+      <div className="flex gap-4">
+        Note&nbsp;name
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        />
+      </div>
+
+      <div className="flex gap-4">
+        Note&nbsp;URL
+        <input
+          value={importNoteURL}
+          onChange={e => setImportNoteURL(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        />
+      </div>
+
+      <div className="flex gap-4">
+        Public&nbsp;access
+        <select
+          value={publicAccess}
+          onChange={e => setPublicAccess(e.target.value)}
+          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+        >
+          <option value="read_write">View &amp; edit</option>
+          <option value="read_only">View only</option>
+          <option value="private">No public access</option>
+        </select>
+      </div>
+
+    </div>
+  </div>)
+}
+
+function CreateModalHeaderElement({ modalState, setModalState, buttonText, activeState }) {
+  return (<button
+    onClick={() => setModalState(activeState)}
+    className={
+      "w-full p-1 gap-2 rounded-md " +
+      (modalState == activeState ? "bg-slate-800 text-white" : "hover:bg-slate-700 hover:text-white")
+    }
+  >
+    {buttonText}
+  </button>)
+}
+
+function CreateModalHeader({ modalState, setModalState }) {
+
+  return (
+    <div className="grid grid-cols-2 grid-rows-2 w-full bg-gray-100 rounded-md gap-1">
+      {/* New note */}
+      <CreateModalHeaderElement
+        modalState={modalState}
+        setModalState={setModalState}
+        buttonText={"Create note"}
+        activeState={"note"}
+      />
+      {/* New folder */}
+      <CreateModalHeaderElement
+        modalState={modalState}
+        setModalState={setModalState}
+        buttonText={"Create folder"}
+        activeState={"folder"}
+      />
+      {/* Import PDF */}
+      <CreateModalHeaderElement
+        modalState={modalState}
+        setModalState={setModalState}
+        buttonText={"Import PDF"}
+        activeState={"import-pdf"}
+      />
+      {/* Import note */}
+      <CreateModalHeaderElement
+        modalState={modalState}
+        setModalState={setModalState}
+        buttonText={"Import note"}
+        activeState={"import-note"}
+      />
+
+    </div>)
+}
+
+async function newNoteSubmit(name, parentDir, publicAccess, setFiles) {
+  addFile(name, "note", parentDir, setFiles, {
+    publicAccess: publicAccess,
+  });
+}
+
+async function newFolderSubmit(name, parentDir, setFiles) {
+  addFile(name, "folder", parentDir, setFiles);
+}
+
+async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, setFiles) {
+  alert("Imported PDF")
+}
+
+async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles) {
+  await importFreeNote(
+    name,
+    parentDir,
+    setFiles,
+    publicAccess,
+    publicNoteURL
+  )
+}
+
+async function createModalSubmit(
+  state,
+  name,
+  parentDir,
+  publicAccess,
+  publicNoteURL,
+  pdfFileContent,
+  setFiles,
+) {
+  if (state == "note") return newNoteSubmit(name, parentDir, publicAccess, setFiles)
+  else if (state == "folder") return newFolderSubmit(name, parentDir, setFiles)
+  else if (state == "import-pdf") return importPDFSubmit(name, publicAccess, pdfFileContent)
+  else if (state == "import-note") return importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles)
+  else alert("Invalid state")
+}
+
 function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
-  const [menu, setMenu] = useState("note");
-  const [noteName, setNoteName] = useState("");
-  const [notePublicAccess, setNotePublicAccess] = useState("view");
-  const [folderName, setFolderName] = useState("");
+  /**
+   * valid states:
+   * note - will create a new file
+   * folder - will create a new directory
+   * import-pdf - will create a new note with a pdf
+   * import-note - import a free note
+   */
+  const [modalState, setModalState] = useState("note")
+  const [name, setName] = useState("")
+  const [publicAccess, setPublicAccess] = useState("private");
+  const [pdfContent, setPdfContent] = useState(null)
+  const [importNoteURL, setImportNoteURL] = useState("")
 
-  const submit = () => {
-    if (menu == "note")
-      addFile(noteName, menu, path.at(-1), setFiles, {
-        publicAccess: notePublicAccess,
-      });
-    else addFile(folderName, menu, path.at(-1), setFiles);
 
-    setMenu("note");
-    setNoteName("");
-    setNotePublicAccess("view");
-    setFolderName("");
+  const submit = async () => {
+    const parentDir = path.at(-1)
+    const result = await createModalSubmit(modalState, name, parentDir, publicAccess, importNoteURL, pdfContent, setFiles)
 
-    setVisible(false);
-    reloadFiles();
-  };
+    // TODO: check result and if failure, display error messages
+    setVisible(false)
+  }
+
+  let modalBody;
+
+  switch (modalState) {
+    case "note":
+      modalBody = <CreateNoteSubmodal name={name} setName={setName} publicAccess={publicAccess} setPublicAccess={setPublicAccess} />
+      break;
+
+    case "folder":
+      modalBody = <CreateFolderSubmodal name={name} setName={setName} publicAccess={publicAccess} setPublicAccess={setPublicAccess} />
+      break;
+
+    case "import-pdf":
+      modalBody = <ImportPDFSubmodal name={name} setName={setName} publicAccess={publicAccess} setPublicAccess={setPublicAccess} />
+      break;
+
+    case "import-note":
+      modalBody = <ImportFreeNoteSubmodal
+        name={name}
+        setName={setName}
+        publicAccess={publicAccess}
+        setPublicAccess={setPublicAccess}
+        importNoteURL={importNoteURL}
+        setImportNoteURL={setImportNoteURL}
+      />
+      break;
+  }
 
   return (
     <div
@@ -477,64 +792,16 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
       }
     >
       <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
-      <div className="relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between">
-        <div className="grid grid-cols-2 w-full gap-4">
-          <button
-            onClick={() => setMenu("note")}
-            className={
-              "w-full rounded-full flex justify-center p-1 gap-2 " +
-              (menu == "note" ? "bg-gray-200" : "hover:bg-gray-200")
-            }
-          >
-            <FaBook className="text-sm mt-2" /> New note
-          </button>
-          <button
-            onClick={() => setMenu("folder")}
-            className={
-              "w-full rounded-full flex justify-center p-1 gap-2 " +
-              (menu == "folder" ? "bg-gray-200" : "hover:bg-gray-200")
-            }
-          >
-            <FaFolder className="text-sm mt-2" /> New folder
-          </button>
-        </div>
-        <div className={(menu == "note" ? "flex" : "hidden") + " flex-col gap-6"}>
-          <div className="flex gap-4">
-            Name
-            <input
-              value={noteName}
-              onChange={e => setNoteName(e.target.value)}
-              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-            />
-          </div>
-          <div className="flex gap-4">
-            Public&nbsp;access
-            <select
-              value={notePublicAccess}
-              onChange={e => setNotePublicAccess(e.target.value)}
-              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-            >
-              <option value="edit">View &amp; edit</option>
-              <option value="view">View only</option>
-              <option value="none">None</option>
-            </select>
-          </div>
-        </div>
-        <div className={(menu == "folder" ? "flex" : "hidden") + " flex-col gap-6"}>
-          <div className="flex gap-4">
-            Name
-            <input
-              value={folderName}
-              onChange={e => setFolderName(e.target.value)}
-              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-            />
-          </div>
-        </div>
+      <div className="relative w-96 h-96 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between">
+        <CreateModalHeader setModalState={setModalState} modalState={modalState} />
+
+        {modalBody}
+
         <button
           onClick={submit}
-          className="bg-slate-800 hover:bg-black text-white w-fit px-4 py-1 rounded-full self-center"
+          className="w-full bg-slate-800 hover:bg-black text-white px-4 py-1 rounded-md self-center"
         >
-          Create {menu}
+          Create
         </button>
       </div>
     </div>
@@ -585,7 +852,6 @@ async function LoadFiles(callback) {
 
 async function addFile(name, type, parentDir, setFiles, options = {}) {
   const response = await fetch(GetApiPath("/api/explorer/addfile"), {
-    // TODO: check, shouldnt have to put the token, it should be in the header by default
     method: "post",
     body: JSON.stringify({ token: getAuthToken(), name, type, parentDir, options }),
     headers: {
@@ -596,6 +862,28 @@ async function addFile(name, type, parentDir, setFiles, options = {}) {
   const jsonReply = await response.json();
   const filesDict = processFilesData(jsonReply.files);
   setFiles(filesDict);
+}
+
+async function importFreeNote(name, parentDir, setFiles, visibility, freeNoteURL) {
+  const response = await fetch(GetApiPath("/api/explorer/import-free-note"), {
+    method: "post",
+    body: JSON.stringify({
+      token: getAuthToken(),
+      name,
+      parentDir,
+      visibility,
+      freeNoteURL,
+    }),
+    headers: {
+      "Content-type": "application/json;charset=UTF-8",
+    },
+  });
+
+  const jsonReply = await response.json();
+  if (jsonReply.files != undefined) {
+    const filesDict = processFilesData(jsonReply.files)
+    setFiles(filesDict)
+  }
 }
 
 async function editFileAPICall(id, newName, setFiles, newVisibility = null, options = {}) {
@@ -731,7 +1019,7 @@ export default function Explorer() {
     selectionWidget = (
       <button
         onClick={() => toggleFileSelection(true)}
-        className="py-2 text-l font-medium hover:text-gray-600 hover:bg-gray-300 flex items-center justify-center rounded-md px-3"
+        className="py-2 text-l bg-gray-200 font-medium hover:text-slate-50 hover:bg-slate-800 flex items-center justify-center rounded-md px-3"
       >
         Select...
       </button>
@@ -759,7 +1047,7 @@ export default function Explorer() {
     fileClickActionFactory = explorerItemClickActionFactory;
   } else {
     bookClickActionFactory = (f, idx) => () => setPath(path.concat([f._id]));
-    fileClickActionFactory = (f, idx) => () => window.open("/note/" + f.fileId, "_blank");
+    fileClickActionFactory = (f, idx) => () => window.open("/auth-note/" + f.fileId, "_blank");
   }
 
   const drawExplorerItem = (f, idx, _) => {
@@ -810,7 +1098,12 @@ export default function Explorer() {
               <FaPencilAlt className="text-2xl" />
               <p className="font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]">Inck</p>
             </div>
+
             <div className="w-48 justify-center align-middle flex">{selectionWidget}</div>
+            {/* Spacer invisible div */}
+            <div className="w-full" />
+            {/*
+            // SEARCH BAR
             <div className="flex bg-gray-100 border-[1px] border-gray-300 text-gray-500 flex-row items-center h-10 overflow-hidden w-full max-w-xl rounded-lg">
               <button className="group pl-2 h-10 flex items-center justify-center">
                 <div className="group-hover:bg-gray-300 flex items-center justify-center w-8 h-8 rounded-full">
@@ -821,11 +1114,15 @@ export default function Explorer() {
                 className="pl-2 bg-transparent focus:outline-none text-gray-900 placeholder-gray-400"
                 placeholder="Search notes"
               />
+
             </div>
-            <div className="hidden sm:flex flex-row gap-2 text-gray-500">
+            
+            */}
+
+            <div className="hidden sm:flex flex-row gap-2">
               <button
                 onClick={disconnect}
-                className="text-l font-medium hover:text-gray-600 hover:bg-gray-300 flex items-center justify-center rounded-md px-3"
+                className="text-l bg-gray-200 font-medium hover:text-slate-50 hover:bg-slate-800 flex items-center justify-center rounded-md px-3"
               >
                 Disconnect
               </button>
@@ -884,8 +1181,11 @@ export default function Explorer() {
             visible={editFileModal}
             setVisible={setEditFileModal}
             setFiles={setFilesAfterChange}
-            save={(id, newName, newVisibility, options) =>
+            save={(id, newName, newVisibility, options) => {
               editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options)
+              toggleFileSelection(false)
+            }
+
             }
           />
         )}
@@ -895,7 +1195,10 @@ export default function Explorer() {
             visible={removeFileModal}
             setVisible={setRemoveFileModal}
             setFiles={setFilesAfterChange}
-            removeFiles={() => removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange)}
+            removeFiles={() => {
+              removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange)
+              toggleFileSelection(false)
+            }}
           />
         )}
         {/* Move files modal */}
@@ -906,7 +1209,10 @@ export default function Explorer() {
             visible={moveFileModal}
             setVisible={setMoveFileModal}
             setFiles={setFilesAfterChange}
-            moveFiles={target => moveFilesAPICall(selectedFiles, target, setFilesAfterChange)}
+            moveFiles={target => {
+              moveFilesAPICall(selectedFiles, target, setFilesAfterChange)
+              toggleFileSelection(false)
+            }}
           />
         )}
       </main>

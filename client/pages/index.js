@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 function OpenNoteBtn() {
   const [noteId, setNoteId] = useState('')
   return (
-    <form onSubmit={(e) => {e.preventDefault(); if(noteId) window.location = '/note/' + noteId}} className='flex flex-row gap-4 items-center justify-between border-2 border-primary bg-white rounded-xl w-full'>
+    <form onSubmit={(e) => {e.preventDefault(); if(noteId) window.location = '/free-note/' + noteId}} className='flex flex-row gap-4 items-center justify-between border-2 border-primary bg-white rounded-xl w-full'>
       <input required name='code' className='placeholder-gray-400 text-gray-700 mx-3 w-full' placeholder='Code' onChange={e => setNoteId(e.target.value)} />
       <button className='flex flex-row items-center bg-primary hover:bg-primary-dark duration-200 px-5 h-full py-[0.55rem] border-0 w-full justify-center -mr-1 -my-[2px] rounded-r-xl'>Open&nbsp;note</button>
     </form>
@@ -17,7 +17,7 @@ function CreateNoteBtn({ className }) {
   const len = 6
   const id = Array(6).fill(0).map(x => chars[Math.floor(Math.random() * chars.length)]).join('')
   return (
-    <button onClick={() => window.location = '/note/' + id} className={`${className} flex flex-row items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl w-full`}>
+    <button onClick={() => window.location = '/free-note/' + id} className={`${className} flex flex-row items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl w-full`}>
       Create new note
       <FaPen className='mr-1 ml-7'/>
     </button>

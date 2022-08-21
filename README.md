@@ -191,7 +191,9 @@ When professor opens lecture notes:
 * [X] Optimize live collaboration (send only stroke modification, not entire stroke every time)
 * [ ] Careful about storing collaborators in memory in Server, probably better to use mongo when lots of users
 * [ ] When undoing stroke erase, insert stroke back to its initial position, not as a new stroke
-* [] Bug: creating file does not always reload the UI: database ordering issue, know how to fix properly, will do soon
+* [X] Bug: creating file does not always reload the UI: database ordering issue, know how to fix properly, will do soon
+* [ ] Load stokes in small batches, not all at once, better for user experience
+* [X] Memory leak, when a user refreshes the page, the socket is not closed => leaking memory. It is reset when browser is closed but not on refresh => easy way to spam and crash the server is to spam refresh
 
 # License
 

@@ -1,7 +1,13 @@
-import { FileModel } from "./Models.mjs";
+import { FileModel, NoteModel } from "./Models.mjs";
 import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { exploreTree } from "./FsTreeExplorer.mjs";
+
+export const PRIVATE = "private"
+export const READ_WRITE = "read_write"
+export const READ_ONLY = "read_only"
+
+const VALID_VISIBILITIES = [PRIVATE, READ_ONLY, READ_WRITE]
 
 /**
  * Potential errors w/ status:
@@ -52,20 +58,75 @@ function generateRandomString(n) {
   return randomString;
 }
 
-export async function createFileFn(req, res) {
-  try {
-    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
+async function generateNewFileName(n) {
 
-    // TODO: validate file name & type
-    // TODO: when generating file id, make sure it's not already used
-    const file = await FileModel.create({
-      type: req.body.type,
-      name: req.body.name,
-      parentDir: req.body.parentDir,
-      owner: token.userId,
-      fileId: generateRandomString(4),
-      defaultAccess: req.body.options && req.body.options.publicAccess
-    });
+  let name = generateRandomString(n)
+
+  let fileAlreadyExists = false
+  let noteAlreadyExists = false
+  do {
+    const fileWithIdCount = await FileModel.count({
+      fileId: name
+    })
+
+    const noteWithIdCount = await NoteModel.count({
+      id: name
+    })
+
+    fileAlreadyExists = fileWithIdCount > 0
+    noteAlreadyExists = noteWithIdCount > 0
+
+
+  } while (fileAlreadyExists || noteAlreadyExists)
+  return name
+
+}
+
+async function insertNewNoteInDB(
+  type,
+  name,
+  parentDir,
+  owner,
+  fileId,
+  defaultAccess) {
+  const filePromise = FileModel.create({
+    type,
+    name,
+    parentDir,
+    owner,
+    fileId,
+    defaultAccess
+  });
+
+  const notePromise = NoteModel.create({
+    id: fileId,
+    isFreeNote: false,
+  })
+
+  await filePromise
+  await notePromise
+}
+
+export async function createFileFn(req, res) {
+  /**
+   * Create authenticated note
+   */
+  try {
+    if (req.body.type != "note" && req.body.type != "folder") {
+      res.status(400).send({ error: "Invalid request" })
+    }
+
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
+    const newFileId = await generateNewFileName(12)
+
+    insertNewNoteInDB(
+      req.body.type,
+      req.body.name,
+      req.body.parentDir,
+      token.userId,
+      newFileId,
+      req.body.options && req.body.options.publicAccess
+    )
 
     const allFiles = await FileModel.find({
       owner: token.userId,
@@ -145,18 +206,88 @@ export async function moveFilesFn(req, res) {
   }
 }
 
+export async function importFreeNote(req, res) {
+  try {
+    const { name, parentDir, visibility, freeNoteURL } = req.body
+    console.log(freeNoteURL)
+    console.log(name)
+    console.log(visibility)
+
+    const wloc = freeNoteURL.match(/\/free-note\/([\w\d_]+)/)
+
+    if (wloc == null || wloc.length != 2) {
+      res.status(400).send({ error: "Unable to import free note: free note does not exist" })
+    }
+    const freeNoteId = wloc[1]
+
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
+    const newFileId = await generateNewFileName(12)
+
+    // Get free note
+    const freeNoteData = await NoteModel.findOne({
+      id: freeNoteId,
+      isFreeNote: true
+    })
+
+    if (freeNoteData == null) {
+      res.status(400).send({ error: "Unable to import free note: free note does not exist" })
+    }
+
+    // Make an auth copy of free note
+    await NoteModel.create({
+      id: newFileId,
+      strokes: freeNoteData.strokes || [],
+      isFreeNote: false
+    })
+    // Create an explorer file
+    await FileModel.create({
+      type: "file",
+      name: name,
+      owner: token.userId,
+      fileId: newFileId,
+      parentDir: parentDir,
+      defaultAccess: visibility
+    })
+
+    const allFiles = await FileModel.find({
+      owner: token.userId,
+    })
+
+    return res.status(201).send({
+      message: 'success',
+      files: allFiles,
+    });
+
+  } catch (err) {
+    console.log(err)
+    res.status(400).send({ error: "Unable to import free note" })
+  }
+}
+
+function validVisibility(visibility) {
+  return VALID_VISIBILITIES.includes(visibility)
+}
+
 export async function editFileFn(req, res) {
   try {
-    const { id, newName, newVisibility, options } = req.body
+    const { id, newName, newVisibility } = req.body
+    if (!validVisibility(newVisibility)) {
+      console.log("Invalid request: visibility requested: " + newVisibility)
+      res.status(400).send({ error: "Invalid request" })
+      return
+    }
+
+    if (newName.trim() == "") {
+      console.log("Invalid new name: " + "'" + newName + "'")
+      res.status(400).send({ error: "Invalid request" })
+    }
+
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
-    // TODO: validate file name & type
-    // TODO: when generating file id, make sure it's not already used
 
 
-    const updateObject = { name: newName }
-    // TODO: check visibility is in a subset of valid values
-    if (newVisibility != "" && newVisibility != null) {
-      updateObject["defaultAccess"] = newVisibility
+    const updateObject = {
+      name: newName,
+      defaultAccess: newVisibility
     }
 
     await FileModel.findOneAndUpdate({
