@@ -5,13 +5,20 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import { Server as SocketServer } from "socket.io";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 
 import dotend from "dotenv";
 dotend.config();
 
 import { UpdateDB, QueryDB, QueryAllDB, InsertDB } from "./Database.mjs";
 import { register as registerFn, login as loginFn } from "./Authentication.mjs";
-import { createFileFn, editFileFn, getFilesFn, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
+import { createFileFn, editFileFn, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
+import { disconnect, newStroke, removeStroke, requestDocument, updateInput, updatePointer, updateTool } from "./Sockets.mjs";
+import { NoteModel } from "./Models.mjs";
+
+const MILLIS_PER_WEEK = 604800000;
+const MILLIS_PER_DAY  = 86400000
+
 
 class Server {
   constructor(port = 8080) {
@@ -27,6 +34,7 @@ class Server {
         methods: ["GET", "POST"],
       },
     });
+
     const corsOptions = {
       origin: "*",
       credentials: true, //access-control-allow-credentials:true
@@ -34,6 +42,9 @@ class Server {
     };
     this.app.use(cors(corsOptions));
     this.app.use(cookieParser());
+
+    // Start automatic collection of old notes
+    setInterval(async () => this.removeOutdatedNotes(), MILLIS_PER_DAY)
   }
 
   start() {
@@ -45,6 +56,16 @@ class Server {
     this.startSocketServer();
   }
 
+  async removeOutdatedNotes() {
+    console.log("Collecting two weeks old notes")
+    const now = Date.now()
+    const minTime = now - 2 * MILLIS_PER_WEEK;
+    await NoteModel.deleteMany({
+      isFreeNote: true,
+      creationDate: {$lte: minTime}
+    })
+  }
+
   registerEndpoints() {
     const jsonBodyParser = bodyParser.json();
     this.app.post("/api/auth/register", jsonBodyParser, registerFn);
@@ -54,164 +75,38 @@ class Server {
     this.app.post("/api/explorer/editfile", jsonBodyParser, editFileFn);
     this.app.post("/api/explorer/removefiles", jsonBodyParser, removeFilesFn);
     this.app.post("/api/explorer/movefiles", jsonBodyParser, moveFilesFn);
+    this.app.post("/api/explorer/import-free-note", jsonBodyParser, importFreeNote);
   }
 
   startSocketServer() {
-    // Map userId: Int => {users: List[socket]}
+    // Map docId: Int => {users: List[socket]}
     this.docs = {};
 
-    this.io.on("connection", socket => {
+    this.io.on("connection", async (socket) => {
+      console.log("Connection incoming")
+      const { authToken, isAuthSocket } = socket.handshake.query
+
       const user = {
         ip: socket.conn.remoteAddress.replace("::ffff:", ""),
         id: Math.random().toString(36).slice(2),
-        canWrite: true,
+        docId: null,
+        canWrite: false,
+        authToken: authToken,
+        isAuthSocket: isAuthSocket === 'true',
         socket: socket,
       };
 
       socket.emit("userId", user.id);
 
-      socket.on("disconnect", () => {
-        if (!user.docId) {
-          return;
-        }
-
-        for (let other of this.docs[user.docId].users) {
-          if (other != user) {
-            other.socket.emit(`collaborator remove ${user.id}`);
-          }
-        }
-
-        this.docs[user.docId].users = this.docs[user.docId].users.filter(u => u != socket);
-        console.log(
-          `[${new Date().toLocaleString()}] ${user.ip} stopped drawing on ${user.docId}, ${
-            this.docs[user.docId].users.length
-          } users remaining`
-        );
-      });
-
-      socket.on("remove stroke", id => {
-        if (!user.docId || !user.canWrite || typeof id != "string") {
-          return;
-        }
-
-        for (let other of this.docs[user.docId].users) {
-          if (other != user) {
-            other.socket.emit("unload strokes", [id]);
-          }
-        }
-
-        UpdateDB("data", "notes", { id: user.docId }, { $pull: { strokes: { id: id } } });
-      });
-
-      socket.on("new stroke", stroke => {
-        try {
-          console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /doc/${user.docId}`);
-
-          if (!user.docId) {
-            return;
-          }
-
-          const [uId, sId] = stroke.id.split("-");
-
-          // if (uId != user.id) {
-          //   console.log(`Invalid stroke on ${user.docId}. User id = ${user.id} (received ${uId})`);
-          //   return;
-          // }
-
-          for (let other of this.docs[user.docId].users) {
-            if (other != user) {
-              other.socket.emit("load strokes", [stroke]);
-            }
-          }
-
-          if (!user.canWrite) {
-            return;
-          }
-
-          QueryAllDB("data", "notes", { id: user.docId }, { id: 1 }, response => {
-            if (response.length) {
-              UpdateDB("data", "notes", { id: user.docId }, { $push: { strokes: stroke } });
-            } else {
-              InsertDB("data", "notes", { id: user.docId, strokes: [stroke] });
-            }
-          });
-        } catch (e) {
-          console.log(e);
-        }
-      });
-
-      socket.on("request document", id => {
-        if (user.docId) {
-          return;
-        }
-
-        user.docId = id;
-        console.log(`[${new Date().toLocaleString()}] ${user.ip} started drawing on /doc/${user.docId}`);
-
-        if (!this.docs[id]) {
-          this.docs[id] = {
-            users: [user],
-          };
-        } else {
-          this.docs[id].users.push(user);
-        }
-
-        if (user.docId == "demo") {
-          user.canWrite = false;
-        }
-        if (user.docId == "secret_demo_page") {
-          user.docId = "demo";
-        }
-
-        // Inform existing collaborators about new collaborator, and vice versa
-        for (let other of this.docs[user.docId].users) {
-          if (other != user) {
-            other.socket.emit("new collaborator", user.id);
-            user.socket.emit("new collaborator", other.id);
-          }
-        }
-
-        QueryAllDB("data", "notes", { id: user.docId }, {}, result => {
-          if (!result.length) {
-            socket.emit("load strokes", [], user.id);
-          } else {
-            const strokes = result[0].strokes;
-            socket.emit("load strokes", strokes, user.id);
-          }
-        });
-      });
-
+      socket.on("disconnect", disconnect(user, this.docs, socket));
+      socket.on("remove stroke", removeStroke(user, this.docs, socket));
+      socket.on("new stroke", newStroke(user, this.docs, socket));
+      socket.on("request document", requestDocument(user, this.docs, socket));
       // LIVE COLLABORATION
 
-      socket.on("update pointer", pointer => {
-        if (!user.docId || !this.docs[user.docId]) return;
-
-        for (let other of this.docs[user.docId].users) {
-          if (other != user) {
-            other.socket.emit(`collaborator pointer ${user.id}`, pointer);
-          }
-        }
-      });
-
-      socket.on("update input", (x, y, p, t) => {
-        if (!user.docId || !this.docs[user.docId]) return;
-
-        for (let other of this.docs[user.docId].users) {
-          if (other != user) {
-            other.socket.emit(`collaborator input ${user.id}`, x, y, p, t);
-          }
-        }
-      });
-
-      socket.on("update tool", tool => {
-        if (!user.docId || !this.docs[user.docId]) return;
-
-        for (let other of this.docs[user.docId].users) {
-          if (other != user) {
-            other.socket.emit(`collaborator tool ${user.id}`, tool);
-          }
-        }
-      });
+      socket.on("update pointer", updatePointer(user, this.docs, socket));
+      socket.on("update input", updateInput(user, this.docs, socket));
+      socket.on("update tool", updateTool(user, this.docs, socket));
     });
   }
 }

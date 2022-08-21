@@ -31,8 +31,17 @@ export class NetworkCanvasManager implements CanvasManager {
     this.baseCanvas = baseCanvas;
     this.network = network;
 
-    const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/);
-    const docId = (wloc && wloc[1]) || "";
+    const pathname = window.location.pathname
+    const authWloc = pathname.match(/\/auth-note\/([\w\d_]+)/)
+    const freeWloc = pathname.match(/\/free-note\/([\w\d_]+)/)
+
+
+    const docId = (
+      (authWloc && authWloc[1]) ||
+      (freeWloc && freeWloc[1]) ||
+      ""
+    )
+    //network.close()
 
     network.emit("request document", docId);
 
