@@ -119,7 +119,7 @@ export async function createFileFn(req, res) {
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
     const newFileId = await generateNewFileName(12)
 
-    insertNewNoteInDB(
+    await insertNewNoteInDB(
       req.body.type,
       req.body.name,
       req.body.parentDir,
@@ -149,12 +149,19 @@ export async function removeFilesFn(req, res) {
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
 
     const children = await exploreTree(notesToRemove)
-
     for (let fileId of children) {
-      await FileModel.deleteOne({
+      // Delete file (explorer)
+      const removed = await FileModel.findOneAndDelete({
         _id: fileId,
         owner: token.userId
       })
+      // Delete note (strokes data)
+      if (removed.type == 'note') {
+        await NoteModel.deleteOne({
+          id: removed.fileId,
+          isFreeNote: false
+        })
+      }
     }
 
     const allFiles = await FileModel.find({

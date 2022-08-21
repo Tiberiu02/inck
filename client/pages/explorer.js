@@ -861,7 +861,7 @@ async function addFile(name, type, parentDir, setFiles, options = {}) {
 
   const jsonReply = await response.json();
   const filesDict = processFilesData(jsonReply.files);
-  setFiles(filesDict);
+  await setFiles(filesDict);
 }
 
 async function importFreeNote(name, parentDir, setFiles, visibility, freeNoteURL) {
