@@ -211,7 +211,8 @@ export class BaseCanvasManager implements CanvasManager {
               }
               const [x, y] = View.getScreenCoords(image.left, image.top);
               const [w, h] = View.getScreenCoords(image.width, image.height, true);
-              this.gl.renderTexture(image.texture, w, h, x, y);
+              const r = window.devicePixelRatio;
+              this.gl.renderTexture(image.texture, w * r, h * r, x * r, y * r);
             } else if (image.texture) {
               this.gl.ctx.deleteTexture(image.texture);
               image.texture = null;

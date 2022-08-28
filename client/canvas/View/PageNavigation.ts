@@ -212,7 +212,7 @@ class DetectVerticalScroll {
     const p0 = this.points[0];
     const dx = x - p0.x;
     const dy = y - p0.y;
-    if (Math.abs(dy) < Math.abs(dx) * 0.5) {
+    if (Math.abs(dy) < Math.abs(dx)) {
       this.vertical = false;
     }
   }
