@@ -11,13 +11,13 @@ import dotend from "dotenv";
 dotend.config();
 
 import { UpdateDB, QueryDB, QueryAllDB, InsertDB } from "./Database.mjs";
-import { register as registerFn, login as loginFn } from "./Authentication.mjs";
-import { createFileFn, editFileFn, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
+import { register as registerFn, login as loginFn, initializeResetPasswordUsingEmail, initializeResetPasswordUsingToken, changePasswordEndpoint } from "./Authentication.mjs";
+import { createFileFn, editFileFn, getAccountDetailsFromToken, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
 import { disconnect, newStroke, removeStroke, requestDocument, updateInput, updatePointer, updateTool } from "./Sockets.mjs";
 import { NoteModel } from "./Models.mjs";
 
 const MILLIS_PER_WEEK = 604800000;
-const MILLIS_PER_DAY  = 86400000
+const MILLIS_PER_DAY = 86400000
 
 
 class Server {
@@ -62,7 +62,7 @@ class Server {
     const minTime = now - 2 * MILLIS_PER_WEEK;
     await NoteModel.deleteMany({
       isFreeNote: true,
-      creationDate: {$lte: minTime}
+      creationDate: { $lte: minTime }
     })
   }
 
@@ -70,12 +70,19 @@ class Server {
     const jsonBodyParser = bodyParser.json();
     this.app.post("/api/auth/register", jsonBodyParser, registerFn);
     this.app.post("/api/auth/login", jsonBodyParser, loginFn);
+
     this.app.post("/api/explorer/getfiles", jsonBodyParser, getFilesFn);
     this.app.post("/api/explorer/addfile", jsonBodyParser, createFileFn);
     this.app.post("/api/explorer/editfile", jsonBodyParser, editFileFn);
     this.app.post("/api/explorer/removefiles", jsonBodyParser, removeFilesFn);
     this.app.post("/api/explorer/movefiles", jsonBodyParser, moveFilesFn);
     this.app.post("/api/explorer/import-free-note", jsonBodyParser, importFreeNote);
+
+    this.app.post("/api/settings/account-details", jsonBodyParser, getAccountDetailsFromToken)
+    // Request a password change (send email, save request in db, etc)
+    this.app.post("/api/auth/reset-password-with-token", jsonBodyParser, initializeResetPasswordUsingToken)
+    this.app.post("/api/auth/reset-password-with-email", jsonBodyParser, initializeResetPasswordUsingEmail)
+    this.app.post("/api/auth/change-password", jsonBodyParser, changePasswordEndpoint)
   }
 
   startSocketServer() {
