@@ -1,4 +1,4 @@
-import { FileModel, NoteModel } from "./Models.mjs";
+import { FileModel, NoteModel, UserModel } from "./Models.mjs";
 import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { exploreTree } from "./FsTreeExplorer.mjs";
@@ -8,6 +8,23 @@ export const READ_WRITE = "read_write"
 export const READ_ONLY = "read_only"
 
 const VALID_VISIBILITIES = [PRIVATE, READ_ONLY, READ_WRITE]
+
+export async function getAccountDetailsFromToken(req, res) {
+  try {
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
+    const userEntry = await UserModel.findOne({ _id: token.userId })
+    res.status(201).send({ 
+      firstName: userEntry.firstName,
+      lastName: userEntry.lastName,
+      email: userEntry.email
+      
+     });
+
+  } catch (err) {
+    console.log(err);
+    res.status(400).send({ error: "Unable to fetch files" })
+  }
+}
 
 /**
  * Potential errors w/ status:

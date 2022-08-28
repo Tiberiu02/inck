@@ -4,7 +4,7 @@ import { setAuthToken } from '../AuthToken'
 import GetApiPath from '../GetApiPath'
 
 
-export default function Register({ toLoginCallback }) {
+export default function Register({ toLoginCallback, toResetPasswordCallback }) {
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -17,7 +17,7 @@ export default function Register({ toLoginCallback }) {
   const toggleUpdates = () => setSubscribeUpdates(!subscribeUpdates)
 
   const router = useRouter()
-  
+
   const [error, setError] = useState("")
 
   const register = async () => {
@@ -52,11 +52,11 @@ export default function Register({ toLoginCallback }) {
       setError('Could not register: ' + jsonResponse["error"])
     }
   }
-  
+
   const textFieldStyle = "bg-white placeholder-gray-400 text-gray-900 h-10 rounded-md shadow-md px-3 font-bold1 focus:outline-none focus:ring-4 focus:ring-gray-300"
   const buttonStyle = "bg-primary hover:bg-primary-light hover:shadow-sm duration-100 text-white w-full h-10 rounded-md shadow-lg font-bold tracking-wider text-sm"
   const undelineStyle = "pl-1 underline decoration-gray-500 decoration underline-offset-2 decoration-[2px] hover:text-gray-800 hover:decoration-gray-800 cursor-pointer"
-  
+
   return (
     <div className="mx-5 max-w-2xl flex flex-col items-center">
       <h2 className="font-semibold text-4xl mb-4">Sign up</h2>
@@ -102,11 +102,11 @@ export default function Register({ toLoginCallback }) {
 
         <div className='flex flex-col text-gray-600 text-sm gap-2'>
           <div className="flex items-center">
-            <input type="checkbox" onClick={toggleTerms} className="accent-primary mr-3" checked={acceptTerms}/>
+            <input type="checkbox" onClick={toggleTerms} className="accent-primary mr-3" checked={acceptTerms} />
             <div onClick={toggleTerms}>I have read and accepted Inck&apos;s
-            <a target='_blank' href='/tos' className={undelineStyle}>terms of service</a>
-            &nbsp;and
-            <a target='_blank' href='/privacy' className={undelineStyle}>privacy policy</a></div>
+              <a target='_blank' href='/tos' className={undelineStyle}>terms of service</a>
+              &nbsp;and
+              <a target='_blank' href='/privacy' className={undelineStyle}>privacy policy</a></div>
           </div>
 
           <div className="flex items-center" onClick={toggleUpdates} >
@@ -114,18 +114,31 @@ export default function Register({ toLoginCallback }) {
             <div>I want to be updated about Inck&apos;s new features</div>
           </div>
         </div>
-        
+
         <div className={`${error == "" ? "hidden" : ""} text-center bg-red-500 w-full py-2 rounded-md shadow-md text-white`}>
           {error}
         </div>
 
-        <button onClick={register} className={buttonStyle}>Register</button>
 
-        <div className="flex justify-end font-extrabold text-sm text-gray-500 mt-3">
-          Already have an account?
-          <div onClick={toLoginCallback} className={undelineStyle}> LOGIN </div>
+        <div className="flex flex-col gap-y-2 -mt-10">
+          <button onClick={register} className={buttonStyle}>Register</button>
+
+          <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
+            Already have an account?
+            <div onClick={toLoginCallback} className={undelineStyle}>
+              {" "}
+              LOG IN{" "}
+            </div>
+          </div>
+
+          <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
+            Forgot your password?
+            <div onClick={toResetPasswordCallback} className={undelineStyle}>
+              {" "}
+              RESET{" "}
+            </div>
+          </div>
         </div>
-
       </div>
     </div>
   )

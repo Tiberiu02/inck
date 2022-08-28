@@ -5,18 +5,43 @@ import Register from '../components/auth/register'
 import Login from '../components/auth/login'
 import { useRouter } from 'next/router'
 import { getAuthToken } from '../components/AuthToken'
+import ResetPassword from '../components/auth/resetPassword'
 
 
 // "@next/swc-win32-x64-msvc": "^12.1.5",
 
 export default function AuthPage() {
+    /*
+    * Possible display states:
+    * login
+    * sign-up
+    * reset-password
+    */
     const [displayLogin, setDisplayLogin] = useState(true)
+    const [displayState, setDisplayState] = useState("login")
 
-    const toggleDisplay = () => setDisplayLogin(!displayLogin)
+    let displayedComponent
+    const toSignUp = () => setDisplayState("sign-up")
+    const toLogin = () => setDisplayState("login")
+    const toResetPassword = () => setDisplayState("reset-password")
 
-    const leftComponent = displayLogin ?
-        <Login toSignUpCallback={toggleDisplay} />
-        : <Register toLoginCallback={toggleDisplay} />
+    if (displayState == "login") {
+        displayedComponent = <Login
+            toSignUpCallback={toSignUp}
+            toPasswordResetCallback={toResetPassword}
+        />
+    } else if (displayState == "sign-up") {
+        displayedComponent = <Register
+            toLoginCallback={toLogin}
+            toResetPasswordCallback={toResetPassword}
+        />
+
+    } else if (displayState == "reset-password") {
+        displayedComponent = <ResetPassword
+            toLoginCallback={toLogin}
+            toRegisterCallback={toSignUp}
+        />
+    }
 
     return (
         <div className="flex flex-row justify-around pt-10 pb-20 min-h-screen h-full font-round bg-gray-100 items-center">
@@ -36,9 +61,9 @@ export default function AuthPage() {
                     Don’t want to miss any update ? Want to get in touch ? See our Twitter account!
                 </div>
             </div>
-            
+
             <div className="flex justify-center">
-                {leftComponent}
+                {displayedComponent}
             </div>
 
 

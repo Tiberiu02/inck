@@ -19,7 +19,9 @@ export function setAuthToken(token) {
   )
 }
 
-export function disconnect() {
+export function disconnect(reload = true) {
   cookies.remove(authCookieName)
-  window.location.reload(false)
+  if (reload) {
+    window.location.reload(false)
+  }
 }
