@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { setAuthToken } from "../AuthToken.js";
 import GetApiPath from "../GetApiPath";
 
-export default function Login({ facebookCallback, googleCallback, toSignUpCallback }) {
+export default function Login({ facebookCallback, googleCallback, toSignUpCallback, toPasswordResetCallback }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,7 +33,8 @@ export default function Login({ facebookCallback, googleCallback, toSignUpCallba
       setAuthToken(jsonResponse.token);
       router.push("/explorer");
     } else {
-      setError("Could not log in: " + jsonResponse["error"]);
+      setError("Error: " + jsonResponse["error"]);
+      setTimeout(() => setError(""), 10_000)
     }
   };
 
@@ -98,11 +99,21 @@ export default function Login({ facebookCallback, googleCallback, toSignUpCallba
         </button>
       </div>
 
-      <div className="flex justify-end self-end font-extrabold text-sm text-gray-500 mt-8">
-        No account?
-        <div onClick={toSignUpCallback} className={undelineStyle}>
-          {" "}
-          SIGN UP{" "}
+      <div className="flex flex-col gap-y-2 justify-end self-end h-fit mt-2">
+        <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
+          No account?
+          <div onClick={toSignUpCallback} className={undelineStyle}>
+            {" "}
+            SIGN UP{" "}
+          </div>
+        </div>
+
+        <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
+          Forgot password ?
+          <div onClick={toPasswordResetCallback} className={undelineStyle}>
+            {" "}
+            RESET{" "}
+          </div>
         </div>
       </div>
     </div>

@@ -306,7 +306,7 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
 
   const TreeRepr = (folder, setSelected, prefixLength = 0) => {
     const folders = folder.children.filter(x => x.type == "folder");
-    const [isOpen, setOpen] = useState(false);
+    const [isOpen, setOpen] = useState(folder.name == "My Notes");
 
     const Folder = isOpen ? FaFolderOpen : FaFolder;
     const children = folders.map(folder => TreeRepr(folder, setSelected, prefixLength + 1));
@@ -1084,7 +1084,7 @@ export default function Explorer() {
   return (
     <div>
       <Head>
-        <title>Inck</title>
+        <title>Inck - Explorer</title>
         <meta name="description" content="The only ink that you will ever need" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -1126,15 +1126,12 @@ export default function Explorer() {
               >
                 Disconnect
               </button>
-              <button className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full">
+              <a href="/faq" className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
                 <FaRegQuestionCircle className="text-2xl" />
-              </button>
-              <button className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full">
-                <FaRegUserCircle className="text-2xl" />
-              </button>
-              <button className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full">
+              </a>
+              <a href="settings" className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
                 <FaRegSun className="text-2xl" />
-              </button>
+              </a>
             </div>
           </div>
 
