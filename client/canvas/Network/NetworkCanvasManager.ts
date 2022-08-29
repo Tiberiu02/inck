@@ -1,9 +1,9 @@
 import { CanvasManager } from "../CanvasManager";
 import { RenderLoop } from "../Rendering/RenderLoop";
 import { DeserializeTool, SerializedTool, Tool } from "../Tooling/Tool";
-import { Vector2D } from "../types";
 import { View } from "../View/View";
 import { NetworkConnection } from "./NetworkConnection";
+import { Vector2D } from "../Math/V2";
 import {
   Graphic,
   PersistentGraphic,
@@ -31,16 +31,11 @@ export class NetworkCanvasManager implements CanvasManager {
     this.baseCanvas = baseCanvas;
     this.network = network;
 
-    const pathname = window.location.pathname
-    const authWloc = pathname.match(/\/auth-note\/([\w\d_]+)/)
-    const freeWloc = pathname.match(/\/free-note\/([\w\d_]+)/)
+    const pathname = window.location.pathname;
+    const authWloc = pathname.match(/\/auth-note\/([\w\d_]+)/);
+    const freeWloc = pathname.match(/\/free-note\/([\w\d_]+)/);
 
-
-    const docId = (
-      (authWloc && authWloc[1]) ||
-      (freeWloc && freeWloc[1]) ||
-      ""
-    )
+    const docId = (authWloc && authWloc[1]) || (freeWloc && freeWloc[1]) || "";
     //network.close()
 
     network.emit("request document", docId);

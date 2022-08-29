@@ -1,4 +1,5 @@
-import { LineSegment, Rectangle, Vector2D, Vector3D } from "../types";
+import { LineSegment, Rectangle, Vector3D } from "../types";
+import { Vector2D } from "./V2";
 
 export function RectangleIntersectsRectangle(a: Rectangle, b: Rectangle, padding: number = 0): boolean {
   return (

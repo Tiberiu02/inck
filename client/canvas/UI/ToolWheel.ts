@@ -87,7 +87,7 @@ export default class ToolWheel {
     };
 
     this.toolManager.selectPen([0, 0, 0], WIDTHS[this.width.pen], 1);
-    //this.toolManager.selectSelection();
+    this.toolManager.selectSelection();
   }
 
   NewTool() {

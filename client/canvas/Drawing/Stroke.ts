@@ -1,4 +1,4 @@
-import { StrokeBuilder } from "./StrokeBuilder";
+import { SmoothStrokeBuilder } from "./SmoothStrokeBuilder";
 import { RGB, StrokePoint } from "../types";
 import { TranslateVectorGraphic, VectorGraphic } from "./VectorGraphic";
 import { PersistentGraphic, SerializedGraphic, Serializers } from "./Graphic";
@@ -42,7 +42,7 @@ export function SerializeStroke(stroke: Stroke): SerializedStroke {
 }
 
 export function DeserializeStroke(stroke: SerializedStroke): Stroke {
-  const builder = new StrokeBuilder(stroke.timestamp, stroke.zIndex, stroke.color, stroke.width);
+  const builder = new SmoothStrokeBuilder(stroke.timestamp, stroke.zIndex, stroke.color, stroke.width);
 
   for (let i = 0; i < stroke.data.length; i += ELEMENTS_PER_INPUT)
     builder.push({
@@ -60,7 +60,7 @@ export function DeserializeStrokeLegacy(data: any): Stroke {
   const zIndex = data.type == "h" ? 0 : data.zIndex ?? 1;
   const { width, timestamp, path, id } = data;
 
-  const builder = new StrokeBuilder(timestamp, zIndex, color, width);
+  const builder = new SmoothStrokeBuilder(timestamp, zIndex, color, width);
   for (let i = 0; i < path.length; i += ELEMENTS_PER_INPUT)
     builder.push({
       x: path[i + OFFSET_INPUT.X],

@@ -1,5 +1,5 @@
 import { ToolManager } from "../Tooling/ToolManager";
-import { Vector2D } from "../types";
+import { V2, Vector2D } from "../Math/V2";
 import { Display } from "../DeviceProps";
 import ToolWheel from "./ToolWheel";
 import tailwind from "../../tailwind.config";
@@ -60,21 +60,24 @@ export class CaddieMenu {
 
     if (pointer) {
       const displacement = new Vector2D(DIST_FROM_CURSOR, 0);
-      const offset = new Vector2D(this.el.getBoundingClientRect().width, this.el.getBoundingClientRect().height).div(2);
+      const offset = new Vector2D(
+        this.el.getBoundingClientRect().width / 2,
+        this.el.getBoundingClientRect().height / 2
+      );
 
-      pointer = pointer.sub(offset).div(Display.DPI());
+      pointer = V2.div(V2.sub(pointer, offset), Display.DPI());
 
-      if (pointer.norm() < CORNER_PADDING + DIST_FROM_CURSOR) {
-        const t = pointer.add(displacement.rot(Math.PI / 2));
+      if (V2.norm(pointer) < CORNER_PADDING + DIST_FROM_CURSOR) {
+        const t = V2.add(pointer, V2.rot(displacement, Math.PI / 2));
         this.target = new Vector2D(Math.max(t.x, PAGE_PADDING), t.y);
       } else {
         let angle = Math.PI * 1.35;
-        if (pointer.add(displacement.rot(angle)).x < PAGE_PADDING) {
+        if (V2.add(pointer, V2.rot(displacement, angle)).x < PAGE_PADDING) {
           angle = Math.PI + Math.acos((pointer.x - PAGE_PADDING) / DIST_FROM_CURSOR);
-        } else if (pointer.add(displacement.rot(angle)).y < PAGE_PADDING) {
+        } else if (V2.add(pointer, V2.rot(displacement, angle)).y < PAGE_PADDING) {
           angle = Math.PI + Math.asin((pointer.y - PAGE_PADDING) / DIST_FROM_CURSOR);
         }
-        this.target = pointer.add(displacement.rot(angle));
+        this.target = V2.add(pointer, V2.rot(displacement, angle));
       }
     }
   }
@@ -84,12 +87,12 @@ export class CaddieMenu {
     const dt = (t - this.lastUpdate) / MS_PER_TIME_UNIT;
 
     const target_pull = () => {
-      this.pos = this.pos.add(this.target.sub(this.pos).mul(PULL_FORCE).mul(dt));
+      this.pos = V2.add(this.pos, V2.mul(V2.sub(this.target, this.pos), Math.min(1, PULL_FORCE * dt)));
     };
 
     if (this.state == STATES.IDLE) {
       if (this.pointer) {
-        if (this.pos.dist(this.target) > TELEPORT_THRESHOLD) {
+        if (V2.dist(this.pos, this.target) > TELEPORT_THRESHOLD) {
           this.state = STATES.FADE_OUT;
         } else {
           this.state = STATES.FOLLOWING;
@@ -207,16 +210,16 @@ export class CaddieMenu {
     let dragging: boolean = false;
 
     const handlePointerDown = (e: PointerEvent) => {
-      initialClick = new Vector2D(e.x, e.y).div(Display.DPI());
-      relativePos = this.target.sub(initialClick);
+      initialClick = V2.div(new Vector2D(e.x, e.y), Display.DPI());
+      relativePos = V2.sub(this.target, initialClick);
       PointerTracker.pause();
     };
     const handlePointerMove = (e: PointerEvent) => {
       if (relativePos) {
-        const pointer = new Vector2D(e.x, e.y).div(Display.DPI());
-        dragging = dragging || pointer.dist(initialClick) > DRAG_START;
+        const pointer = V2.div(new Vector2D(e.x, e.y), Display.DPI());
+        dragging = dragging || V2.dist(pointer, initialClick) > DRAG_START;
         console.log(dragging);
-        this.target = this.pos = pointer.add(relativePos);
+        this.target = this.pos = V2.add(pointer, relativePos);
       }
     };
     const handlePointerUp = (e: PointerEvent) => {

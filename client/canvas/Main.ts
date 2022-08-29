@@ -4,7 +4,6 @@ import ToolWheel from "./UI/ToolWheel";
 import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { CanvasManager } from "./CanvasManager";
-import { Vector2D } from "./types";
 import { CaddieMenu } from "./UI/CaddieMenu";
 import { PenEvent, PointerTracker } from "./UI/PointerTracker";
 import { ToolManager } from "./Tooling/ToolManager";
@@ -15,6 +14,7 @@ import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
 import { TestFastRenderingSupport } from "./DeviceProps";
 import { PdfCanvasManager } from "./PDF";
+import { Vector2D } from "./Math/V2";
 
 export default class App {
   private canvasManager: CanvasManager;

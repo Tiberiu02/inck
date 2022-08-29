@@ -13,9 +13,9 @@ import {
 } from "../Drawing/Graphic";
 import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { Stroke } from "../Drawing/Stroke";
-import { StrokeBuilder } from "../Drawing/StrokeBuilder";
+import { SmoothStrokeBuilder } from "../Drawing/SmoothStrokeBuilder";
 import { PolyLine, UniteRectangles } from "../Math/Geometry";
-import { Point2D, RGB, StrokePoint, Vector2D, Vector3D } from "../types";
+import { RGB, StrokePoint, Vector3D } from "../types";
 import { View } from "../View/View";
 import { ActionStack } from "./ActionsStack";
 import { SerializedTool, Tool } from "./Tool";
@@ -23,6 +23,8 @@ import { BUFFER_SIZE, NUM_LAYERS } from "../Rendering/BaseCanvasManager";
 import { RenderLoop } from "../Rendering/RenderLoop";
 import { PointerTracker } from "../UI/PointerTracker";
 import { NetworkConnection } from "../Network/NetworkConnection";
+import { V2, Vector2D } from "../Math/V2";
+import { StrokeVectorizer } from "../Drawing/StrokeBuilder";
 
 const LASSO_WIDTH = 0.05; // in
 const LASSO_COLOR: RGB = [0.4, 0.6, 1];
@@ -36,7 +38,7 @@ export interface SerializedSelection extends SerializedTool {
   readonly selecting: boolean;
   readonly points: StrokePoint[];
   readonly selected: SerializedGraphic[];
-  readonly toTranslateBy: Point2D;
+  readonly toTranslateBy: Vector2D;
 }
 
 export class Selection implements Tool {
@@ -80,11 +82,11 @@ export class Selection implements Tool {
       this.strokeBuilder.push({ x, y, pressure, timestamp });
       this.points.push({ x, y, pressure, timestamp });
 
-      const connector = new DottedStrokeBuilder(color, width / 2);
+      const connector = new SmoothStrokeBuilder(timestamp, 1, color, width / 3);
       connector.push(this.points[0]);
       connector.push({ x, y, pressure, timestamp });
 
-      this.active = this.strokeBuilder.getStrokes().concat(connector.getStrokes());
+      this.active = this.strokeBuilder.getStrokes().concat([connector.getGraphic()]);
     } else {
       if (this.selecting) {
         this.selecting = false;
@@ -126,7 +128,7 @@ export class Selection implements Tool {
     window.addEventListener("pointermove", e => {
       if (pointer && e.pointerId == pointerId) {
         const newPointer = new Vector2D(e.x, e.y);
-        this.translateSelection(newPointer.sub(pointer));
+        this.translateSelection(V2.sub(newPointer, pointer));
         pointer = newPointer;
       }
     });
@@ -245,7 +247,7 @@ export class Selection implements Tool {
 
   translateSelection({ x, y }: Vector2D) {
     [x, y] = View.getCanvasCoords(x, y, true);
-    this.toTranslateBy = this.toTranslateBy.add(new Vector2D(x, y));
+    this.toTranslateBy = V2.add(this.toTranslateBy, new Vector2D(x, y));
     RenderLoop.scheduleRender();
   }
 
@@ -289,7 +291,7 @@ class DottedStrokeBuilder {
   private color: RGB;
   private width: number;
   private strokes: Graphic[];
-  private currentStroke: StrokeBuilder;
+  private currentStroke: StrokeVectorizer;
   private lastPoint: StrokePoint;
   private lastKeyPoint: StrokePoint;
   private isDotting: boolean;
@@ -306,12 +308,12 @@ class DottedStrokeBuilder {
       this.timestamp = p.timestamp;
       this.lastPoint = this.lastKeyPoint = p;
       this.isDotting = true;
-      this.currentStroke = new StrokeBuilder(p.timestamp, 1, this.color, this.width);
+      this.currentStroke = new StrokeVectorizer(1, this.color, this.width);
       this.currentStroke.push(p);
       return;
     }
 
-    while (Vector2D.dist(p, this.lastPoint) > SP_DIST * this.width) {
+    while (V2.dist(p, this.lastPoint) > SP_DIST * this.width) {
       this.push({
         x: (p.x + this.lastPoint.x) / 2,
         y: (p.y + this.lastPoint.y) / 2,
@@ -321,8 +323,8 @@ class DottedStrokeBuilder {
     }
 
     if (this.isDotting) {
-      if (Vector2D.dist(p, this.lastKeyPoint) <= DOT_LEN * this.width) {
-        this.currentStroke.push(p);
+      if (V2.dist(p, this.lastKeyPoint) <= DOT_LEN * this.width) {
+        //this.currentStroke.push(p);
       } else {
         this.currentStroke.push({ ...this.lastPoint, timestamp: this.lastPoint.timestamp + 10 });
 
@@ -331,8 +333,8 @@ class DottedStrokeBuilder {
         this.isDotting = false;
       }
     } else {
-      if (Vector2D.dist(p, this.lastKeyPoint) > BREAK_LEN * this.width) {
-        this.currentStroke = new StrokeBuilder(Date.now(), 1, this.color, this.width);
+      if (V2.dist(p, this.lastKeyPoint) > BREAK_LEN * this.width) {
+        this.currentStroke = new StrokeVectorizer(1, this.color, this.width);
         this.currentStroke.push(p);
         this.lastKeyPoint = p;
         this.isDotting = true;
@@ -352,7 +354,7 @@ function GetShadow(drawable: PersistentGraphic, shadowColor: RGB): VectorGraphic
   if (drawable.serializer == Serializers.STROKE) {
     const s = drawable as Stroke;
     const shadowWidth = View.getCanvasCoords(Display.DPI() * SHADOW_SIZE, 0, true)[0];
-    const builder = new StrokeBuilder(
+    const builder = new SmoothStrokeBuilder(
       s.timestamp,
       s.zIndex,
       shadowColor,

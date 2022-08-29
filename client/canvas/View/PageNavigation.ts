@@ -1,5 +1,5 @@
 import { FingerEvent } from "../UI/PointerTracker";
-import { Vector2D } from "../types";
+import { V2, Vector2D } from "../Math/V2";
 import { MutableView, View } from "./View";
 
 export class PageNavigation {
@@ -43,12 +43,12 @@ export class PageNavigation {
       let radius = 0;
 
       for (const p of Object.values(pointers)) {
-        center = center.add(p);
+        center = V2.add(center, p);
       }
-      center = center.div(N);
+      center = V2.div(center, N);
 
       for (const p of Object.values(pointers)) {
-        radius += p.dist(center);
+        radius += V2.dist(p, center);
       }
       radius /= N;
 
@@ -182,7 +182,7 @@ class ScrollInertia {
       if (Math.sqrt(vx ** 2 + vy ** 2) > MINIMUM_VELOCITY) {
         MutableView.applyTranslation(this.velocity.x * dt, this.velocity.y * dt);
 
-        this.velocity = this.velocity.mul(1 - Math.min(1, dt * INERTIA_DECAY_PER_MS));
+        this.velocity = V2.mul(this.velocity, 1 - Math.min(1, dt * INERTIA_DECAY_PER_MS));
 
         this.t = t;
       } else {
