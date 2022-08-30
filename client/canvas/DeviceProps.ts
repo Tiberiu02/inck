@@ -32,6 +32,7 @@ export class Display {
 }
 
 export function TestFastRenderingSupport(): boolean {
+  if (typeof navigator == "undefined") return false;
   const ua = navigator.userAgent;
   return (
     navigator.vendor != "Apple Computer, Inc." &&

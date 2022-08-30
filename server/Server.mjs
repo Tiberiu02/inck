@@ -13,7 +13,7 @@ dotend.config();
 import { UpdateDB, QueryDB, QueryAllDB, InsertDB } from "./Database.mjs";
 import { register as registerFn, login as loginFn, initializeResetPasswordUsingEmail, initializeResetPasswordUsingToken, changePasswordEndpoint } from "./Authentication.mjs";
 import { createFileFn, editFileFn, getAccountDetailsFromToken, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
-import { disconnect, newStroke, removeStroke, requestDocument, updateInput, updatePointer, updateTool, remoteControl, directedRemoteControl } from "./Sockets.mjs";
+import { disconnect, newStroke, removeStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets.mjs";
 import { NoteModel } from "./Models.mjs";
 
 const MILLIS_PER_WEEK = 604800000;
@@ -111,9 +111,6 @@ class Server {
       socket.on("request document", requestDocument(user, this.docs, socket));
 
       // LIVE COLLABORATION
-      socket.on("update pointer", updatePointer(user, this.docs, socket));
-      socket.on("update input", updateInput(user, this.docs, socket));
-      socket.on("update tool", updateTool(user, this.docs, socket));
       socket.on("remote control", remoteControl(user, this.docs, socket));
       socket.on("directed remote control", directedRemoteControl(user, this.docs, socket));
     });

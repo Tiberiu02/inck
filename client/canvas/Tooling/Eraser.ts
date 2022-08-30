@@ -1,9 +1,9 @@
 import { ActionStack } from "./ActionsStack";
 import { CanvasManager } from "../CanvasManager";
-import { Tool } from "./Tool";
+import { MyTool } from "./Tool";
 import { NetworkConnection } from "../Network/NetworkConnection";
 
-export class StrokeEraser implements Tool {
+export class StrokeEraser implements MyTool {
   private x: number;
   private y: number;
   private canvasManager: CanvasManager;

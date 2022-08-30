@@ -1,8 +1,8 @@
-import { SerializedTool, Tool } from "../Tooling/Tool";
+import { SerializedTool, MyTool } from "../Tooling/Tool";
 import { NetworkConnection } from "./NetworkConnection";
 
-export class NetworkTool implements Tool {
-  private baseTool: Tool;
+export class NetworkTool implements MyTool {
+  private baseTool: MyTool;
   private network: NetworkConnection;
   private isPressing: boolean;
 
@@ -14,7 +14,7 @@ export class NetworkTool implements Tool {
     //});
   }
 
-  setTool(tool: Tool) {
+  setTool(tool: MyTool) {
     if (this.baseTool) {
       this.baseTool.release();
     }

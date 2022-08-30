@@ -12,7 +12,6 @@ import { View } from "./View/View";
 import { MutableObservableProperty, ObservableProperty } from "./DesignPatterns/Observable";
 import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
-import { TestFastRenderingSupport } from "./DeviceProps";
 import { PdfCanvasManager } from "./PDF";
 import { Vector2D } from "./Math/V2";
 
@@ -28,8 +27,6 @@ export default class App {
   private scrollBars: ScrollBars;
   private wheel: ToolWheel;
   private caddie: CaddieMenu;
-
-  private supportsFastRender: boolean;
 
   constructor() {
     Object.assign(document.body.style, {
@@ -48,7 +45,6 @@ export default class App {
       overflow: "hidden",
     });
     window.addEventListener("contextmenu", e => e.preventDefault());
-    this.supportsFastRender = TestFastRenderingSupport();
 
     // Canvas
     this.canvasManager = new BaseCanvasManager();
@@ -103,8 +99,5 @@ export default class App {
 
     this.toolManager.update(x, y, e.pressure, e.timeStamp);
     this.caddie.updatePointer(e.pressure ? new Vector2D(e.x, e.y) : null);
-
-    // Render
-    this.supportsFastRender ? RenderLoop.render() : RenderLoop.scheduleRender();
   }
 }

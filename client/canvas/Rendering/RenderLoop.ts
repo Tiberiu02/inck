@@ -1,8 +1,18 @@
+import { TestFastRenderingSupport } from "../DeviceProps";
+
 export class RenderLoop {
   private static renderFn: Function[];
   private static rerender: boolean;
   private static rendering: boolean;
   private static nextRender: number;
+  private static fastRender: boolean;
+
+  public static get supportsFastRender() {
+    if (this.fastRender == undefined) {
+      this.fastRender = TestFastRenderingSupport();
+    }
+    return this.fastRender;
+  }
 
   static scheduleRender() {
     RenderLoop.rerender = true;

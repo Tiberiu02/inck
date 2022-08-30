@@ -207,41 +207,6 @@ async function requestDocumentFn(id, user, docs, socket) {
     })
 }
 
-function updatePointerFn(pointer, user, docs, socket) {
-    if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
-        return;
-    }
-
-    for (let other of docs[user.docId].users) {
-        if (other != user) {
-            other.socket.emit(`collaborator pointer ${user.id}`, pointer);
-        }
-    }
-}
-
-function updateInputFn(x, y, p, t, user, docs, socket) {
-    if (!user.docId || !docs[user.docId]  /* ||!user.canWrite */) {
-        return;
-    }
-    for (let other of docs[user.docId].users) {
-        if (other != user) {
-            other.socket.emit(`collaborator input ${user.id}`, x, y, p, t);
-        }
-    }
-}
-
-function updateToolFn(tool, user, docs, socket) {
-    if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
-        return;
-    };
-
-    for (let other of docs[user.docId].users) {
-        if (other != user) {
-            other.socket.emit(`collaborator tool ${user.id}`, tool);
-        }
-    }
-}
-
 function remoteControlFn(args, user, docs, socket) {
     if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
         return;
@@ -265,18 +230,6 @@ function directedRemoteControlFn(targetId, args, user, docs, socket) {
             other.socket.emit(`collaborator update ${user.id}`, ...args);
         }
     }
-}
-
-export function updateTool(user, docs, socket) {
-    return (tool) => updateToolFn(tool, user, docs, socket)
-}
-
-export function updateInput(user, docs, socket) {
-    return (x, y, p, t) => updateInputFn(x, y, p, t, user, docs, socket)
-}
-
-export function updatePointer(user, docs, socket) {
-    return (pointer) => updatePointerFn(pointer, user, docs, socket)
 }
 
 export function remoteControl(user, docs, socket) {
