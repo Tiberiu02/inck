@@ -25,16 +25,17 @@ import { PointerTracker } from "../UI/PointerTracker";
 import { NetworkConnection } from "../Network/NetworkConnection";
 import { V2, Vector2D } from "../Math/V2";
 import { StrokeVectorizer } from "../Drawing/StrokeVectorizer";
+import { prototype } from "events";
+import { Collaborator } from "../Network/NetworkCanvasManager";
 
 const LASSO_ZINDEX = 1;
 
 const LASSO_WIDTH = 0.05; // in
 const LASSO_COLOR: RGB = [0.4, 0.6, 1];
-const LASSO_COLOR_COLLAB: RGB = [0.4, 0.8, 0.8];
+const LASSO_CONNECTOR_COLOR: RGB = [0.5, 0.75, 1];
 
 const SHADOW_SIZE = 0.2; // in
 const SHADOW_COLOR: RGB = [0.7, 0.9, 1];
-const SHADOW_COLOR_COLLAB: RGB = [0.7, 1, 0.9];
 
 export interface SerializedSelection extends SerializedTool {
   readonly selecting: boolean;
@@ -43,72 +44,210 @@ export interface SerializedSelection extends SerializedTool {
   readonly toTranslateBy: Vector2D;
 }
 
-export class Selection implements Tool {
-  private canvasManager: CanvasManager;
-  private actionStack: ActionStack;
-  private network: NetworkConnection;
-  private lasso: DottedStrokeBuilder;
+export class SelectionInterface {
+  clearSelection() {}
+  applyTranslation() {}
+  translateSelection(delta: { x: number; y: number }) {}
+  releaseLasso() {}
+  updateLasso(x: number, y: number, pressure: number, timestamp: number) {}
+}
 
-  private selecting: boolean;
-  private points: StrokePoint[];
-  private selected: PersistentGraphic[];
+export class SelectionBase {
+  protected canvasManager: CanvasManager;
+  protected selecting: boolean;
+  protected selected: PersistentGraphic[];
+  protected toTranslateBy: Vector2D;
+
+  protected lassoColor: RGB;
+  protected lassoConnectorColor: RGB;
+  protected shadowColor: RGB;
+
   private active: Graphic[];
-  private ui: HTMLDivElement;
-  private toTranslateBy: Vector2D;
+  private lasso: DottedStrokeBuilder;
+  private points: StrokePoint[];
 
-  constructor(canvasManager: CanvasManager, actionStack?: ActionStack, network?: NetworkConnection) {
+  constructor(canvasManager: CanvasManager) {
     this.canvasManager = canvasManager;
-    this.actionStack = actionStack;
-    this.network = network;
+
     this.selected = [];
     this.active = [];
     this.points = [];
-    this.ui = this.createUI();
 
     this.toTranslateBy = new Vector2D(0, 0);
+
+    this.lassoColor = LASSO_COLOR;
+    this.lassoConnectorColor = LASSO_CONNECTOR_COLOR;
+    this.shadowColor = SHADOW_COLOR;
+  }
+
+  updateLasso(x: number, y: number, pressure: number, timestamp: number) {
+    console.log("updating lasso");
+    const width = View.getCanvasCoords(Display.DPI() * LASSO_WIDTH, 0, true)[0];
+
+    if (!this.selecting) {
+      this.clearSelection();
+
+      this.lasso = new DottedStrokeBuilder(this.lassoColor, width);
+      this.selecting = true;
+      this.points = [];
+    }
+
+    this.lasso.push({ x, y, pressure, timestamp });
+    this.points.push({ x, y, pressure, timestamp });
+
+    const connector = new StrokeVectorizer(this.lassoConnectorColor, width / 3);
+    connector.push(this.points[0]);
+    connector.push({ x, y, pressure, timestamp });
+
+    this.active = this.lasso.getStrokes().concat([connector.getGraphic(LASSO_ZINDEX)]);
+  }
+
+  releaseLasso() {
+    const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
+    this.selected = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
+    this.computeShadows();
+
+    this.selecting = false;
+  }
+
+  clearSelection() {
+    this.selected = [];
+    this.active = [];
+    RenderLoop.scheduleRender();
+  }
+
+  applyTranslation() {
+    const { x, y } = this.toTranslateBy;
+    this.selected = this.selected.map(d => TranslatePersistentGraphic(d, x, y));
+    this.active = this.active.map(d => TranslateGraphic(d, x, y));
+    this.toTranslateBy = new Vector2D(0, 0);
+  }
+
+  render() {
+    this.active.forEach(s =>
+      this.canvasManager.addForNextRender(
+        s.type == GraphicTypes.VECTOR ? ({ ...s, glUniforms: this.GetUniforms() } as VectorGraphic) : s
+      )
+    );
+  }
+
+  translateSelection({ x, y }: Vector2D) {
+    [x, y] = View.getCanvasCoords(x, y, true);
+    this.toTranslateBy = V2.add(this.toTranslateBy, new Vector2D(x, y));
+    RenderLoop.scheduleRender();
+  }
+
+  serialize(): SerializedSelection {
+    return {
+      deserializer: Serializers.SELECTION,
+      selecting: this.selecting,
+      selected: this.selected.map(SerializeGraphic),
+      points: this.points,
+      toTranslateBy: { x: this.toTranslateBy.x, y: this.toTranslateBy.y },
+    };
+  }
+
+  protected computeShadows() {
+    const shadows: Graphic[] = this.selected.map(d => GetShadow(d, this.shadowColor));
+    this.active = OptimizeDrawables(shadows.concat(this.selected.map(s => s.graphic)));
+  }
+
+  private GetUniforms() {
+    return {
+      u_AspectRatio: Display.AspectRatio(),
+      u_Left: View.getLeft() - this.toTranslateBy.x,
+      u_Top: View.getTop() - this.toTranslateBy.y,
+      u_Zoom: View.getZoom(),
+    };
+  }
+}
+
+export class CollabSelection extends SelectionBase implements SelectionInterface {
+  constructor(canvasManager: CanvasManager) {
+    super(canvasManager);
+    console.log("created collab selection");
+  }
+
+  static deserialize(data: SerializedSelection, canvasManager: CanvasManager, collab: Collaborator): CollabSelection {
+    const s = new CollabSelection(canvasManager);
+    s.selecting = data.selecting;
+    s.selected = data.selected.map(DeserializeGraphic);
+    s.lassoColor = collab.getColor(0.8);
+    s.lassoConnectorColor = collab.getColor(0.85);
+    s.shadowColor = collab.getColor(0.9);
+    s.computeShadows();
+    return s;
+  }
+}
+
+type Emitter<InterfaceType> = new (network: NetworkConnection, baseTool: SerializedTool) => InterfaceType;
+
+function CreateEmitterClass<InterfaceType>(InterfaceClass: new () => InterfaceType): Emitter<InterfaceType> {
+  const Emitter: any = function (network: NetworkConnection, baseTool: SerializedTool) {
+    this.network = network;
+    network.setTool(baseTool);
+  };
+
+  const prototype = Object.getPrototypeOf(new InterfaceClass());
+  const methods = Object.getOwnPropertyNames(prototype).filter(x => x != "constructor");
+
+  console.log("creating emitter");
+  for (const method of methods) {
+    console.log(method);
+    Emitter.prototype[method] = function (...args: any[]) {
+      this.network.updateTool(method, ...args);
+    };
+  }
+
+  return Emitter;
+}
+
+const EmitterSelection = CreateEmitterClass(SelectionInterface);
+
+export class MySelection extends SelectionBase implements Tool {
+  private actionStack: ActionStack;
+  private network: NetworkConnection;
+  private ui: HTMLDivElement;
+
+  private remoteController: SelectionInterface;
+
+  constructor(canvasManager: CanvasManager, actionStack: ActionStack, network: NetworkConnection) {
+    super(canvasManager);
+
+    this.actionStack = actionStack;
+    this.network = network;
+    this.ui = this.createUI();
+    this.remoteController = new EmitterSelection(network, this.serialize());
   }
 
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (pressure) {
-      const width = View.getCanvasCoords(Display.DPI() * LASSO_WIDTH, 0, true)[0];
-      const color = this.actionStack ? LASSO_COLOR : LASSO_COLOR_COLLAB;
-
       if (!this.selecting) {
         this.release();
-
-        this.lasso = new DottedStrokeBuilder(color, width);
-        this.selecting = true;
-        this.points = [];
       }
 
-      this.lasso.push({ x, y, pressure, timestamp });
-      this.points.push({ x, y, pressure, timestamp });
-
-      const connector = new StrokeVectorizer(color, width / 3);
-      connector.push(this.points[0]);
-      connector.push({ x, y, pressure, timestamp });
-
-      this.active = this.lasso.getStrokes().concat([connector.getGraphic(LASSO_ZINDEX)]);
+      super.updateLasso(x, y, pressure, timestamp);
+      this.remoteController.updateLasso(x, y, pressure, timestamp);
     } else {
       if (this.selecting) {
-        this.selecting = false;
+        super.releaseLasso();
+        this.remoteController.releaseLasso();
 
         if (this.actionStack) {
-          const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
-          this.selected = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
           this.selected.forEach(d => this.canvasManager.remove(d.id));
-          this.network.updateTool(this);
         }
-
-        this.computeShadows();
       }
     }
   }
 
-  private computeShadows() {
-    const shadowColor = this.actionStack ? SHADOW_COLOR : SHADOW_COLOR_COLLAB;
-    const shadows: Graphic[] = this.selected.map(d => GetShadow(d, shadowColor));
-    this.active = OptimizeDrawables(shadows.concat(this.selected.map(s => s.graphic)));
+  translateSelection({ x, y }: Vector2D): void {
+    super.translateSelection({ x, y });
+    this.remoteController.translateSelection({ x, y });
+  }
+
+  applyTranslation() {
+    super.applyTranslation();
+    this.remoteController.applyTranslation();
   }
 
   private createUI(): HTMLDivElement {
@@ -195,11 +334,7 @@ export class Selection implements Tool {
   }
 
   render(): void {
-    this.active.forEach(s =>
-      this.canvasManager.addForNextRender(
-        s.type == GraphicTypes.VECTOR ? ({ ...s, glUniforms: this.GetUniforms() } as VectorGraphic) : s
-      )
-    );
+    super.render();
 
     if (this.actionStack) {
       if (this.selected.length) {
@@ -220,68 +355,17 @@ export class Selection implements Tool {
     }
   }
 
-  private GetUniforms() {
-    return {
-      u_AspectRatio: Display.AspectRatio(),
-      u_Left: View.getLeft() - this.toTranslateBy.x,
-      u_Top: View.getTop() - this.toTranslateBy.y,
-      u_Zoom: View.getZoom(),
-    };
-  }
-
   release(): void {
-    if (this.actionStack) {
-      this.network.updateTool(this);
-      this.selected.forEach(d => this.canvasManager.add(d));
-    }
-    this.selected = [];
-    this.active = [];
+    this.selected.forEach(d => this.canvasManager.add(d));
+    super.clearSelection();
+    this.remoteController.clearSelection();
+
     this.ui.style.display = "none";
-    RenderLoop.scheduleRender();
   }
 
   deleteSelection(): void {
-    this.selected = [];
-    this.active = [];
-    this.network.updateTool(this);
-    RenderLoop.scheduleRender();
-  }
-
-  translateSelection({ x, y }: Vector2D) {
-    [x, y] = View.getCanvasCoords(x, y, true);
-    this.toTranslateBy = V2.add(this.toTranslateBy, new Vector2D(x, y));
-    RenderLoop.scheduleRender();
-  }
-
-  applyTranslation() {
-    const { x, y } = this.toTranslateBy;
-    this.selected = this.selected.map(d => TranslatePersistentGraphic(d, x, y));
-    this.active = this.active.map(d => TranslateGraphic(d, x, y));
-    this.toTranslateBy = new Vector2D(0, 0);
-  }
-
-  serialize(): SerializedSelection {
-    return {
-      deserializer: Serializers.SELECTION,
-      selecting: this.selecting,
-      selected: this.selected.map(SerializeGraphic),
-      points: this.points,
-      toTranslateBy: { x: this.toTranslateBy.x, y: this.toTranslateBy.y },
-    };
-  }
-
-  static deserialize(data: SerializedSelection, canvasManager: CanvasManager, actionStack?: ActionStack): Selection {
-    const s = new Selection(canvasManager, actionStack);
-    s.selecting = data.selecting;
-    s.selected = data.selected.map(DeserializeGraphic);
-    if (data.selecting) {
-      for (const p of data.points) {
-        s.update(p.x, p.y, p.pressure, p.timestamp);
-      }
-    } else {
-      s.computeShadows();
-    }
-    return s;
+    super.clearSelection();
+    this.remoteController.clearSelection();
   }
 }
 

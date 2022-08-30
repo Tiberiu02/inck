@@ -1,13 +1,15 @@
 import { io } from "socket.io-client";
-import { Tool } from "../Tooling/Tool";
+import { SerializedTool, Tool } from "../Tooling/Tool";
 import { View } from "../View/View";
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../../components/AuthToken.js";
 import { Vector2D } from "../Math/V2";
+import { Socket } from "socket.io-client";
+import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
 const SERVER_PORT = 8080;
 
 export class NetworkConnection {
-  private socket: any;
+  private socket: Socket;
   private onConnect: () => void;
   private connected: boolean;
   private canWrite: boolean;
@@ -75,13 +77,33 @@ export class NetworkConnection {
     this.socket.emit("update input", x, y, p, t);
   }
 
-  updateTool(tool: Tool) {
-    this.socket.emit("update tool", tool ? tool.serialize() : undefined);
-  }
+  //updateTool(tool: Tool) {
+  //  this.socket.emit("update tool", tool ? tool.serialize() : undefined);
+  //}
 
   close() {
     this.connected = false;
-    this.socket.disconnect(true);
+    this.socket.disconnect();
+  }
+
+  updateCollab(method: string, ...args: any[]) {
+    this.socket.emit("remote control", method, ...args);
+  }
+
+  updateCollabDirected(targetId: string, method: string, ...args: any[]) {
+    this.socket.emit("directed remote control", targetId, method, ...args);
+  }
+
+  updateTool(method: string, ...args: any[]) {
+    this.updateCollab("updateTool", method, ...args);
+  }
+
+  setTool(tool: SerializedTool, directedAtUserId?: string) {
+    if (directedAtUserId) {
+      this.updateCollabDirected(directedAtUserId, "setTool", tool);
+    } else {
+      this.updateCollab("setTool", tool);
+    }
   }
 
   writeAllowed() {

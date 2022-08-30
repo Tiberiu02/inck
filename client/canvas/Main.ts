@@ -62,7 +62,7 @@ export default class App {
     this.canvasManager = new NetworkCanvasManager(this.canvasManager, this.network);
 
     // PDF import
-    const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/);
+    const wloc = window.location.pathname.match(/\/free-note\/([\w\d_]+)/);
     const docId = (wloc && wloc[1]) || "";
     if (docId == "pdf") {
       this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo.pdf", yMax);

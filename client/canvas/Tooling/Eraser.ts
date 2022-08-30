@@ -1,16 +1,19 @@
 import { ActionStack } from "./ActionsStack";
 import { CanvasManager } from "../CanvasManager";
 import { Tool } from "./Tool";
+import { NetworkConnection } from "../Network/NetworkConnection";
 
 export class StrokeEraser implements Tool {
   private x: number;
   private y: number;
   private canvasManager: CanvasManager;
   private actionStack: ActionStack;
+  private network: NetworkConnection;
 
-  constructor(canvasManager: CanvasManager, actionStack: ActionStack) {
+  constructor(canvasManager: CanvasManager, actionStack: ActionStack, network: NetworkConnection) {
     this.canvasManager = canvasManager;
     this.actionStack = actionStack;
+    this.network = network;
   }
 
   update(x: number, y: number, pressure: number, timeStamp: number): void {

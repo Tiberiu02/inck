@@ -242,6 +242,31 @@ function updateToolFn(tool, user, docs, socket) {
     }
 }
 
+function remoteControlFn(args, user, docs, socket) {
+    if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
+        return;
+    };
+
+    for (let other of docs[user.docId].users) {
+        if (other != user) {
+            other.socket.emit(`collaborator update ${user.id}`, ...args);
+        }
+    }
+}
+
+function directedRemoteControlFn(targetId, args, user, docs, socket) {
+    if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
+        return;
+    };
+
+
+    for (let other of docs[user.docId].users) {
+        if (other.id == targetId) {
+            other.socket.emit(`collaborator update ${user.id}`, ...args);
+        }
+    }
+}
+
 export function updateTool(user, docs, socket) {
     return (tool) => updateToolFn(tool, user, docs, socket)
 }
@@ -252,6 +277,14 @@ export function updateInput(user, docs, socket) {
 
 export function updatePointer(user, docs, socket) {
     return (pointer) => updatePointerFn(pointer, user, docs, socket)
+}
+
+export function remoteControl(user, docs, socket) {
+    return (...args) => remoteControlFn(args, user, docs, socket);
+}
+
+export function directedRemoteControl(user, docs, socket) {
+    return (targetId, ...args) => directedRemoteControlFn(targetId, args, user, docs, socket);
 }
 
 export function disconnect(user, docs, socket) {

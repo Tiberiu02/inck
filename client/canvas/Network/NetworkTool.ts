@@ -9,9 +9,9 @@ export class NetworkTool implements Tool {
   constructor(network: NetworkConnection) {
     this.network = network;
 
-    network.on("new collaborator", (id: string) => {
-      network.updateTool(this.baseTool);
-    });
+    //network.on("new collaborator", (id: string) => {
+    //  network.updateTool(this.baseTool);
+    //});
   }
 
   setTool(tool: Tool) {
@@ -28,12 +28,12 @@ export class NetworkTool implements Tool {
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (this.baseTool) {
       if (pressure && !this.isPressing) {
-        this.network.updateTool(this.baseTool);
+        //this.network.updateTool(this.baseTool);
       }
       this.isPressing = pressure > 0;
 
       this.baseTool.update(x, y, pressure, timestamp);
-      this.network.updateInput(x, y, pressure, timestamp);
+      //this.network.updateInput(x, y, pressure, timestamp);
     }
   }
 
