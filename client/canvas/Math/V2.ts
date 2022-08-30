@@ -54,4 +54,8 @@ export class V2 {
   static dot(v: Vector2D, u: Vector2D): number {
     return v.x * u.x + v.y * u.y;
   }
+
+  static cross(v: Vector2D, u: Vector2D): number {
+    return v.x * u.y - v.y * u.x;
+  }
 }

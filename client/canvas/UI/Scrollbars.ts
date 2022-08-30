@@ -30,10 +30,11 @@ export class ScrollBars {
 
     const style = {
       backgroundColor: "rgba(0, 0, 0, 0.5)",
-      position: "absolute",
+      position: "fixed",
       width: "0px",
       height: "0px",
       borderRadius: `${this.width / 2}px`,
+      zIndex: "100",
     };
 
     this.vertical = document.createElement("div");

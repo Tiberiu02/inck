@@ -13,7 +13,7 @@ import {
 } from "../Drawing/Graphic";
 import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { Stroke } from "../Drawing/Stroke";
-import { SmoothStrokeBuilder } from "../Drawing/SmoothStrokeBuilder";
+import { StrokeBuilder } from "../Drawing/StrokeBuilder";
 import { PolyLine, UniteRectangles } from "../Math/Geometry";
 import { RGB, StrokePoint, Vector3D } from "../types";
 import { View } from "../View/View";
@@ -24,7 +24,9 @@ import { RenderLoop } from "../Rendering/RenderLoop";
 import { PointerTracker } from "../UI/PointerTracker";
 import { NetworkConnection } from "../Network/NetworkConnection";
 import { V2, Vector2D } from "../Math/V2";
-import { StrokeVectorizer } from "../Drawing/StrokeBuilder";
+import { StrokeVectorizer } from "../Drawing/StrokeVectorizer";
+
+const LASSO_ZINDEX = 1;
 
 const LASSO_WIDTH = 0.05; // in
 const LASSO_COLOR: RGB = [0.4, 0.6, 1];
@@ -45,7 +47,7 @@ export class Selection implements Tool {
   private canvasManager: CanvasManager;
   private actionStack: ActionStack;
   private network: NetworkConnection;
-  private strokeBuilder: DottedStrokeBuilder;
+  private lasso: DottedStrokeBuilder;
 
   private selecting: boolean;
   private points: StrokePoint[];
@@ -74,19 +76,19 @@ export class Selection implements Tool {
       if (!this.selecting) {
         this.release();
 
-        this.strokeBuilder = new DottedStrokeBuilder(color, width);
+        this.lasso = new DottedStrokeBuilder(color, width);
         this.selecting = true;
         this.points = [];
       }
 
-      this.strokeBuilder.push({ x, y, pressure, timestamp });
+      this.lasso.push({ x, y, pressure, timestamp });
       this.points.push({ x, y, pressure, timestamp });
 
-      const connector = new SmoothStrokeBuilder(timestamp, 1, color, width / 3);
+      const connector = new StrokeVectorizer(color, width / 3);
       connector.push(this.points[0]);
       connector.push({ x, y, pressure, timestamp });
 
-      this.active = this.strokeBuilder.getStrokes().concat([connector.getGraphic()]);
+      this.active = this.lasso.getStrokes().concat([connector.getGraphic(LASSO_ZINDEX)]);
     } else {
       if (this.selecting) {
         this.selecting = false;
@@ -308,7 +310,7 @@ class DottedStrokeBuilder {
       this.timestamp = p.timestamp;
       this.lastPoint = this.lastKeyPoint = p;
       this.isDotting = true;
-      this.currentStroke = new StrokeVectorizer(1, this.color, this.width);
+      this.currentStroke = new StrokeVectorizer(this.color, this.width);
       this.currentStroke.push(p);
       return;
     }
@@ -328,13 +330,13 @@ class DottedStrokeBuilder {
       } else {
         this.currentStroke.push({ ...this.lastPoint, timestamp: this.lastPoint.timestamp + 10 });
 
-        this.strokes = OptimizeDrawables(this.strokes.concat([this.currentStroke.getGraphic()]));
+        this.strokes = OptimizeDrawables(this.strokes.concat([this.currentStroke.getGraphic(LASSO_ZINDEX)]));
         this.lastKeyPoint = this.lastPoint;
         this.isDotting = false;
       }
     } else {
       if (V2.dist(p, this.lastKeyPoint) > BREAK_LEN * this.width) {
-        this.currentStroke = new StrokeVectorizer(1, this.color, this.width);
+        this.currentStroke = new StrokeVectorizer(this.color, this.width);
         this.currentStroke.push(p);
         this.lastKeyPoint = p;
         this.isDotting = true;
@@ -345,7 +347,7 @@ class DottedStrokeBuilder {
   }
 
   getStrokes(): Graphic[] {
-    return this.strokes.concat(this.isDotting ? [this.currentStroke.getGraphic()] : []);
+    return this.strokes.concat(this.isDotting ? [this.currentStroke.getGraphic(LASSO_ZINDEX)] : []);
   }
 }
 
@@ -354,7 +356,7 @@ function GetShadow(drawable: PersistentGraphic, shadowColor: RGB): VectorGraphic
   if (drawable.serializer == Serializers.STROKE) {
     const s = drawable as Stroke;
     const shadowWidth = View.getCanvasCoords(Display.DPI() * SHADOW_SIZE, 0, true)[0];
-    const builder = new SmoothStrokeBuilder(
+    const builder = new StrokeBuilder(
       s.timestamp,
       s.zIndex,
       shadowColor,

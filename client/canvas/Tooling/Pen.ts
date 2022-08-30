@@ -1,7 +1,7 @@
 import { ActionStack } from "./ActionsStack";
 import { CanvasManager } from "../CanvasManager";
 import { DeserializeStroke, SerializedStroke, SerializeStroke } from "../Drawing/Stroke";
-import { SmoothStrokeBuilder } from "../Drawing/SmoothStrokeBuilder";
+import { StrokeBuilder } from "../Drawing/StrokeBuilder";
 import { RGB } from "../types";
 import { SerializedTool, Tool } from "./Tool";
 import { View } from "../View/View";
@@ -23,7 +23,7 @@ export class Pen implements Tool {
   private actionStack: ActionStack;
 
   private drawing: boolean;
-  private strokeBuilder: SmoothStrokeBuilder;
+  private strokeBuilder: StrokeBuilder;
 
   constructor(color: RGB, width: number, zIndex: number, canvasManager: CanvasManager, actionStack?: ActionStack) {
     this.color = color;
@@ -38,7 +38,7 @@ export class Pen implements Tool {
     if (pressure) {
       if (!this.drawing) {
         const width = View.getCanvasCoords(Display.DPI() * this.width, 0, true)[0];
-        this.strokeBuilder = new SmoothStrokeBuilder(timestamp, this.zIndex, this.color, width);
+        this.strokeBuilder = new StrokeBuilder(timestamp, this.zIndex, this.color, width);
         this.drawing = true;
       }
 
