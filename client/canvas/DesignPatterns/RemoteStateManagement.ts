@@ -11,7 +11,6 @@ export function CreateEmitterClass<InterfaceType>(InterfaceClass: new () => Inte
   const methods = Object.getOwnPropertyNames(prototype).filter(x => x != "constructor");
 
   for (const method of methods) {
-    console.log(method);
     Emitter.prototype[method] = function (...args: any[]) {
       this.network.updateTool(method, ...args);
     };

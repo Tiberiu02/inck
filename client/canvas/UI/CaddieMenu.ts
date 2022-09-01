@@ -212,6 +212,7 @@ export class CaddieMenu {
     const handlePointerDown = (e: PointerEvent) => {
       initialClick = V2.div(new Vector2D(e.x, e.y), Display.DPI);
       relativePos = V2.sub(this.target, initialClick);
+      this.el.setPointerCapture(e.pointerId);
       PointerTracker.pause();
     };
     const handlePointerMove = (e: PointerEvent) => {
@@ -230,8 +231,8 @@ export class CaddieMenu {
       }
     };
     this.el.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
+    this.el.addEventListener("pointermove", handlePointerMove);
+    this.el.addEventListener("pointerup", handlePointerUp);
 
     document.body.appendChild(this.el);
   }

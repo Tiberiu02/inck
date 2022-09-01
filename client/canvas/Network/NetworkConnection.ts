@@ -72,10 +72,6 @@ export class NetworkConnection {
     this.socket.emit("remote control", "setPointer", pointer);
   }
 
-  updateInput(x: number, y: number, p: number, t: number) {
-    this.socket.emit("update input", x, y, p, t);
-  }
-
   close() {
     this.connected = false;
     this.socket.disconnect();
@@ -101,7 +97,7 @@ export class NetworkConnection {
     }
   }
 
-  writeAllowed() {
+  get writeAllowed() {
     return this.canWrite;
   }
 }
