@@ -7,6 +7,10 @@ import { VectorGraphic } from "./VectorGraphic";
 
 const STROKE_ROUGHNESS = 0.05;
 
+export function GetPointRadius(strokeWidth: number, pressure: number) {
+  return (strokeWidth * (pressure + 1)) / 3;
+}
+
 export class StrokeVectorizer {
   private color: RGB;
   private width: number;
@@ -31,7 +35,7 @@ export class StrokeVectorizer {
   }
 
   private GetRadius(p: StrokePoint): number {
-    return (this.width * (p.pressure + 1)) / 3;
+    return GetPointRadius(this.width, p.pressure);
   }
   private GetAngleStep(p: StrokePoint): number {
     return STROKE_ROUGHNESS / (2 * Math.PI * this.GetRadius(p)) ** 0.5;

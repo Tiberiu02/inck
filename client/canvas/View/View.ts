@@ -34,6 +34,7 @@
  */
 
 import { Display } from "../DeviceProps";
+import { m4, Matrix4 } from "../Math/M4";
 
 export class View {
   protected static top: number;
@@ -62,6 +63,16 @@ export class View {
     }
   }
 
+  static getTransformMatrix(): Matrix4 {
+    const transforms = [
+      m4.translation(-this.left, -this.top, 0),
+      m4.scaling(this.zoom, this.zoom * Display.AspectRatio, 0),
+      m4.translation(-0.5, -0.5, 0),
+      m4.scaling(2, -2, 0),
+    ];
+    return transforms.reduce((a, b) => m4.multiply(b, a));
+  }
+
   static getTop() {
     this.ensureInstance();
     return this.top;
@@ -80,15 +91,15 @@ export class View {
   }
   static getHeight() {
     this.ensureInstance();
-    return 1 / this.zoom / Display.AspectRatio();
+    return 1 / this.zoom / Display.AspectRatio;
   }
 
   // Map screen coordinates to canvas coordinates
   static getCanvasCoords(x: number, y: number, isDistance: boolean = false): [number, number] {
     this.ensureInstance();
 
-    x /= Display.Width() * this.zoom;
-    y /= Display.Width() * this.zoom;
+    x /= Display.Width * this.zoom;
+    y /= Display.Width * this.zoom;
     if (!isDistance) {
       x += this.left;
       y += this.top;
@@ -103,8 +114,8 @@ export class View {
       x -= this.left;
       y -= this.top;
     }
-    x *= Display.Width() * this.zoom;
-    y *= Display.Width() * this.zoom;
+    x *= Display.Width * this.zoom;
+    y *= Display.Width * this.zoom;
     return [x, y];
   }
 }

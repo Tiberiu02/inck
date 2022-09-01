@@ -1,13 +1,16 @@
 import { Geometry } from "../Math/Geometry";
+import { Vector2D } from "../Math/V2";
 import {
   DeserializeStroke,
   DeserializeStrokeLegacy,
+  RotateStroke,
+  ScaleStroke,
   SerializedStroke,
   SerializeStroke,
   Stroke,
   TranslateStroke,
 } from "./Stroke";
-import { TranslateVectorGraphic, VectorGraphic } from "./VectorGraphic";
+import { RotateVectorGraphic, ScaleVectorGraphic, TranslateVectorGraphic, VectorGraphic } from "./VectorGraphic";
 
 export enum GraphicTypes {
   VECTOR,
@@ -56,6 +59,14 @@ export function DeserializeGraphic(data: SerializedGraphic) {
   return graphic;
 }
 
+export function TranslateGraphic(graphic: Graphic, dx: number, dy: number) {
+  if (graphic.type == GraphicTypes.VECTOR) {
+    return TranslateVectorGraphic(graphic as VectorGraphic, dx, dy);
+  } else {
+    return graphic;
+  }
+}
+
 export function TranslatePersistentGraphic(graphic: PersistentGraphic, dx: number, dy: number) {
   if (graphic.serializer == Serializers.STROKE) {
     return TranslateStroke(graphic as Stroke, dx, dy);
@@ -64,9 +75,33 @@ export function TranslatePersistentGraphic(graphic: PersistentGraphic, dx: numbe
   }
 }
 
-export function TranslateGraphic(graphic: Graphic, dx: number, dy: number) {
+export function RotateGraphic(graphic: Graphic, angle: number, center: Vector2D) {
   if (graphic.type == GraphicTypes.VECTOR) {
-    return TranslateVectorGraphic(graphic as VectorGraphic, dx, dy);
+    return RotateVectorGraphic(graphic as VectorGraphic, angle, center);
+  } else {
+    return graphic;
+  }
+}
+
+export function RotatePersistentGraphic(graphic: PersistentGraphic, angle: number, center: Vector2D) {
+  if (graphic.serializer == Serializers.STROKE) {
+    return RotateStroke(graphic as Stroke, angle, center);
+  } else {
+    return graphic;
+  }
+}
+
+export function ScaleGraphic(graphic: Graphic, factor: number, center: Vector2D) {
+  if (graphic.type == GraphicTypes.VECTOR) {
+    return ScaleVectorGraphic(graphic as VectorGraphic, factor, center);
+  } else {
+    return graphic;
+  }
+}
+
+export function ScalePersistentGraphic(graphic: PersistentGraphic, factor: number, center: Vector2D) {
+  if (graphic.serializer == Serializers.STROKE) {
+    return ScaleStroke(graphic as Stroke, factor, center);
   } else {
     return graphic;
   }

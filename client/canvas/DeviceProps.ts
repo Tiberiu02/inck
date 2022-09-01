@@ -5,28 +5,30 @@ function ComputeDPI() {
   el.style.height = "1in";
   el.style.top = "100%";
   document.body.appendChild(el);
-  window.DPI = el.offsetHeight;
+  const dpi = el.offsetHeight;
   document.body.removeChild(el);
+  return dpi;
 }
 
 export class Display {
-  static DPI(): number {
-    if (!window.DPI) {
-      ComputeDPI();
+  private static _DPI: number;
+  static get DPI(): number {
+    if (!this._DPI) {
+      this._DPI = ComputeDPI();
     }
 
-    return window.DPI;
+    return this._DPI;
   }
 
-  static Width(): number {
+  static get Width(): number {
     return document.documentElement.clientWidth;
   }
 
-  static Height(): number {
+  static get Height(): number {
     return document.documentElement.clientHeight;
   }
 
-  static AspectRatio(): number {
+  static get AspectRatio(): number {
     return document.documentElement.clientWidth / document.documentElement.clientHeight;
   }
 }

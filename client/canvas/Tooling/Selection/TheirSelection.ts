@@ -15,9 +15,14 @@ export interface SerializedSelection extends SerializedTool {
 }
 
 export class SelectionController {
+  loadSelection(selected: SerializedGraphic[]) {}
+  applyScaling() {}
+  setScaling(factor: number) {}
+  applyRotation() {}
+  setRotation(angle: number) {}
   clearSelection() {}
   applyTranslation() {}
-  translateSelection(delta: { x: number; y: number }) {}
+  setTranslation(delta: { x: number; y: number }) {}
   releaseLasso() {}
   updateLasso(x: number, y: number, pressure: number, timestamp: number) {}
 }
@@ -39,7 +44,10 @@ export class TheirSelection extends SelectionBase implements SelectionController
     s.lassoColor = collab.getColor(0.8);
     s.lassoConnectorColor = collab.getColor(0.85);
     s.shadowColor = collab.getColor(0.9);
-    s.computeShadows();
+    if (s.selected.length) {
+      s.computeSelectionCenter();
+      s.computeShadows();
+    }
     return s;
   }
 }

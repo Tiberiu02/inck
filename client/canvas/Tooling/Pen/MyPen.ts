@@ -46,7 +46,7 @@ export class MyPen implements MyTool {
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (pressure) {
       if (!this.drawing) {
-        const width = View.getCanvasCoords(Display.DPI() * this.width, 0, true)[0];
+        const width = View.getCanvasCoords(Display.DPI * this.width, 0, true)[0];
         this.remoteController.setWidth(width);
         this.strokeBuilder = new StrokeBuilder(timestamp, this.zIndex, this.color, width);
         this.drawing = true;

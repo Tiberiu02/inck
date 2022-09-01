@@ -99,7 +99,7 @@ export class ScrollBars {
   private updateBars() {
     const hLen = View.getWidth();
     const hStart = View.getLeft();
-    const hFullLen = Display.Width() - 3 * this.margin - this.width;
+    const hFullLen = Display.Width - 3 * this.margin - this.width;
 
     Object.assign(this.horizontal.style, {
       display: hLen == 1 || MutableView.maxWidth ? "none" : "",
@@ -110,9 +110,9 @@ export class ScrollBars {
     });
 
     const vSize = Math.max(this.yMax.get(), (this.vAnchor ?? View.getTop()) + View.getHeight());
-    const vLen = hLen / Display.AspectRatio() / vSize;
+    const vLen = hLen / Display.AspectRatio / vSize;
     const vStart = View.getTop() / vSize;
-    let vFullLen = Display.Height() - 2 * this.margin - this.margin - this.width;
+    let vFullLen = Display.Height - 2 * this.margin - this.margin - this.width;
 
     this.vBarHeight = vLen * vFullLen;
     if (this.vBarHeight < this.width) {

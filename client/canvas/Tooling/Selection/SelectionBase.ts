@@ -1,9 +1,15 @@
 import { CanvasManager } from "../../CanvasManager";
 import { Display } from "../../DeviceProps";
 import {
+  DeserializeGraphic,
   Graphic,
   GraphicTypes,
   PersistentGraphic,
+  RotateGraphic,
+  RotatePersistentGraphic,
+  ScaleGraphic,
+  ScalePersistentGraphic,
+  SerializedGraphic,
   SerializeGraphic,
   Serializers,
   TranslateGraphic,
@@ -20,6 +26,8 @@ import { StrokeBuilder } from "../../Drawing/StrokeBuilder";
 import { Stroke } from "../../Drawing/Stroke";
 import { DottedStrokeBuilder } from "./DottedStrokeBuilder";
 import { OptimizeDrawables } from "../../Rendering/OptimizeDrawables";
+import { m4 } from "../../Math/M4";
+import { syncBuiltinESMExports } from "module";
 
 const LASSO_ZINDEX = 1;
 
@@ -34,8 +42,12 @@ export class SelectionBase {
   protected canvasManager: CanvasManager;
   protected selecting: boolean;
   protected selected: PersistentGraphic[];
-  protected toTranslateBy: Vector2D;
   protected points: StrokePoint[];
+
+  protected toTranslateBy: Vector2D;
+  protected toRotateBy: number;
+  protected toScaleBy: number;
+  protected selectionCenter: Vector2D;
 
   protected lassoColor: RGB;
   protected lassoConnectorColor: RGB;
@@ -52,6 +64,9 @@ export class SelectionBase {
     this.points = [];
 
     this.toTranslateBy = new Vector2D(0, 0);
+    this.toRotateBy = 0;
+    this.toScaleBy = 1;
+    this.selectionCenter = new Vector2D(0, 0);
 
     this.lassoColor = LASSO_COLOR;
     this.lassoConnectorColor = LASSO_CONNECTOR_COLOR;
@@ -60,7 +75,7 @@ export class SelectionBase {
 
   updateLasso(x: number, y: number, pressure: number, timestamp: number) {
     console.log("updating lasso");
-    const width = View.getCanvasCoords(Display.DPI() * LASSO_WIDTH, 0, true)[0];
+    const width = View.getCanvasCoords(Display.DPI * LASSO_WIDTH, 0, true)[0];
 
     if (!this.selecting) {
       this.clearSelection();
@@ -82,11 +97,19 @@ export class SelectionBase {
   }
 
   releaseLasso() {
+    // Clear lasso
+    this.selecting = false;
+    this.active = [];
+
+    // Compute selection
     const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
     this.selected = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
-    this.computeShadows();
 
-    this.selecting = false;
+    if (this.selected.length) {
+      this.computeSelectionCenter();
+      this.computeShadows();
+    }
+
     RenderLoop.scheduleRender();
   }
 
@@ -96,25 +119,59 @@ export class SelectionBase {
     RenderLoop.scheduleRender();
   }
 
+  setTranslation({ x, y }: Vector2D) {
+    [x, y] = View.getCanvasCoords(x, y, true);
+    this.toTranslateBy = new Vector2D(x, y);
+    RenderLoop.scheduleRender();
+  }
+
   applyTranslation() {
     const { x, y } = this.toTranslateBy;
     this.selected = this.selected.map(d => TranslatePersistentGraphic(d, x, y));
     this.active = this.active.map(d => TranslateGraphic(d, x, y));
+    this.selectionCenter = V2.add(this.selectionCenter, { x, y });
     this.toTranslateBy = new Vector2D(0, 0);
   }
 
-  render() {
-    this.active.forEach(s =>
-      this.canvasManager.addForNextRender(
-        s.type == GraphicTypes.VECTOR ? ({ ...s, glUniforms: this.GetUniforms() } as VectorGraphic) : s
-      )
-    );
+  setRotation(angle: number) {
+    this.toRotateBy = angle;
+    RenderLoop.scheduleRender();
   }
 
-  translateSelection({ x, y }: Vector2D) {
-    [x, y] = View.getCanvasCoords(x, y, true);
-    this.toTranslateBy = V2.add(this.toTranslateBy, new Vector2D(x, y));
+  applyRotation() {
+    this.selected = this.selected.map(d => RotatePersistentGraphic(d, this.toRotateBy, this.selectionCenter));
+    this.active = this.active.map(d => RotateGraphic(d, this.toRotateBy, this.selectionCenter));
+    this.toRotateBy = 0;
+    this.computeSelectionCenter();
     RenderLoop.scheduleRender();
+  }
+
+  setScaling(factor: number) {
+    this.toScaleBy = factor;
+    RenderLoop.scheduleRender();
+  }
+
+  applyScaling() {
+    this.selected = this.selected.map(d => ScalePersistentGraphic(d, this.toScaleBy, this.selectionCenter));
+    this.active = this.active.map(d => ScaleGraphic(d, this.toScaleBy, this.selectionCenter));
+    this.toScaleBy = 1;
+    RenderLoop.scheduleRender();
+  }
+
+  loadSelection(selected: SerializedGraphic[]) {
+    this.selected = selected.map(DeserializeGraphic);
+    this.computeSelectionCenter();
+    this.computeShadows();
+  }
+
+  render() {
+    const uniforms = !this.selecting && this.GetUniforms();
+
+    this.active.forEach(s =>
+      this.canvasManager.addForNextRender(
+        s.type == GraphicTypes.VECTOR ? ({ ...s, glUniforms: uniforms } as VectorGraphic) : s
+      )
+    );
   }
 
   protected computeShadows() {
@@ -122,12 +179,26 @@ export class SelectionBase {
     this.active = OptimizeDrawables(shadows.concat(this.selected.map(s => s.graphic)));
   }
 
+  protected computeSelectionCenter() {
+    const bBox = this.selected.map(s => s.geometry.boundingBox).reduce(UniteRectangles);
+    this.selectionCenter = new Vector2D((bBox.xMin + bBox.xMax) / 2, (bBox.yMin + bBox.yMax) / 2);
+  }
+
   private GetUniforms() {
+    const { x: cx, y: cy } = this.selectionCenter;
+    const { x, y } = this.toTranslateBy;
+
+    const m = [
+      m4.translation(-cx, -cy, 0),
+      m4.zRotation(this.toRotateBy),
+      m4.scaling(this.toScaleBy, this.toScaleBy, 1),
+      m4.translation(cx, cy, 0),
+      m4.translation(x, y, 0),
+      View.getTransformMatrix(),
+    ];
+
     return {
-      u_AspectRatio: Display.AspectRatio(),
-      u_Left: View.getLeft() - this.toTranslateBy.x,
-      u_Top: View.getTop() - this.toTranslateBy.y,
-      u_Zoom: View.getZoom(),
+      u_Matrix: m.reduce((a, b) => m4.multiply(b, a)),
     };
   }
 }
@@ -136,7 +207,7 @@ function GetShadow(drawable: PersistentGraphic, shadowColor: RGB): VectorGraphic
   console.log(drawable);
   if (drawable.serializer == Serializers.STROKE) {
     const s = drawable as Stroke;
-    const shadowWidth = View.getCanvasCoords(Display.DPI() * SHADOW_SIZE, 0, true)[0];
+    const shadowWidth = View.getCanvasCoords(Display.DPI * SHADOW_SIZE, 0, true)[0];
     const builder = new StrokeBuilder(
       s.timestamp,
       s.zIndex,
