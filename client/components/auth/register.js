@@ -4,6 +4,14 @@ import { setAuthToken } from '../AuthToken'
 import GetApiPath from '../GetApiPath'
 
 
+// 8 characters, at least one letter, one number and one special character
+const PW_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
+
+function checkPassword(pwd) {
+  return PW_REGEX.test(pwd)
+}
+
+
 export default function Register({ toLoginCallback, toResetPasswordCallback }) {
 
   const [firstName, setFirstName] = useState("")
@@ -17,11 +25,30 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
   const toggleUpdates = () => setSubscribeUpdates(!subscribeUpdates)
 
   const router = useRouter()
-
   const [error, setError] = useState("")
+
+  const setTimedError = (err) => {
+    setError("Error: " + err)
+    setTimeout(() => setError(""), 10_000)
+  }
 
   const register = async () => {
     setError("")
+
+    if (!checkPassword(password)) {
+      setTimedError("Invalid password: check requirements")
+      return
+    }
+
+    if (password != repeatedPass) {
+      setTimedError("Passwords don't match")
+      return
+    }
+
+    if (!acceptTerms) {
+      setTimedError("Accept terms of services to use Inck")
+      return
+    }
 
     const inputs = {
       firstName: firstName,
@@ -33,25 +60,31 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
       subscribeUpdates: subscribeUpdates
     }
 
-    const response = await fetch(
-      GetApiPath('/api/auth/register'),
-      {
-        method: "post",
-        body: JSON.stringify(inputs),
-        headers: {
-          "Content-type": "application/json;charset=UTF-8"
-        },
-      }
-    )
-    const jsonResponse = await response.json()
+    try {
+      const response = await fetch(
+        GetApiPath('/api/auth/register'),
+        {
+          method: "post",
+          body: JSON.stringify(inputs),
+          headers: {
+            "Content-type": "application/json;charset=UTF-8"
+          },
+        }
+      )
+      const jsonResponse = await response.json()
 
-    if (response.status == 201) {
-      setAuthToken(jsonResponse.token)
-      router.push("/explorer")
-    } else {
-      setError('Could not register: ' + jsonResponse["error"])
+      if (response.status == 201) {
+        setAuthToken(jsonResponse.token)
+        router.push("/explorer")
+      } else {
+        setTimedError(jsonResponse["error"])
+      }
+    } catch (err) {
+      setTimedError("Failed to fetch")
     }
   }
+
+
 
   const textFieldStyle = "bg-white placeholder-gray-400 text-gray-900 h-10 rounded-md shadow-md px-3 font-bold1 focus:outline-none focus:ring-4 focus:ring-gray-300"
   const buttonStyle = "bg-primary hover:bg-primary-light hover:shadow-sm duration-100 text-white w-full h-10 rounded-md shadow-lg font-bold tracking-wider text-sm"
@@ -84,14 +117,18 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         ></input>
+        <div className='flex flex-col'>
+          <div className='italic text-xs font-extralight'>At least 8 characters long, one letter, one number and one special character</div>
+          <input
+            className={textFieldStyle}
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
 
-        <input
-          className={textFieldStyle}
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+
         <input
           className={textFieldStyle}
           type="password"
