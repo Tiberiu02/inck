@@ -37,7 +37,7 @@ export default function ResetPassword() {
                 disconnect(false)
                 Router.push("/auth")
             } else {
-                setError("Impossible to reset password")
+                setError("Error: " + result.error)
                 setTimeout(() => setError(""), 10_000)
             }
         } catch (err) {

@@ -219,7 +219,9 @@ export async function initializeResetPasswordUsingToken(req, res) {
 }
 
 export async function changePasswordEndpoint(req, res) {
+  console.log("POLLED ENDPOINTS!!!!!")
   try {
+    console.log("asdf")
     const { newPassword, resetToken, email } = req.body
     const passHash = await bcrypt.hash(newPassword, Number(process.env.BCRYPT_SALT))
 
@@ -230,7 +232,7 @@ export async function changePasswordEndpoint(req, res) {
 
     if (!entry || !isPwValid) {
       console.log("Invalid reset token")
-      return res.status(400).send({ error: "Unable to reset password" })
+      return res.status(400).send({ error: "Unable to reset password (432)" })
     }
 
     await UserModel.updateOne({
@@ -249,6 +251,6 @@ export async function changePasswordEndpoint(req, res) {
   } catch (err) {
     console.log("Error while setting new password")
     console.log(err)
-    res.status(400).send({ error: "Unable to reset password" })
+    res.status(400).send({ error: "Unable to reset password (662)" })
   }
 }
