@@ -25,6 +25,8 @@ import {
 import Cookies from "universal-cookie";
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
 import GetApiPath from "../components/GetApiPath";
+import Link from 'next/link'
+
 
 function DirListing({
   Symbol,
@@ -1126,12 +1128,19 @@ export default function Explorer() {
               >
                 Disconnect
               </button>
-              <a href="/faq" className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
-                <FaRegQuestionCircle className="text-2xl" />
-              </a>
-              <a href="settings" className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
-                <FaRegSun className="text-2xl" />
-              </a>
+              <Link href="/faq">
+                <a className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
+                  <FaRegQuestionCircle className="text-2xl" />
+                </a>
+              </Link>
+
+              <Link href="/settings">
+                <a className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
+                  <FaRegSun className="text-2xl" />
+                </a>
+              </Link>
+
+
             </div>
           </div>
 
