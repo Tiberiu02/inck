@@ -1,7 +1,10 @@
 import { StrokeBuilder } from "./StrokeBuilder";
-import { RGB, StrokePoint } from "../types";
-import { TranslateVectorGraphic, VectorGraphic } from "./VectorGraphic";
+import { RGB, StrokePoint, Vector3D } from "../types";
+import { RotateVectorGraphic, ScaleVectorGraphic, TranslateVectorGraphic, VectorGraphic } from "./VectorGraphic";
 import { PersistentGraphic, SerializedGraphic, Serializers } from "./Graphic";
+import { V2, Vector2D } from "../Math/V2";
+import { PolyLine } from "../Math/Geometry";
+import { GetPointRadius } from "./StrokeVectorizer";
 
 export const ELEMENTS_PER_INPUT = 4;
 export const OFFSET_INPUT = {
@@ -78,5 +81,26 @@ export function TranslateStroke(stroke: Stroke, dx: number, dy: number): Stroke 
     geometry: stroke.geometry.translate(dx, dy),
     graphic: TranslateVectorGraphic(stroke.graphic, dx, dy),
     points: stroke.points.map(p => ({ ...p, x: p.x + dx, y: p.y + dy })),
+  };
+}
+
+export function RotateStroke(stroke: Stroke, angle: number, center: Vector2D): Stroke {
+  const points = stroke.points.map(p => ({ ...p, ...V2.rot(p, angle, center) }));
+  return {
+    ...stroke,
+    geometry: new PolyLine(points.map(p => new Vector3D(p.x, p.y, GetPointRadius(stroke.width, p.pressure)))),
+    graphic: RotateVectorGraphic(stroke.graphic, angle, center),
+    points: points,
+  };
+}
+
+export function ScaleStroke(stroke: Stroke, factor: number, center: Vector2D): Stroke {
+  const points = stroke.points.map(p => ({ ...p, ...V2.scale(p, factor, center) }));
+  return {
+    ...stroke,
+    width: stroke.width * factor,
+    geometry: new PolyLine(points.map(p => new Vector3D(p.x, p.y, GetPointRadius(stroke.width * factor, p.pressure)))),
+    graphic: ScaleVectorGraphic(stroke.graphic, factor, center),
+    points: points,
   };
 }

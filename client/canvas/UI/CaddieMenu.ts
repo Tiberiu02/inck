@@ -65,7 +65,7 @@ export class CaddieMenu {
         this.el.getBoundingClientRect().height / 2
       );
 
-      pointer = V2.div(V2.sub(pointer, offset), Display.DPI());
+      pointer = V2.div(V2.sub(pointer, offset), Display.DPI);
 
       if (V2.norm(pointer) < CORNER_PADDING + DIST_FROM_CURSOR) {
         const t = V2.add(pointer, V2.rot(displacement, Math.PI / 2));
@@ -127,8 +127,8 @@ export class CaddieMenu {
       }
     }
 
-    this.el.style.top = this.pos.y * Display.DPI() + "px";
-    this.el.style.left = this.pos.x * Display.DPI() + "px";
+    this.el.style.top = this.pos.y * Display.DPI + "px";
+    this.el.style.left = this.pos.x * Display.DPI + "px";
     this.el.style.opacity = this.opacity + "%";
 
     this.lastUpdate = t;
@@ -210,13 +210,14 @@ export class CaddieMenu {
     let dragging: boolean = false;
 
     const handlePointerDown = (e: PointerEvent) => {
-      initialClick = V2.div(new Vector2D(e.x, e.y), Display.DPI());
+      initialClick = V2.div(new Vector2D(e.x, e.y), Display.DPI);
       relativePos = V2.sub(this.target, initialClick);
+      this.el.setPointerCapture(e.pointerId);
       PointerTracker.pause();
     };
     const handlePointerMove = (e: PointerEvent) => {
       if (relativePos) {
-        const pointer = V2.div(new Vector2D(e.x, e.y), Display.DPI());
+        const pointer = V2.div(new Vector2D(e.x, e.y), Display.DPI);
         dragging = dragging || V2.dist(pointer, initialClick) > DRAG_START;
         console.log(dragging);
         this.target = this.pos = V2.add(pointer, relativePos);
@@ -230,8 +231,8 @@ export class CaddieMenu {
       }
     };
     this.el.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
+    this.el.addEventListener("pointermove", handlePointerMove);
+    this.el.addEventListener("pointerup", handlePointerUp);
 
     document.body.appendChild(this.el);
   }

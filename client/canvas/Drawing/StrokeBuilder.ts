@@ -3,7 +3,7 @@ import { RGB, StrokePoint, Vector3D } from "../types";
 import { PolyLine } from "../Math/Geometry";
 import { Stroke } from "./Stroke";
 import { VectorGraphic } from "./VectorGraphic";
-import { StrokeVectorizer } from "./StrokeVectorizer";
+import { GetPointRadius, StrokeVectorizer } from "./StrokeVectorizer";
 
 const D_T = 5;
 const STIFFNESS = 0.005;
@@ -56,7 +56,7 @@ export class StrokeBuilder {
       timestamp: this.timestamp,
       zIndex: this.zIndex,
       serializer: Serializers.STROKE,
-      geometry: new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, (this.width * (p.pressure + 1)) / 3))),
+      geometry: new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, GetPointRadius(this.width, p.pressure)))),
       graphic: this.getGraphic(),
     };
   }

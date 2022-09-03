@@ -33,7 +33,11 @@
 
 const MatType = Float32Array;
 
-export type Matrix4 = number[];
+type Tuple<T, N, R extends T[] = []> = R["length"] extends N ? R : Tuple<T, N, [...R, T]>;
+
+export type Matrix4 = Tuple<number, 16> | Float32Array;
+export type Vector3 = Tuple<number, 3> | Float32Array;
+export type Vector4 = Tuple<number, 4> | Float32Array;
 
 export class m4 {
   /**
@@ -77,7 +81,7 @@ export class m4 {
    * @param {Matrix4} [dst] optional matrix to store result
    * @return {Matrix4} dst or a new matrix if none provided
    */
-  static multiply(a, b, dst?) {
+  static multiply(a: Matrix4, b: Matrix4, dst?: Matrix4): Matrix4 {
     dst = dst || new MatType(16);
     var b00 = b[0 * 4 + 0];
     var b01 = b[0 * 4 + 1];

@@ -1,4 +1,4 @@
-import { m4 } from "../Math/M4";
+import { m4, Matrix4 } from "../Math/M4";
 import {
   MainFragmentShaderSource,
   MainVertexShaderSource,
@@ -192,9 +192,14 @@ export class GL {
     gl.enableVertexAttribArray(location);
   }
 
-  static setUniform1f(gl, program, name, val) {
+  static setUniform1f(gl: WebGLRenderingContext, program: WebGLProgram, name: string, val: number) {
     let location = gl.getUniformLocation(program, name);
     gl.uniform1f(location, val);
+  }
+
+  static setUniformMatrix4fv(gl: WebGLRenderingContext, program: WebGLProgram, name: string, val: Matrix4) {
+    let location = gl.getUniformLocation(program, name);
+    gl.uniformMatrix4fv(location, false, val);
   }
 
   static setProgram(gl: WebGLRenderingContext, program: WebGLProgram, uniforms: object) {
@@ -204,7 +209,14 @@ export class GL {
     GL.setAttribute(gl, program, "a_Color", 4, 2);
 
     for (let name in uniforms) {
-      GL.setUniform1f(gl, program, name, uniforms[name]);
+      const u = uniforms[name];
+      if (typeof u == "number") {
+        GL.setUniform1f(gl, program, name, u);
+      } else if (u.length == 16) {
+        GL.setUniformMatrix4fv(gl, program, name, u);
+      } else {
+        throw new Error("Unknown uniform:", u);
+      }
     }
   }
 

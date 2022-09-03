@@ -21,7 +21,7 @@ export class PdfCanvasManager implements CanvasManager {
     this.yMax = yMax;
     this.images = [];
 
-    MutableView.maxWidth = 5;
+    MutableView.maxWidth = 3;
     this.init();
   }
 

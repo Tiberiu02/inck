@@ -1,10 +1,9 @@
 import { io } from "socket.io-client";
-import { SerializedTool, Tool } from "../Tooling/Tool";
+import { SerializedTool, MyTool } from "../Tooling/Tool";
 import { View } from "../View/View";
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../../components/AuthToken.js";
 import { Vector2D } from "../Math/V2";
 import { Socket } from "socket.io-client";
-import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
 const SERVER_PORT = 8080;
 
@@ -70,16 +69,8 @@ export class NetworkConnection {
   }
 
   updatePointer(pointer: Vector2D) {
-    this.socket.emit("update pointer", pointer);
+    this.socket.emit("remote control", "setPointer", pointer);
   }
-
-  updateInput(x: number, y: number, p: number, t: number) {
-    this.socket.emit("update input", x, y, p, t);
-  }
-
-  //updateTool(tool: Tool) {
-  //  this.socket.emit("update tool", tool ? tool.serialize() : undefined);
-  //}
 
   close() {
     this.connected = false;
@@ -106,7 +97,7 @@ export class NetworkConnection {
     }
   }
 
-  writeAllowed() {
+  get writeAllowed() {
     return this.canWrite;
   }
 }

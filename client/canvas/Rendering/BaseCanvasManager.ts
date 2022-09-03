@@ -10,10 +10,7 @@ import { View } from "../View/View";
 
 export function GetUniforms() {
   return {
-    u_AspectRatio: Display.AspectRatio(),
-    u_Left: View.getLeft(),
-    u_Top: View.getTop(),
-    u_Zoom: View.getZoom(),
+    u_Matrix: View.getTransformMatrix(),
   };
 }
 

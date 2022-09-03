@@ -50,7 +50,7 @@ export default class ToolWheel {
     [this.onOpenSettings, this.registerOpenSettings] = CreateEvent();
 
     this.toolManager = toolManager;
-    this.R = Math.min(3 * Display.DPI(), innerWidth / 2, innerHeight / 2);
+    this.R = Math.min(3 * Display.DPI, innerWidth / 2, innerHeight / 2);
 
     this.wheel = this.buildToolWheel(this.R);
 
@@ -87,7 +87,7 @@ export default class ToolWheel {
     };
 
     this.toolManager.selectPen([0, 0, 0], WIDTHS[this.width.pen], 1);
-    this.toolManager.selectSelection();
+    //this.toolManager.selectSelection();
   }
 
   NewTool() {
@@ -476,7 +476,7 @@ export default class ToolWheel {
       const a1 = SLICE_ANGLE * i;
       const a2 = SLICE_ANGLE * (i + 1);
       const a = (a1 + a2) / 2;
-      const w = (type == "highlighter" ? H_WIDTHS[i] : WIDTHS[i]) * Display.DPI();
+      const w = (type == "highlighter" ? H_WIDTHS[i] : WIDTHS[i]) * Display.DPI;
 
       let part = createElement("g", { class: "button_group" });
       part.addEventListener("pointerup", () => {

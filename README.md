@@ -29,12 +29,21 @@ Open your browser and go to https://localhost:3080.
 
 # To-do list
 
+* [ ] understand architecture (collaboration perspective):
+	Main -> ToolManager -> MyTool -> Emitter -> ... -> TheirTool -> CanvasManager
+	* [ ] Create class diagram
+* [ ] use pointer capture in scrollbar
+* [ ] selection/paste undo
+* [ ] highlighter selection highlight --> too light
+* [ ] geometry polyline overlap not accounting for radius --> hilighter might not get selected
+* [ ] analytics
+
 ### Refactorings
-* [ ] Drawable -> Graphic + PersistentGraphic
-* [ ] GL Context to it's on class (instance stored in BaseCanvasManager)
-* [ ] Network singleton
-* [ ] Network tools: 2 versions (local and collab, with seamless communication)
-* [ ] Method-less Vector class (move all methods to static class)
+* [X] Drawable -> Graphic + PersistentGraphic
+* [X] GL Context to it's on class (instance stored in BaseCanvasManager)
+* [X] Network tools: 2 versions (local and collab, with seamless communication)
+* [X] Method-less Vector class (move all methods to static class)
+* [-] Network singleton
 
 ### Bugs
 
@@ -150,15 +159,13 @@ When professor opens lecture notes:
   * [X] TRIANGLE_STRIP - 1h
   * [-] Strokes grouped in buffers by Y-coordinate to optimize rendering - 2h (UNFEASABLE)
   * [X] Highlighter strokes at the back => 2 sets of buffers: pen & highlighter - 1h
-  * [ ] Ability to delete/undo strokes => stroke ID - 2h
-  * [ ] Finding strokes that intersect a given line - 3h
-  * [ ] Open wheel on triple tap - 2h
-  * [ ] Optimize active stroke rendering using partial buffering - 1h
-* [ ] Improve stroke triangularization
+  * [X] Ability to delete/undo strokes => stroke ID - 2h
+  * [X] Finding strokes that intersect a given line - 3h
+  * [-] Open wheel on triple tap - 2h
+  * [-] Optimize active stroke rendering using partial buffering - 1h --> Garbage
+* [X] Improve stroke triangularization
+* [X] Use TRIANGLE_STRIP with double buffer size (+50% performance boost)
 * [ ] Preserve scroll on refresh
-* [ ] Wheel opening gesture
-* [ ] Double press gesture
-* [ ] Use TRIANGLE_STRIP with double buffer size (+50% performance boost)
 * [ ] Split initial package
 * [ ] Download notes as PNG
 * [ ] Optimize physics engine & rewrite in WebAssembly (not necessary for now, rendering is the bottleneck)
@@ -173,27 +180,24 @@ When professor opens lecture notes:
 * [X] Ability to move
   * [X] Detect drag
   * [X] Move selection
-* [ ] Ability to transform
-  * [ ] Draw control points
-  * [ ] Draw rotation point
-  * [ ] Detect drag on control points
-  * [ ] Update selection
+* [X] Ability to transform
+  * [X] Draw control points
+  * [X] Draw rotation point
+  * [X] Detect drag on control points
+  * [X] Update selection
 
 ### PDF import
 * [X] Render PDF to canvas
-* [ ] Render all pages with proper transform
-* [ ] Dynamic resolution
-* [ ] Highlighter transparency
+* [X] Render all pages with proper transform
+* [X] Dynamic resolution
+* [X] Highlighter transparency
 * [ ] Infinite zoom
 
 ### Tech debt
 * [ ] Send live collaboration update on scroll (not just on pointer move), so that pointer appears to move when scrolling
-* [X] Optimize live collaboration (send only stroke modification, not entire stroke every time)
 * [ ] Careful about storing collaborators in memory in Server, probably better to use mongo when lots of users
 * [ ] When undoing stroke erase, insert stroke back to its initial position, not as a new stroke
-* [X] Bug: creating file does not always reload the UI: database ordering issue, know how to fix properly, will do soon
 * [ ] Load stokes in small batches, not all at once, better for user experience
-* [X] Memory leak, when a user refreshes the page, the socket is not closed => leaking memory. It is reset when browser is closed but not on refresh => easy way to spam and crash the server is to spam refresh
 
 # License
 

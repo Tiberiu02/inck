@@ -130,7 +130,19 @@ export class PolyLine implements Geometry {
     }
 
     for (const p of this.points) {
-      if (poly.contains(new Vector2D(p.x, p.y))) {
+      if (poly.contains(p)) {
+        return true;
+      }
+    }
+
+    for (let i = 1; i < this.points.length; i++) {
+      const line = {
+        x1: this.points[i].x,
+        y1: this.points[i].y,
+        x2: this.points[i - 1].x,
+        y2: this.points[i - 1].y,
+      };
+      if (poly.intersectsLine(line)) {
         return true;
       }
     }

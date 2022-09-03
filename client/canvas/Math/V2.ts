@@ -25,9 +25,14 @@ export class V2 {
     return new Vector2D(v.x / factor, v.y / factor);
   }
 
-  static rot(v: Vector2D, angle: number): Vector2D {
+  static rot(v: Vector2D, angle: number, center: Vector2D = new Vector2D(0, 0)): Vector2D {
     const [sin, cos] = [Math.sin(angle), Math.cos(angle)];
-    return new Vector2D(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
+    const [x, y] = [v.x - center.x, v.y - center.y];
+    return new Vector2D(x * cos - y * sin + center.x, x * sin + y * cos + center.y);
+  }
+
+  static scale(v: Vector2D, factor: number, center: Vector2D = new Vector2D(0, 0)): Vector2D {
+    return V2.add(V2.mul(V2.sub(v, center), factor), center);
   }
 
   static norm(v: Vector2D): number {
@@ -57,5 +62,10 @@ export class V2 {
 
   static cross(v: Vector2D, u: Vector2D): number {
     return v.x * u.y - v.y * u.x;
+  }
+
+  static angle(v: Vector2D, u: Vector2D): number {
+    const a = Math.acos(V2.dot(V2.normalize(u), V2.normalize(v)));
+    return V2.cross(u, v) > 0 ? a : -a;
   }
 }
