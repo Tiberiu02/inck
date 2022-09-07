@@ -12,9 +12,11 @@ import { LASSO_COLOR, SelectionBase, SHADOW_SIZE } from "./SelectionBase";
 import { EmitterSelection, SelectionController, SerializedSelection } from "./TheirSelection";
 import { SelectionUI } from "../../UI/SelectionUI";
 import { V3 } from "../../Math/V3";
+import { Icons } from "../../UI/Icons";
 
 const UI_COLOR = [115, 160, 255];
 const OUTLINE_WIDTH = 0.05;
+const MENU_TOP_MARGIN = 0.15; //in
 
 export class MySelection extends SelectionBase implements MyTool {
   private actionStack: ActionStack;
@@ -24,6 +26,7 @@ export class MySelection extends SelectionBase implements MyTool {
   private remoteController: SelectionController;
   private keyHandler: (e: KeyboardEvent) => void;
   private menu: HTMLElement;
+  private shadowSize: number;
 
   constructor(canvasManager: CanvasManager, actionStack: ActionStack, network: NetworkConnection) {
     super(canvasManager);
@@ -32,6 +35,7 @@ export class MySelection extends SelectionBase implements MyTool {
     this.actionStack = actionStack;
     this.network = network;
     this.ui = this.createUI();
+    this.shadowSize = SHADOW_SIZE;
 
     this.network.setTool(this.serialize());
     this.remoteController = new EmitterSelection(network);
@@ -93,6 +97,7 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   applyScaling() {
+    this.shadowSize *= this.toScaleBy;
     super.applyScaling();
     this.remoteController.applyScaling();
   }
@@ -108,33 +113,38 @@ export class MySelection extends SelectionBase implements MyTool {
 
       const [x1, y1] = View.getScreenCoords(cx - sw * this.toScaleBy + x, cy - sh * this.toScaleBy + y);
       const [x2, y2] = View.getScreenCoords(cx + sw * this.toScaleBy + x, cy + sh * this.toScaleBy + y);
-      const w = SHADOW_SIZE * Display.DPI * 2;
+      const w = this.shadowSize * Display.DPI * 2 * this.toScaleBy;
 
       this.ui.style.left = `${x1 - w}px`;
       this.ui.style.top = `${y1 - w}px`;
       this.ui.style.width = `${x2 - x1 + 2 * w}px`;
       this.ui.style.height = `${y2 - y1 + 2 * w}px`;
-      this.ui.style.display = "";
+      this.ui.style.visibility = "visible";
       this.ui.style.transform = `rotate(${this.toRotateBy}rad)`;
     } else {
-      this.ui.style.display = "none";
+      this.ui.style.visibility = "hidden";
     }
   }
 
   release(): void {
     this.deselect();
     window.removeEventListener("keydown", this.keyHandler);
-    this.ui.style.display = "none";
+    this.ui.remove();
+  }
+
+  clearSelection(): void {
+    this.shadowSize = SHADOW_SIZE;
+    super.clearSelection();
   }
 
   deselect(): void {
     this.selected.forEach(d => this.canvasManager.add(d));
-    super.clearSelection();
+    this.clearSelection();
     this.remoteController.clearSelection();
   }
 
   deleteSelection(): void {
-    super.clearSelection();
+    this.clearSelection();
     this.remoteController.clearSelection();
   }
 
@@ -155,6 +165,11 @@ export class MySelection extends SelectionBase implements MyTool {
   loadSelection(selected: SerializedGraphic[]) {
     super.loadSelection(selected);
     this.remoteController.loadSelection(selected);
+  }
+
+  translateToCenter() {
+    this.setTranslation(V2.sub(View.center, this.selectionCenter));
+    this.applyTranslation();
   }
 
   serialize(): SerializedSelection {
@@ -186,7 +201,7 @@ export class MySelection extends SelectionBase implements MyTool {
   private createContainer() {
     const container = document.createElement("div");
     container.style.position = "fixed";
-    container.style.display = "none";
+    container.style.visibility = "hidden";
     container.style.outline = `${OUTLINE_WIDTH}in solid rgba(${UI_COLOR})`;
     container.style.borderRadius = "0.02in";
     container.style.cursor = "move";
@@ -195,18 +210,17 @@ export class MySelection extends SelectionBase implements MyTool {
     let pointer: Vector2D;
     let pointerId: number;
     container.addEventListener("pointerdown", e => {
-      pointer = new Vector2D(e.x, e.y);
+      pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
-      container.setPointerCapture(e.pointerId);
       PointerTracker.pause();
     });
-    container.addEventListener("pointermove", e => {
+    window.addEventListener("pointermove", e => {
       if (pointer && e.pointerId == pointerId) {
-        const newPointer = new Vector2D(e.x, e.y);
+        const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
         this.setTranslation(V2.sub(newPointer, pointer));
       }
     });
-    container.addEventListener("pointerup", e => {
+    window.addEventListener("pointerup", e => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyTranslation();
@@ -222,22 +236,21 @@ export class MySelection extends SelectionBase implements MyTool {
     const menu = document.createElement("div");
     menu.style.display = "flex";
     menu.style.flexDirection = "row";
+    menu.style.padding = "0em 0.55em";
     menu.style.backgroundColor = "rgba(255, 255, 255, 1)";
     menu.style.position = "absolute";
     menu.style.overflow = "hidden";
-    menu.style.bottom = "0px";
+    menu.style.bottom = `-${OUTLINE_WIDTH + MENU_TOP_MARGIN}in`;
     menu.style.left = "50%";
-    menu.style.transform = "translate(-50%, 50%)";
+    menu.style.transform = "translate(-50%, 100%)";
     menu.style.borderRadius = "9999em";
     menu.style.filter = "drop-shadow(0 2px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 5px rgb(0 0 0 / 0.25))";
 
-    const createBtn = (first: boolean, last: boolean, cb: Function) => {
+    const createBtn = (cb: Function) => {
       const btn = document.createElement("div");
-      btn.style.padding = `0.5em ${last ? "1em" : "0.7em"} 0.5em ${first ? "1em" : "0.7em"}`;
+      btn.style.padding = `0.5em 0.5em`;
       btn.style.cursor = "pointer";
-      if (!first) {
-        btn.style.borderLeft = "1px solid #aaa";
-      }
+      btn.style.display = "flex";
       menu.appendChild(btn);
 
       let pressed = false;
@@ -260,18 +273,19 @@ export class MySelection extends SelectionBase implements MyTool {
       return btn;
     };
 
-    const deselectBtn = createBtn(true, false, () => this.deselect());
-    deselectBtn.innerHTML = "❌&nbsp;Deselect";
+    const copyBtn = createBtn(() => this.copySelection());
+    copyBtn.innerHTML = `${Icons.Copy("#0288d1")}`;
 
-    const copyBtn = createBtn(false, false, () => this.copySelection());
-    copyBtn.innerHTML = "📋&nbsp;Copy";
+    const cutBtn = createBtn(() => this.cutSelection());
+    cutBtn.innerHTML = `${Icons.Cut("#f9a825")}`;
 
-    const cutBtn = createBtn(false, false, () => this.cutSelection());
-    cutBtn.innerHTML = "✂️&nbsp;Cut";
+    const deleteBtn = createBtn(() => this.deleteSelection());
+    deleteBtn.innerHTML = `${Icons.Delete("#d32f2f")}`;
 
-    const deleteBtn = createBtn(false, false, () => this.deleteSelection());
-    deleteBtn.innerHTML = "🗑️&nbsp;Delete";
+    const deselectBtn = createBtn(() => this.deselect());
+    deselectBtn.innerHTML = `${Icons.Check("#388e3c")}`;
 
+    this.menu = menu;
     return menu;
   }
 
@@ -299,21 +313,20 @@ export class MySelection extends SelectionBase implements MyTool {
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
       this.menu.style.visibility = "hidden";
-      btn.setPointerCapture(e.pointerId);
       PointerTracker.pause();
     });
-    btn.addEventListener("pointermove", e => {
+    window.addEventListener("pointermove", e => {
       if (pointer && e.pointerId == pointerId) {
         const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
         const angle = V2.angle(V2.sub(newPointer, this.selectionCenter), V2.sub(pointer, this.selectionCenter));
         this.setRotation(angle);
       }
     });
-    btn.addEventListener("pointerup", e => {
+    window.addEventListener("pointerup", e => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyRotation();
-        this.menu.style.visibility = "visible";
+        this.menu.style.visibility = "";
         PointerTracker.unpause();
       }
     });
@@ -345,17 +358,16 @@ export class MySelection extends SelectionBase implements MyTool {
       e.stopPropagation();
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
-      btn.setPointerCapture(e.pointerId);
       PointerTracker.pause();
     });
-    btn.addEventListener("pointermove", e => {
+    window.addEventListener("pointermove", e => {
       if (pointer && e.pointerId == pointerId) {
         const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
         const factor = V2.dist(newPointer, this.selectionCenter) / V2.dist(pointer, this.selectionCenter);
         this.setScaling(factor);
       }
     });
-    btn.addEventListener("pointerup", e => {
+    window.addEventListener("pointerup", e => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyScaling();

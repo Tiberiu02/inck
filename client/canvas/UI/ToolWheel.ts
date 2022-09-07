@@ -16,7 +16,7 @@ const N_SHAPES = SHAPES.length;
 
 const N = COLORS_NAMES.length;
 const SLICE_ANGLE = (Math.PI * 7) / 6 / N;
-const COLORS_START_ANGLE = -(SLICE_ANGLE * N - Math.PI) / 2;
+const COLORS_START_ANGLE = -(SLICE_ANGLE * (N + 1) - Math.PI) / 2;
 
 const WIDTHS = [0.005, 0.01, 0.02, 0.03, 0.045, 0.06, 0.09];
 const H_WIDTHS = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
@@ -123,7 +123,8 @@ export default class ToolWheel {
     return this.wheel.style.display != "none";
   }
 
-  show(x: number, y: number) {
+  show(e: PointerEvent) {
+    const { x, y, pointerId } = e;
     let transform = "scale(1)";
     if (x != undefined && y != undefined) {
       const x1 = Math.max(this.R, Math.min(innerWidth - this.R, x));
@@ -147,6 +148,7 @@ export default class ToolWheel {
 
     this.wheel.classList.remove("wheel-hidden");
     this.wheel.classList.remove("wheel-active");
+    this.wheel.setPointerCapture(pointerId); // useless
     setTimeout(() => this.wheel.classList.add("wheel-active"), 500 + 50);
     setTimeout(() => (this.wheel.style.transform = transform), 50);
   }
@@ -318,14 +320,14 @@ export default class ToolWheel {
     }
 
     // Eraser
-    {
+    if (false) {
       const a1 = COLORS_START_ANGLE - SLICE_ANGLE;
       const a2 = COLORS_START_ANGLE;
       const a = (a1 + a2) / 2;
 
       let eraser = createElement("g", { class: "tool_button" });
       eraser.addEventListener("pointerdown", () => {
-        this.setTool("eraser");
+        this.toolManager.enableEraser();
         this.hide();
         this.registerClose();
       });
@@ -429,7 +431,7 @@ export default class ToolWheel {
     }
 
     function AddOptionButton(img, angle, action) {
-      const iconSize = R / 12;
+      const iconSize = R / 14;
       const [x, y] = spin((r1 + r2 * 2) / 3, angle);
 
       let option = createElement("g", { class: "option_button" });
@@ -438,7 +440,7 @@ export default class ToolWheel {
         createElement("circle", {
           cx: x,
           cy: y,
-          r: iconSize * 0.8,
+          r: iconSize * 0.9,
         })
       );
 
@@ -453,14 +455,17 @@ export default class ToolWheel {
         })
       );
 
-      option.addEventListener("pointerdown", action);
+      option.addEventListener("click", action);
 
       menu.appendChild(option);
     }
 
-    AddOptionButton(RES_ROOT + "Redo.png", Math.PI * 1.37, () => this.toolManager.redo());
-    AddOptionButton(RES_ROOT + "Tool_Settings.png", Math.PI * 1.5, () => this.registerOpenSettings());
-    AddOptionButton(RES_ROOT + "Undo.png", Math.PI * 1.63, () => this.toolManager.undo());
+    AddOptionButton(RES_ROOT + "material_redo.png", Math.PI * 1.37, () => this.toolManager.redo());
+    AddOptionButton(RES_ROOT + "material_paste.png", Math.PI * 1.5, () => {
+      this.close();
+      this.toolManager.paste();
+    });
+    AddOptionButton(RES_ROOT + "material_undo.png", Math.PI * 1.63, () => this.toolManager.undo());
 
     return menu;
   }

@@ -54,6 +54,7 @@ export class ToolManager {
           id: Math.random().toString(36).slice(2),
         }));
         (this.tool as MySelection).loadSelection(graphics);
+        (this.tool as MySelection).translateToCenter();
       }
     } catch (e) {}
   }

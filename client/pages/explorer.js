@@ -1,8 +1,8 @@
 import Head from "next/head";
 import { setuid } from "process";
 import React, { useState, useEffect, useRef } from "react";
-import { useCallback } from 'react'
-import { useDropzone } from 'react-dropzone'
+import { useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   FaAngleDown,
   FaAngleRight,
@@ -37,7 +37,7 @@ function DirListing({
   onClick,
   children,
   link,
-  openByDefault = false
+  openByDefault = false,
 }) {
   let [open, setOpen] = useState(openByDefault);
   const selected = userPath && dirPath && userPath.toString() == dirPath.toString();
@@ -89,8 +89,9 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
     >
       {showSelect && (
         <div
-          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
-            } text-center`}
+          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
+            isSelected ? "text-slate-800" : "text-white"
+          } text-center`}
         >
           x
         </div>
@@ -113,8 +114,9 @@ function Book({ title, onClick, showSelect = false, isSelected = false }) {
       <div className="realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
         {showSelect && (
           <div
-            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
-              } text-center`}
+            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
+              isSelected ? "text-slate-800" : "text-white"
+            } text-center`}
           >
             x
           </div>
@@ -168,13 +170,15 @@ function MobileMenu() {
         <FaBars className="text-3xl text-gray-500" />
       </button>
       <div
-        className={`fixed h-screen w-screen bg-black z-10 ${open ? "opacity-50" : "opacity-0 pointer-events-none"
-          } transition-all duration-200 top-0 left-0`}
+        className={`fixed h-screen w-screen bg-black z-10 ${
+          open ? "opacity-50" : "opacity-0 pointer-events-none"
+        } transition-all duration-200 top-0 left-0`}
         onClick={toggleOpen}
       ></div>
       <div
-        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${open ? "translate-x-0" : "-translate-x-full"
-          } transition-all duration-200 top-0 left-0 overflow-scroll`}
+        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } transition-all duration-200 top-0 left-0 overflow-scroll`}
       >
         <FileTree className="pt-10 pb-52 w-full" />
       </div>
@@ -206,7 +210,6 @@ function FileTree({ className, files, path, setPath }) {
 
   return (
     <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{ overflow: "overlay" }}>
-
       <div className="min-w-full w-fit">
         {/*
         <DirListing Symbol={FaRegClock} symbolClassName="mt-[0.1rem]" name="Recent" link></DirListing>
@@ -215,7 +218,6 @@ function FileTree({ className, files, path, setPath }) {
         <DirListing Symbol={FaTrash} name="Trash" link></DirListing>
         <div className="mt-5"></div>
         */}
-
 
         {files && buildDirListing(files["f/notes"], ["f/notes"], true)}
       </div>
@@ -326,8 +328,9 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
         <div
           onDoubleClick={onDoubleClick}
           onClick={onClick}
-          className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
-            } text-md`}
+          className={`flex items-center hover:bg-gray-200 ${
+            target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
+          } text-md`}
         >
           {prefix} <Folder className="h-4 w-4" /> &nbsp;{" "}
           <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
@@ -385,8 +388,9 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
           <button
             disabled={!canMove}
             onClick={onMoveClick}
-            className={` ${canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
-              } text-white w-fit px-4 py-1 rounded-full self-center`}
+            className={` ${
+              canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
+            } text-white w-fit px-4 py-1 rounded-full self-center`}
           >
             Move files
           </button>
@@ -401,7 +405,6 @@ function EditFileModal({ visible, setVisible, file, save }) {
   const [newName, setNewName] = useState("");
   const [newNoteAccess, setNewNoteAccess] = useState(file.defaultAccess || "private");
 
-
   const fileType = file !== undefined ? file.type : "";
   const isAccessVisible = fileType == "note";
 
@@ -413,11 +416,11 @@ function EditFileModal({ visible, setVisible, file, save }) {
 
   const saveEdits = () => {
     const trimmedNewName = newName.trim();
-    let name = ""
+    let name = "";
     if (trimmedNewName == "") {
-      name = file.name
+      name = file.name;
     } else {
-      name = trimmedNewName
+      name = trimmedNewName;
     }
     save(file._id, name, newNoteAccess);
     hideModal();
@@ -493,7 +496,7 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
         </select>
       </div>
     </div>
-  )
+  );
 }
 
 function CreateFolderSubmodal({ name, setName, publicAccess, setPublicAccess }) {
@@ -508,65 +511,63 @@ function CreateFolderSubmodal({ name, setName, publicAccess, setPublicAccess }) 
         />
       </div>
     </div>
-  )
+  );
 }
 
-
-
 function PDFDropZone({ setPdfContent, setFileSize }) {
+  const onDrop = useCallback(
+    acceptedFiles => {
+      if (acceptedFiles.length > 0) {
+        const [file] = acceptedFiles;
+        setFileSize(file.size);
 
-  const onDrop = useCallback(acceptedFiles => {
-    if (acceptedFiles.length > 0) {
-      const [file] = acceptedFiles
-      setFileSize(file.size)
-
-      const formData = new FormData()
-      formData.append("file", file)
-      setPdfContent(formData)
-    }
-
-  }, [])
+        const formData = new FormData();
+        formData.append("file", file);
+        setPdfContent(formData);
+      }
+    },
+    [setPdfContent, setFileSize]
+  );
   const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf'],
-    }
-  })
+      "application/pdf": [".pdf"],
+    },
+  });
 
-  const isFileSelected = acceptedFiles.length > 0
+  const isFileSelected = acceptedFiles.length > 0;
 
-  let dropZoneContent
+  let dropZoneContent;
 
   if (isDragActive) {
-    dropZoneContent = "Drop the files here ..."
+    dropZoneContent = "Drop the files here ...";
   } else if (acceptedFiles.length == 0) {
-    dropZoneContent = "Drop file here, or click to select ..."
+    dropZoneContent = "Drop file here, or click to select ...";
   } else {
-
-    dropZoneContent = acceptedFiles[0].name
+    dropZoneContent = acceptedFiles[0].name;
   }
 
   return (
-    <div {...getRootProps({
-      className: `rounded-md p-3 border-dashed border-slate-500 border-2 text-sm h-16 italic 
-                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${isDragActive ? "bg-slate-100" : ""}
+    <div
+      {...getRootProps({
+        className: `rounded-md p-3 border-dashed border-slate-500 border-2 text-sm h-16 italic 
+                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${
+          isDragActive ? "bg-slate-100" : ""
+        }
                   
-                  `
-    })}>
+                  `,
+      })}
+    >
       <input {...getInputProps()} />
-      <p className="truncate text-ellipsis">
-        {dropZoneContent}
-      </p>
+      <p className="truncate text-ellipsis">{dropZoneContent}</p>
     </div>
-  )
+  );
 }
 
 function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess }) {
-
-  const [pdfContent, setPdfContent] = useState(null)
-  const [fileSize, setFileSize] = useState(0)
+  const [pdfContent, setPdfContent] = useState(null);
+  const [fileSize, setFileSize] = useState(0);
   const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
-
 
   return (
     <div className="flex flex-col gap-6">
@@ -593,73 +594,67 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess }) {
       </div>
 
       <div>
-        <PDFDropZone
-          setFileSize={setFileSize}
-          setPdfContent={setPdfContent}
-        />
-        {fileSize > 0.0 &&
-          <p className="text-sm text-right italic">
-            * File size: {fileSizeFormat} MB
-          </p>
-        }
+        <PDFDropZone setFileSize={setFileSize} setPdfContent={setPdfContent} />
+        {fileSize > 0.0 && <p className="text-sm text-right italic">* File size: {fileSizeFormat} MB</p>}
       </div>
     </div>
-  )
+  );
 }
 
 function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, importNoteURL, setImportNoteURL }) {
+  return (
+    <div>
+      <div className="flex flex-col gap-6">
+        <div className="flex gap-4">
+          Note&nbsp;name
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+          />
+        </div>
 
-  return (<div>
-    <div className="flex flex-col gap-6">
-      <div className="flex gap-4">
-        Note&nbsp;name
-        <input
-          value={name}
-          onChange={e => setName(e.target.value)}
-          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-        />
+        <div className="flex gap-4">
+          Note&nbsp;URL
+          <input
+            value={importNoteURL}
+            onChange={e => setImportNoteURL(e.target.value)}
+            className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+          />
+        </div>
+
+        <div className="flex gap-4">
+          Public&nbsp;access
+          <select
+            value={publicAccess}
+            onChange={e => setPublicAccess(e.target.value)}
+            className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+          >
+            <option value="read_write">View &amp; edit</option>
+            <option value="read_only">View only</option>
+            <option value="private">No public access</option>
+          </select>
+        </div>
       </div>
-
-      <div className="flex gap-4">
-        Note&nbsp;URL
-        <input
-          value={importNoteURL}
-          onChange={e => setImportNoteURL(e.target.value)}
-          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-        />
-      </div>
-
-      <div className="flex gap-4">
-        Public&nbsp;access
-        <select
-          value={publicAccess}
-          onChange={e => setPublicAccess(e.target.value)}
-          className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-        >
-          <option value="read_write">View &amp; edit</option>
-          <option value="read_only">View only</option>
-          <option value="private">No public access</option>
-        </select>
-      </div>
-
     </div>
-  </div>)
+  );
 }
 
 function CreateModalHeaderElement({ modalState, setModalState, buttonText, activeState }) {
-  return (<button
-    onClick={() => setModalState(activeState)}
-    className={
-      "w-full p-1 gap-2 rounded-md " +
-      (modalState == activeState ? "bg-slate-800 text-white" : "hover:bg-slate-700 hover:text-white")
-    }
-  >
-    {buttonText}
-  </button>)
+  return (
+    <button
+      onClick={() => setModalState(activeState)}
+      className={
+        "w-full p-1 gap-2 rounded-md " +
+        (modalState == activeState ? "bg-slate-800 text-white" : "hover:bg-slate-700 hover:text-white")
+      }
+    >
+      {buttonText}
+    </button>
+  );
 }
 
 function CreateModalHeader({ modalState, setModalState }) {
-
   return (
     <div className="grid grid-cols-2 grid-rows-2 w-full bg-gray-100 rounded-md gap-1">
       {/* New note */}
@@ -690,8 +685,8 @@ function CreateModalHeader({ modalState, setModalState }) {
         buttonText={"Import note"}
         activeState={"import-note"}
       />
-
-    </div>)
+    </div>
+  );
 }
 
 async function newNoteSubmit(name, parentDir, publicAccess, setFiles) {
@@ -705,33 +700,19 @@ async function newFolderSubmit(name, parentDir, setFiles) {
 }
 
 async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, setFiles) {
-  alert("Imported PDF")
+  alert("Imported PDF");
 }
 
 async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles) {
-  await importFreeNote(
-    name,
-    parentDir,
-    setFiles,
-    publicAccess,
-    publicNoteURL
-  )
+  await importFreeNote(name, parentDir, setFiles, publicAccess, publicNoteURL);
 }
 
-async function createModalSubmit(
-  state,
-  name,
-  parentDir,
-  publicAccess,
-  publicNoteURL,
-  pdfFileContent,
-  setFiles,
-) {
-  if (state == "note") return newNoteSubmit(name, parentDir, publicAccess, setFiles)
-  else if (state == "folder") return newFolderSubmit(name, parentDir, setFiles)
-  else if (state == "import-pdf") return importPDFSubmit(name, publicAccess, pdfFileContent)
-  else if (state == "import-note") return importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles)
-  else alert("Invalid state")
+async function createModalSubmit(state, name, parentDir, publicAccess, publicNoteURL, pdfFileContent, setFiles) {
+  if (state == "note") return newNoteSubmit(name, parentDir, publicAccess, setFiles);
+  else if (state == "folder") return newFolderSubmit(name, parentDir, setFiles);
+  else if (state == "import-pdf") return importPDFSubmit(name, publicAccess, pdfFileContent);
+  else if (state == "import-note") return importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles);
+  else alert("Invalid state");
 }
 
 function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
@@ -742,45 +723,75 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
    * import-pdf - will create a new note with a pdf
    * import-note - import a free note
    */
-  const [modalState, setModalState] = useState("note")
-  const [name, setName] = useState("")
+  const [modalState, setModalState] = useState("note");
+  const [name, setName] = useState("");
   const [publicAccess, setPublicAccess] = useState("private");
-  const [pdfContent, setPdfContent] = useState(null)
-  const [importNoteURL, setImportNoteURL] = useState("")
-
+  const [pdfContent, setPdfContent] = useState(null);
+  const [importNoteURL, setImportNoteURL] = useState("");
 
   const submit = async () => {
-    const parentDir = path.at(-1)
-    const result = await createModalSubmit(modalState, name, parentDir, publicAccess, importNoteURL, pdfContent, setFiles)
+    const parentDir = path.at(-1);
+    const result = await createModalSubmit(
+      modalState,
+      name,
+      parentDir,
+      publicAccess,
+      importNoteURL,
+      pdfContent,
+      setFiles
+    );
 
     // TODO: check result and if failure, display error messages
-    setVisible(false)
-  }
+    setVisible(false);
+  };
 
   let modalBody;
 
   switch (modalState) {
     case "note":
-      modalBody = <CreateNoteSubmodal name={name} setName={setName} publicAccess={publicAccess} setPublicAccess={setPublicAccess} />
+      modalBody = (
+        <CreateNoteSubmodal
+          name={name}
+          setName={setName}
+          publicAccess={publicAccess}
+          setPublicAccess={setPublicAccess}
+        />
+      );
       break;
 
     case "folder":
-      modalBody = <CreateFolderSubmodal name={name} setName={setName} publicAccess={publicAccess} setPublicAccess={setPublicAccess} />
+      modalBody = (
+        <CreateFolderSubmodal
+          name={name}
+          setName={setName}
+          publicAccess={publicAccess}
+          setPublicAccess={setPublicAccess}
+        />
+      );
       break;
 
     case "import-pdf":
-      modalBody = <ImportPDFSubmodal name={name} setName={setName} publicAccess={publicAccess} setPublicAccess={setPublicAccess} />
+      modalBody = (
+        <ImportPDFSubmodal
+          name={name}
+          setName={setName}
+          publicAccess={publicAccess}
+          setPublicAccess={setPublicAccess}
+        />
+      );
       break;
 
     case "import-note":
-      modalBody = <ImportFreeNoteSubmodal
-        name={name}
-        setName={setName}
-        publicAccess={publicAccess}
-        setPublicAccess={setPublicAccess}
-        importNoteURL={importNoteURL}
-        setImportNoteURL={setImportNoteURL}
-      />
+      modalBody = (
+        <ImportFreeNoteSubmodal
+          name={name}
+          setName={setName}
+          publicAccess={publicAccess}
+          setPublicAccess={setPublicAccess}
+          importNoteURL={importNoteURL}
+          setImportNoteURL={setImportNoteURL}
+        />
+      );
       break;
   }
 
@@ -881,8 +892,8 @@ async function importFreeNote(name, parentDir, setFiles, visibility, freeNoteURL
 
   const jsonReply = await response.json();
   if (jsonReply.files != undefined) {
-    const filesDict = processFilesData(jsonReply.files)
-    setFiles(filesDict)
+    const filesDict = processFilesData(jsonReply.files);
+    setFiles(filesDict);
   }
 }
 
@@ -1126,10 +1137,16 @@ export default function Explorer() {
               >
                 Disconnect
               </button>
-              <a href="/faq" className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
+              <a
+                href="/faq"
+                className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer"
+              >
                 <FaRegQuestionCircle className="text-2xl" />
               </a>
-              <a href="settings" className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
+              <a
+                href="settings"
+                className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer"
+              >
                 <FaRegSun className="text-2xl" />
               </a>
             </div>
@@ -1179,11 +1196,9 @@ export default function Explorer() {
             setVisible={setEditFileModal}
             setFiles={setFilesAfterChange}
             save={(id, newName, newVisibility, options) => {
-              editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options)
-              toggleFileSelection(false)
-            }
-
-            }
+              editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options);
+              toggleFileSelection(false);
+            }}
           />
         )}
         {/* Remove files modal */}
@@ -1193,8 +1208,8 @@ export default function Explorer() {
             setVisible={setRemoveFileModal}
             setFiles={setFilesAfterChange}
             removeFiles={() => {
-              removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange)
-              toggleFileSelection(false)
+              removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange);
+              toggleFileSelection(false);
             }}
           />
         )}
@@ -1207,8 +1222,8 @@ export default function Explorer() {
             setVisible={setMoveFileModal}
             setFiles={setFilesAfterChange}
             moveFiles={target => {
-              moveFilesAPICall(selectedFiles, target, setFilesAfterChange)
-              toggleFileSelection(false)
+              moveFilesAPICall(selectedFiles, target, setFilesAfterChange);
+              toggleFileSelection(false);
             }}
           />
         )}

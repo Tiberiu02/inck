@@ -120,7 +120,6 @@ export class SelectionBase {
   }
 
   setTranslation({ x, y }: Vector2D) {
-    [x, y] = View.getCanvasCoords(x, y, true);
     this.toTranslateBy = new Vector2D(x, y);
     RenderLoop.scheduleRender();
   }

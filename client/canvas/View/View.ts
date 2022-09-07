@@ -35,6 +35,7 @@
 
 import { Display } from "../DeviceProps";
 import { m4, Matrix4 } from "../Math/M4";
+import { Vector2D } from "../Math/V2";
 
 export class View {
   protected static top: number;
@@ -92,6 +93,12 @@ export class View {
   static getHeight() {
     this.ensureInstance();
     return 1 / this.zoom / Display.AspectRatio;
+  }
+  static get center(): Vector2D {
+    return {
+      x: this.left + 0.5 / this.zoom,
+      y: this.top + 0.5 / this.zoom / Display.AspectRatio,
+    };
   }
 
   // Map screen coordinates to canvas coordinates

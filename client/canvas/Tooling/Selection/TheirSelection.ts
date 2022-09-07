@@ -30,7 +30,6 @@ export class SelectionController {
 export class TheirSelection extends SelectionBase implements SelectionController, TheirTool {
   constructor(canvasManager: CanvasManager) {
     super(canvasManager);
-    console.log("created collab selection");
   }
 
   protected(): SelectionController {
@@ -39,12 +38,15 @@ export class TheirSelection extends SelectionBase implements SelectionController
 
   static deserialize(data: SerializedSelection, canvasManager: CanvasManager, collab: Collaborator): TheirSelection {
     const s = new TheirSelection(canvasManager);
-    s.selecting = data.selecting;
-    s.selected = data.selected.map(DeserializeGraphic);
     s.lassoColor = collab.getColor(0.8);
     s.lassoConnectorColor = collab.getColor(0.85);
     s.shadowColor = collab.getColor(0.9);
-    if (s.selected.length) {
+    if (data.selecting) {
+      for (const p of data.points) {
+        s.updateLasso(p.x, p.y, p.pressure, p.timestamp);
+      }
+    } else if (data.selected.length) {
+      s.selected = data.selected.map(DeserializeGraphic);
       s.computeSelectionCenter();
       s.computeShadows();
     }

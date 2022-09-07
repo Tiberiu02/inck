@@ -29,9 +29,10 @@ Open your browser and go to https://localhost:3080.
 
 # To-do list
 
-* [ ] understand architecture (collaboration perspective):
+* [X] understand architecture (collaboration perspective):
 	Main -> ToolManager -> MyTool -> Emitter -> ... -> TheirTool -> CanvasManager
-	* [ ] Create class diagram
+	* [X] Create class diagram
+  * [ ] Split Base Canvas Manager into GL & GraphicsContainer
 * [ ] use pointer capture in scrollbar
 * [ ] selection/paste undo
 * [ ] highlighter selection highlight --> too light
