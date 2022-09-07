@@ -27,6 +27,8 @@ const OPACITY_SPEED = 500; // % / s
 const OPACITY_SPEED_SLOW = 100; // % / s
 const FADE_IN_DELAY = 200; // ms
 
+const FRAME_SIZE = 1; // in
+
 export class CaddieMenu {
   private el: HTMLElement;
   private toolManager: ToolManager;
@@ -35,6 +37,8 @@ export class CaddieMenu {
 
   private pointer: Vector2D;
   private pos: Vector2D;
+
+  private frame: Vector2D;
   private target: Vector2D;
   private opacity: number;
   private state: STATES;
@@ -48,6 +52,7 @@ export class CaddieMenu {
 
     this.state = STATES.IDLE;
 
+    this.frame = new Vector2D(0, 0);
     this.target = new Vector2D(CORNER_PADDING, PAGE_PADDING);
     this.pos = this.target;
     this.opacity = MAX_OPACITY;
@@ -67,17 +72,24 @@ export class CaddieMenu {
 
       pointer = V2.div(V2.sub(pointer, offset), Display.DPI);
 
-      if (V2.norm(pointer) < CORNER_PADDING + DIST_FROM_CURSOR) {
-        const t = V2.add(pointer, V2.rot(displacement, Math.PI / 2));
+      this.frame = new Vector2D(
+        Math.min(Math.max(this.frame.x, pointer.x - FRAME_SIZE), pointer.x),
+        Math.min(Math.max(this.frame.y, pointer.y - FRAME_SIZE), pointer.y)
+      );
+
+      const frameCenter = V2.add(this.frame, V2.mul(new Vector2D(1, 1), FRAME_SIZE / 2));
+
+      if (V2.norm(frameCenter) < CORNER_PADDING + DIST_FROM_CURSOR) {
+        const t = V2.add(frameCenter, V2.rot(displacement, Math.PI / 2));
         this.target = new Vector2D(Math.max(t.x, PAGE_PADDING), t.y);
       } else {
         let angle = Math.PI * 1.35;
-        if (V2.add(pointer, V2.rot(displacement, angle)).x < PAGE_PADDING) {
-          angle = Math.PI + Math.acos((pointer.x - PAGE_PADDING) / DIST_FROM_CURSOR);
-        } else if (V2.add(pointer, V2.rot(displacement, angle)).y < PAGE_PADDING) {
-          angle = Math.PI + Math.asin((pointer.y - PAGE_PADDING) / DIST_FROM_CURSOR);
+        if (V2.add(frameCenter, V2.rot(displacement, angle)).x < PAGE_PADDING) {
+          angle = Math.PI + Math.acos((frameCenter.x - PAGE_PADDING) / DIST_FROM_CURSOR);
+        } else if (V2.add(frameCenter, V2.rot(displacement, angle)).y < PAGE_PADDING) {
+          angle = Math.PI + Math.asin((frameCenter.y - PAGE_PADDING) / DIST_FROM_CURSOR);
         }
-        this.target = V2.add(pointer, V2.rot(displacement, angle));
+        this.target = V2.add(frameCenter, V2.rot(displacement, angle));
       }
     }
   }
@@ -182,7 +194,7 @@ export class CaddieMenu {
           eraseBtn.innerHTML = CaddieMenu.EraserIcon();
         }
         this.el.style.display = "none";
-        this.wheel.show(e.x, e.y);
+        this.wheel.show(e);
       }
     });
     this.wheel.onClose.addListener(() => (this.el.style.display = "flex"));
@@ -191,6 +203,7 @@ export class CaddieMenu {
     const eraseBtn = button();
     eraseBtn.innerHTML = CaddieMenu.EraserIcon();
     eraseBtn.addEventListener("pointerup", () => {
+      console.log(dragging);
       if (!dragging) {
         if (this.toolManager.isErasing) {
           this.toolManager.disableEraser();
@@ -212,7 +225,6 @@ export class CaddieMenu {
     const handlePointerDown = (e: PointerEvent) => {
       initialClick = V2.div(new Vector2D(e.x, e.y), Display.DPI);
       relativePos = V2.sub(this.target, initialClick);
-      this.el.setPointerCapture(e.pointerId);
       PointerTracker.pause();
     };
     const handlePointerMove = (e: PointerEvent) => {
@@ -231,8 +243,8 @@ export class CaddieMenu {
       }
     };
     this.el.addEventListener("pointerdown", handlePointerDown);
-    this.el.addEventListener("pointermove", handlePointerMove);
-    this.el.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
 
     document.body.appendChild(this.el);
   }
