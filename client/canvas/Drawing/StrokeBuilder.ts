@@ -69,6 +69,10 @@ export class StrokeBuilder {
     const dt = 1;
     const p0 = this.points[this.points.length - 1];
 
+    if (this.points.length == 1) {
+      return [p0];
+    }
+
     let { x, y, p, vx, vy, vp, t } = this.mass;
 
     let extraPoints: StrokePoint[] = [];
