@@ -33,6 +33,8 @@ Open your browser and go to https://localhost:3080.
 	Main -> ToolManager -> MyTool -> Emitter -> ... -> TheirTool -> CanvasManager
 	* [X] Create class diagram
   * [ ] Split Base Canvas Manager into GL & GraphicsContainer
+  * How to keep active & static strokes layered?
+  * How to optimize GL calls?
 * [ ] use pointer capture in scrollbar
 * [ ] selection/paste undo
 * [ ] highlighter selection highlight --> too light

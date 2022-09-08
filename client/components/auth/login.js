@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import React, { useState } from "react";
+import { TrackLogin } from "../Analytics.js";
 import { setAuthToken } from "../AuthToken.js";
 import GetApiPath from "../GetApiPath";
 
@@ -30,11 +31,12 @@ export default function Login({ facebookCallback, googleCallback, toSignUpCallba
     const jsonResponse = await response.json();
 
     if (response.status == 200) {
+      TrackLogin(email);
       setAuthToken(jsonResponse.token);
       router.push("/explorer");
     } else {
       setError("Error: " + jsonResponse["error"]);
-      setTimeout(() => setError(""), 10_000)
+      setTimeout(() => setError(""), 10_000);
     }
   };
 
@@ -99,7 +101,7 @@ export default function Login({ facebookCallback, googleCallback, toSignUpCallba
         </button>
       </div>
 
-      <div className="flex flex-col gap-y-2 justify-end self-end h-fit mt-2">
+      <div className="flex flex-col gap-y-2 justify-end self-end h-fit mt-4">
         <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
           No account?
           <div onClick={toSignUpCallback} className={undelineStyle}>
@@ -109,7 +111,7 @@ export default function Login({ facebookCallback, googleCallback, toSignUpCallba
         </div>
 
         <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
-          Forgot password ?
+          Forgot password?
           <div onClick={toPasswordResetCallback} className={undelineStyle}>
             {" "}
             RESET{" "}

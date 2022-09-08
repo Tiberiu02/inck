@@ -1,53 +1,51 @@
-import { useRouter } from 'next/router'
-import React, { useState } from 'react'
-import { setAuthToken } from '../AuthToken'
-import GetApiPath from '../GetApiPath'
-
+import { useRouter } from "next/router";
+import React, { useState } from "react";
+import { TrackSignUp } from "../Analytics";
+import { setAuthToken } from "../AuthToken";
+import GetApiPath from "../GetApiPath";
 
 // 8 characters, at least one letter, one number and one special character
-const PW_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
+const PW_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
 
 function checkPassword(pwd) {
-  return PW_REGEX.test(pwd)
+  return PW_REGEX.test(pwd);
 }
 
-
 export default function Register({ toLoginCallback, toResetPasswordCallback }) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [repeatedPass, setRepeatedPass] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [subscribeUpdates, setSubscribeUpdates] = useState(false);
+  const toggleTerms = () => setAcceptTerms(!acceptTerms);
+  const toggleUpdates = () => setSubscribeUpdates(!subscribeUpdates);
 
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [repeatedPass, setRepeatedPass] = useState("")
-  const [acceptTerms, setAcceptTerms] = useState(false)
-  const [subscribeUpdates, setSubscribeUpdates] = useState(false)
-  const toggleTerms = () => setAcceptTerms(!acceptTerms)
-  const toggleUpdates = () => setSubscribeUpdates(!subscribeUpdates)
+  const router = useRouter();
+  const [error, setError] = useState("");
 
-  const router = useRouter()
-  const [error, setError] = useState("")
-
-  const setTimedError = (err) => {
-    setError("Error: " + err)
-    setTimeout(() => setError(""), 10_000)
-  }
+  const setTimedError = err => {
+    setError("Error: " + err);
+    setTimeout(() => setError(""), 10_000);
+  };
 
   const register = async () => {
-    setError("")
+    setError("");
 
     if (!checkPassword(password)) {
-      setTimedError("Invalid password: check requirements")
-      return
+      setTimedError("Invalid password: check requirements");
+      return;
     }
 
     if (password != repeatedPass) {
-      setTimedError("Passwords don't match")
-      return
+      setTimedError("Passwords don't match");
+      return;
     }
 
     if (!acceptTerms) {
-      setTimedError("Accept terms of services to use Inck")
-      return
+      setTimedError("Accept terms of services to use Inck");
+      return;
     }
 
     const inputs = {
@@ -57,38 +55,37 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
       password: password,
       confirmPassword: repeatedPass,
       acceptTerms: acceptTerms,
-      subscribeUpdates: subscribeUpdates
-    }
+      subscribeUpdates: subscribeUpdates,
+    };
 
     try {
-      const response = await fetch(
-        GetApiPath('/api/auth/register'),
-        {
-          method: "post",
-          body: JSON.stringify(inputs),
-          headers: {
-            "Content-type": "application/json;charset=UTF-8"
-          },
-        }
-      )
-      const jsonResponse = await response.json()
+      const response = await fetch(GetApiPath("/api/auth/register"), {
+        method: "post",
+        body: JSON.stringify(inputs),
+        headers: {
+          "Content-type": "application/json;charset=UTF-8",
+        },
+      });
+      const jsonResponse = await response.json();
 
       if (response.status == 201) {
-        setAuthToken(jsonResponse.token)
-        router.push("/explorer")
+        TrackSignUp(email);
+        setAuthToken(jsonResponse.token);
+        router.push("/explorer");
       } else {
-        setTimedError(jsonResponse["error"])
+        setTimedError(jsonResponse["error"]);
       }
     } catch (err) {
-      setTimedError("Failed to fetch")
+      setTimedError("Failed to fetch");
     }
-  }
+  };
 
-
-
-  const textFieldStyle = "bg-white placeholder-gray-400 text-gray-900 h-10 rounded-md shadow-md px-3 font-bold1 focus:outline-none focus:ring-4 focus:ring-gray-300"
-  const buttonStyle = "bg-primary hover:bg-primary-light hover:shadow-sm duration-100 text-white w-full h-10 rounded-md shadow-lg font-bold tracking-wider text-sm"
-  const undelineStyle = "pl-1 underline decoration-gray-500 decoration underline-offset-2 decoration-[2px] hover:text-gray-800 hover:decoration-gray-800 cursor-pointer"
+  const textFieldStyle =
+    "bg-white placeholder-gray-400 text-gray-900 h-10 rounded-md shadow-md px-3 font-bold1 focus:outline-none focus:ring-4 focus:ring-gray-300";
+  const buttonStyle =
+    "bg-primary hover:bg-primary-light hover:shadow-sm duration-100 text-white w-full h-10 rounded-md shadow-lg font-bold tracking-wider text-sm";
+  const undelineStyle =
+    "pl-1 underline decoration-gray-500 decoration underline-offset-2 decoration-[2px] hover:text-gray-800 hover:decoration-gray-800 cursor-pointer";
 
   return (
     <div className="mx-5 max-w-2xl flex flex-col items-center">
@@ -101,13 +98,13 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
             className={textFieldStyle}
             placeholder="First Name"
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={e => setFirstName(e.target.value)}
           ></input>
           <input
             className={textFieldStyle}
             placeholder="Last Name"
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={e => setLastName(e.target.value)}
           ></input>
         </div>
 
@@ -115,50 +112,62 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
           className={textFieldStyle}
           placeholder="Email address"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
         ></input>
-        <div className='flex flex-col'>
-          <div className='italic text-xs font-extralight'>At least 8 characters long, one letter, one number and one special character</div>
+        <div className="flex flex-col">
+          <div className="italic text-xs font-extralight">
+            At least 8 characters long, one letter, one number and one special character
+          </div>
           <input
             className={textFieldStyle}
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value)}
           />
         </div>
-
 
         <input
           className={textFieldStyle}
           type="password"
           placeholder="Repeat password"
           value={repeatedPass}
-          onChange={(e) => setRepeatedPass(e.target.value)}
+          onChange={e => setRepeatedPass(e.target.value)}
         />
 
-        <div className='flex flex-col text-gray-600 text-sm gap-2'>
+        <div className="flex flex-col text-gray-600 text-sm gap-2">
           <div className="flex items-center">
             <input type="checkbox" onClick={toggleTerms} className="accent-primary mr-3" checked={acceptTerms} />
-            <div onClick={toggleTerms}>I have read and accepted Inck&apos;s
-              <a target='_blank' href='/tos' className={undelineStyle}>terms of service</a>
+            <div onClick={toggleTerms}>
+              I have read and accepted Inck&apos;s
+              <a target="_blank" href="/tos" className={undelineStyle}>
+                terms of service
+              </a>
               &nbsp;and
-              <a target='_blank' href='/privacy' className={undelineStyle}>privacy policy</a></div>
+              <a target="_blank" href="/privacy" className={undelineStyle}>
+                privacy policy
+              </a>
+            </div>
           </div>
 
-          <div className="flex items-center" onClick={toggleUpdates} >
+          <div className="flex items-center" onClick={toggleUpdates}>
             <input type="checkbox" className="accent-primary text-white mr-3" checked={subscribeUpdates} />
             <div>I want to be updated about Inck&apos;s new features</div>
           </div>
         </div>
 
-        <div className={`${error == "" ? "hidden" : ""} text-center bg-red-500 w-full py-2 rounded-md shadow-md text-white`}>
+        <div
+          className={`${
+            error == "" ? "hidden" : ""
+          } text-center bg-red-500 w-full py-2 rounded-md shadow-md text-white`}
+        >
           {error}
         </div>
 
-
         <div className="flex flex-col gap-y-2 -mt-10">
-          <button onClick={register} className={buttonStyle}>Register</button>
+          <button onClick={register} className={buttonStyle}>
+            Register
+          </button>
 
           <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
             Already have an account?
@@ -178,5 +187,5 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
