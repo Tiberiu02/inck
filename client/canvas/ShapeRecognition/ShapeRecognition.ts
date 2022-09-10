@@ -75,7 +75,7 @@ export function DetectShape(inputs: StrokePoint[]): StrokePoint[] {
   return polyline;
 }
 
-export function DetectEqualSides(points: StrokePoint[]): boolean {
+function DetectEqualSides(points: StrokePoint[]): boolean {
   const lengths: number[] = [];
   //Compute the array of side lenghts
   for (let i = 0; i < points.length - 1; i++) {

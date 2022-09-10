@@ -1,9 +1,10 @@
 import { CanvasManager } from "../../CanvasManager";
 import { DeserializeStroke, SerializedStroke, SerializeStroke } from "../../Drawing/Stroke";
 import { StrokeBuilder } from "../../Drawing/StrokeBuilder";
-import { RGB } from "../../types";
+import { RGB, StrokePoint } from "../../types";
 import { SerializedTool, MyTool, TheirTool } from "../Tool";
 import { CreateEmitterClass, ProtectInstance } from "../../DesignPatterns/RemoteStateManagement";
+import { RenderLoop } from "../../Rendering/RenderLoop";
 
 export interface SerializedPen extends SerializedTool {
   readonly color: RGB;
@@ -13,6 +14,7 @@ export interface SerializedPen extends SerializedTool {
 }
 
 export class PenController {
+  loadPoints(newPoints: StrokePoint[]) {}
   update(x: number, y: number, pressure: number, timestamp: number): void {}
   setWidth(width: number): void {}
 }
@@ -33,6 +35,12 @@ export class TheirPen implements PenController, TheirTool {
     this.zIndex = zIndex;
 
     this.canvasManager = canvasManager;
+  }
+
+  loadPoints(newPoints: StrokePoint[]): void {
+    this.strokeBuilder = new StrokeBuilder(newPoints[0].timestamp, this.zIndex, this.color, this.width);
+    newPoints.forEach(p => this.strokeBuilder.push(p));
+    RenderLoop.scheduleRender();
   }
 
   update(x: number, y: number, pressure: number, timestamp: number): void {
