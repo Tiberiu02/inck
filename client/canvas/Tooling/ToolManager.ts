@@ -6,7 +6,7 @@ import { StrokeEraser } from "./Eraser";
 import { MyPen } from "./Pen/MyPen";
 import { MyTool } from "./Tool";
 import { MySelection } from "./Selection/MySelection";
-import { SerializedGraphic } from "../Drawing/Graphic";
+import { DeserializeGraphic, SerializedGraphic, TranslatePersistentGraphic } from "../Drawing/Graphic";
 
 export class ToolManager {
   private tool: MyTool;
@@ -49,12 +49,13 @@ export class ToolManager {
 
       if (obj.inckObject == "selection") {
         this.selectSelection();
-        const graphics = (obj.data as SerializedGraphic[]).map(s => ({
-          ...s,
-          id: Math.random().toString(36).slice(2),
-        }));
-        (this.tool as MySelection).loadSelection(graphics);
-        (this.tool as MySelection).translateToCenter();
+        const graphics = (obj.data as SerializedGraphic[])
+          .map(s => ({
+            ...s,
+            id: Math.random().toString(36).slice(2),
+          }))
+          .map(DeserializeGraphic);
+        (this.tool as MySelection).paste(graphics);
       }
     } catch (e) {}
   }

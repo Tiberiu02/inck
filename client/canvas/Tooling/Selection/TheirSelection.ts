@@ -36,6 +36,10 @@ export class TheirSelection extends SelectionBase implements SelectionController
     return ProtectInstance(this, SelectionController);
   }
 
+  loadSelection(selected: SerializedGraphic[]) {
+    this.updateSelection(selected.map(DeserializeGraphic));
+  }
+
   static deserialize(data: SerializedSelection, canvasManager: CanvasManager, collab: Collaborator): TheirSelection {
     const s = new TheirSelection(canvasManager);
     s.lassoColor = collab.getColor(0.8);

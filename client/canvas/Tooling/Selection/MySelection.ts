@@ -1,6 +1,13 @@
 import { CanvasManager } from "../../CanvasManager";
 import { Display } from "../../DeviceProps";
-import { DeserializeGraphic, SerializedGraphic, SerializeGraphic, Serializers } from "../../Drawing/Graphic";
+import {
+  DeserializeGraphic,
+  PersistentGraphic,
+  SerializedGraphic,
+  SerializeGraphic,
+  Serializers,
+  TranslatePersistentGraphic,
+} from "../../Drawing/Graphic";
 import { UniteRectangles } from "../../Math/Geometry";
 import { View } from "../../View/View";
 import { ActionStack } from "../ActionsStack";
@@ -17,6 +24,7 @@ import { Icons } from "../../UI/Icons";
 const UI_COLOR = [115, 160, 255];
 const OUTLINE_WIDTH = 0.05;
 const MENU_TOP_MARGIN = 0.15; //in
+const PADDING_SIZE = 0.4; // in
 
 export class MySelection extends SelectionBase implements MyTool {
   private actionStack: ActionStack;
@@ -26,7 +34,8 @@ export class MySelection extends SelectionBase implements MyTool {
   private remoteController: SelectionController;
   private keyHandler: (e: KeyboardEvent) => void;
   private menu: HTMLElement;
-  private shadowSize: number;
+  private padding: number;
+  private inUse: boolean;
 
   constructor(canvasManager: CanvasManager, actionStack: ActionStack, network: NetworkConnection) {
     super(canvasManager);
@@ -35,7 +44,8 @@ export class MySelection extends SelectionBase implements MyTool {
     this.actionStack = actionStack;
     this.network = network;
     this.ui = this.createUI();
-    this.shadowSize = SHADOW_SIZE;
+    this.padding = PADDING_SIZE;
+    this.inUse = true;
 
     this.network.setTool(this.serialize());
     this.remoteController = new EmitterSelection(network);
@@ -63,12 +73,49 @@ export class MySelection extends SelectionBase implements MyTool {
       if (this.selecting) {
         super.releaseLasso();
         this.remoteController.releaseLasso();
-
-        if (this.actionStack) {
-          this.selected.forEach(d => this.canvasManager.remove(d.id));
-        }
+        this.selected.forEach(d => this.canvasManager.remove(d.id));
       }
     }
+  }
+
+  updateSelection(newSelection: PersistentGraphic[]): void {
+    super.updateSelection(newSelection);
+    this.remoteController.loadSelection(newSelection.map(SerializeGraphic));
+  }
+
+  private registerAction(initialSelection: PersistentGraphic[]) {
+    const equal = (a: PersistentGraphic[], b: PersistentGraphic[]) =>
+      a.map(e => e.id).join(" ") == b.map(e => e.id).join(" ");
+
+    const newSelection = this.selected;
+    this.actionStack.push({
+      undo: () => {
+        if (equal(this.selected, newSelection)) {
+          this.updateSelection(initialSelection);
+          return true;
+        } else {
+          let success = false;
+          for (const e of initialSelection) {
+            if (this.canvasManager.remove(e.id)) {
+              this.canvasManager.add(e);
+              success = true;
+            }
+          }
+          return success;
+        }
+      },
+      redo: () => {
+        if (equal(this.selected, initialSelection)) {
+          this.updateSelection(newSelection);
+        } else {
+          for (const e of newSelection) {
+            if (this.canvasManager.remove(e.id)) {
+              this.canvasManager.add(e);
+            }
+          }
+        }
+      },
+    });
   }
 
   setTranslation({ x, y }: Vector2D): void {
@@ -77,8 +124,12 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   applyTranslation() {
+    const initialSelection = this.selected;
+
     super.applyTranslation();
     this.remoteController.applyTranslation();
+
+    this.registerAction(initialSelection);
   }
 
   setRotation(angle: number): void {
@@ -87,8 +138,12 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   applyRotation() {
+    const initialSelection = this.selected;
+
     super.applyRotation();
     this.remoteController.applyRotation();
+
+    this.registerAction(initialSelection);
   }
 
   setScaling(factor: number): void {
@@ -97,9 +152,13 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   applyScaling() {
-    this.shadowSize *= this.toScaleBy;
+    const initialSelection = this.selected;
+
+    this.padding *= this.toScaleBy;
     super.applyScaling();
     this.remoteController.applyScaling();
+
+    this.registerAction(initialSelection);
   }
 
   render(): void {
@@ -113,7 +172,7 @@ export class MySelection extends SelectionBase implements MyTool {
 
       const [x1, y1] = View.getScreenCoords(cx - sw * this.toScaleBy + x, cy - sh * this.toScaleBy + y);
       const [x2, y2] = View.getScreenCoords(cx + sw * this.toScaleBy + x, cy + sh * this.toScaleBy + y);
-      const w = this.shadowSize * Display.DPI * 2 * this.toScaleBy;
+      const w = this.padding * Display.DPI * this.toScaleBy;
 
       this.ui.style.left = `${x1 - w}px`;
       this.ui.style.top = `${y1 - w}px`;
@@ -130,10 +189,11 @@ export class MySelection extends SelectionBase implements MyTool {
     this.deselect();
     window.removeEventListener("keydown", this.keyHandler);
     this.ui.remove();
+    this.inUse = false;
   }
 
   clearSelection(): void {
-    this.shadowSize = SHADOW_SIZE;
+    this.padding = PADDING_SIZE;
     super.clearSelection();
   }
 
@@ -144,6 +204,17 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   deleteSelection(): void {
+    const selection = this.selected;
+    this.actionStack.push({
+      undo: () => {
+        selection.forEach(e => this.canvasManager.add(e));
+        return true;
+      },
+      redo: () => {
+        selection.forEach(e => this.canvasManager.remove(e.id));
+      },
+    });
+
     this.clearSelection();
     this.remoteController.clearSelection();
   }
@@ -162,14 +233,33 @@ export class MySelection extends SelectionBase implements MyTool {
     this.deleteSelection();
   }
 
-  loadSelection(selected: SerializedGraphic[]) {
-    super.loadSelection(selected);
-    this.remoteController.loadSelection(selected);
-  }
-
   translateToCenter() {
     this.setTranslation(V2.sub(View.center, this.selectionCenter));
     this.applyTranslation();
+  }
+
+  paste(selection: PersistentGraphic[]) {
+    this.selected = selection;
+    this.computeSelectionCenter();
+
+    const d = V2.sub(View.center, this.selectionCenter);
+    selection = selection.map(s => TranslatePersistentGraphic(s, d.x, d.y));
+
+    this.updateSelection(selection);
+
+    this.actionStack.push({
+      undo: () => {
+        if (this.selected == selection) {
+          this.deleteSelection();
+          return true;
+        } else {
+          return selection.map(e => this.canvasManager.remove(e.id)).every(s => s);
+        }
+      },
+      redo: () => {
+        selection.forEach(e => this.canvasManager.add(e));
+      },
+    });
   }
 
   serialize(): SerializedSelection {

@@ -103,7 +103,15 @@ export class SelectionBase {
 
     // Compute selection
     const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
-    this.selected = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
+    const newSelection = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
+
+    this.updateSelection(newSelection);
+
+    RenderLoop.scheduleRender();
+  }
+
+  updateSelection(newSelection: PersistentGraphic[]) {
+    this.selected = newSelection;
 
     if (this.selected.length) {
       this.computeSelectionCenter();
@@ -155,12 +163,6 @@ export class SelectionBase {
     this.active = this.active.map(d => ScaleGraphic(d, this.toScaleBy, this.selectionCenter));
     this.toScaleBy = 1;
     RenderLoop.scheduleRender();
-  }
-
-  loadSelection(selected: SerializedGraphic[]) {
-    this.selected = selected.map(DeserializeGraphic);
-    this.computeSelectionCenter();
-    this.computeShadows();
   }
 
   render() {

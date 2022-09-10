@@ -35,9 +35,9 @@ Open your browser and go to https://localhost:3080.
   * [ ] Split Base Canvas Manager into GL & GraphicsContainer
   * How to keep active & static strokes layered?
   * How to optimize GL calls?
-* [ ] use pointer capture in scrollbar
-* [ ] selection/paste undo
-* [ ] highlighter selection highlight --> too light
+* [X] selection/paste undo
+* [-] use pointer capture in scrollbar (abandoned)
+* [ ] highlighter shadow when selected --> too light
 * [ ] geometry polyline overlap not accounting for radius --> hilighter might not get selected
 * [ ] analytics
 
@@ -188,6 +188,7 @@ When professor opens lecture notes:
   * [X] Draw rotation point
   * [X] Detect drag on control points
   * [X] Update selection
+* [X] Undo/redo
 
 ### PDF import
 * [X] Render PDF to canvas

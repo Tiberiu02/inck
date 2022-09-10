@@ -94,6 +94,7 @@ export class PolyLine implements Geometry {
         y2: this.points[i - 1].y,
       };
 
+      // TODO: Replace by line intersects line
       if (RectangleIntersectsRectangle(rect, LineBoundingBox(line))) {
         return true;
       }

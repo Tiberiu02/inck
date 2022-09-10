@@ -1,3 +1,5 @@
+import { RenderLoop } from "../Rendering/RenderLoop";
+
 export interface Action {
   undo: () => boolean;
   redo: () => void;
