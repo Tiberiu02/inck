@@ -1,20 +1,20 @@
+import Script from "next/script";
+import { useEffect } from "react";
+
 export function AnalyticsScript() {
   /* Google tag (gtag.js) */
-  return (
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-M75NLE2CYF"
-      onLoad={() => {
-        window.dataLayer = window.dataLayer || [];
-        function gtag() {
-          dataLayer.push(arguments);
-        }
-        gtag("js", new Date());
+  useEffect(() => {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () {
+      dataLayer.push(arguments);
+    };
 
-        gtag("config", "G-M75NLE2CYF");
-      }}
-    ></script>
-  );
+    gtag("js", new Date());
+
+    gtag("config", "G-M75NLE2CYF");
+  }, []);
+
+  return <Script async src="https://www.googletagmanager.com/gtag/js?id=G-M75NLE2CYF" />;
 }
 
 export function TrackSignUp(email) {
