@@ -68,4 +68,12 @@ export class V2 {
     const a = Math.acos(V2.dot(V2.normalize(u), V2.normalize(v)));
     return V2.cross(u, v) > 0 ? a : -a;
   }
+
+  static get Ox() {
+    return new Vector2D(1, 0);
+  }
+
+  static get Oy() {
+    return new Vector2D(0, 1);
+  }
 }
