@@ -11,7 +11,7 @@ function OpenNoteBtn() {
     <form
       onSubmit={e => {
         e.preventDefault();
-        if (noteId) window.location = "/free-note/" + noteId;
+        if (noteId) window.location = "/note/" + noteId;
       }}
       className="flex flex-row gap-4 items-center justify-between border-2 border-primary bg-white rounded-xl w-full"
     >
@@ -38,7 +38,7 @@ function CreateNoteBtn({ className }) {
     .join("");
   return (
     <button
-      onClick={() => (window.location = "/free-note/" + id)}
+      onClick={() => (window.location = "/note/" + id)}
       className={`${className} max-w-lg flex flex-row items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl w-full`}
     >
       Create new note
@@ -240,7 +240,7 @@ export default function LandingPage() {
             <p className="text-2xl mt-4 text-gray-900 italic mb-2">Still not convinced?</p>
             <h1 className="text-6xl text-center">Try it out</h1>
             <FaArrowDown className="text-5xl text-primary mt-12 mb-4" />
-            <iframe className="w-full h-[80vw] sm:h-[50vw] rounded-xl shadow-lg" src="/free-note/demo" />
+            <iframe className="w-full h-[80vw] sm:h-[50vw] rounded-xl shadow-lg" src="/note/demo" />
           </div>
 
           <p className="mt-20 -mb-20 py-5">© Inck team 2022</p>

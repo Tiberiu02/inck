@@ -21,7 +21,13 @@ const noteSchema = new mongoose.Schema({
   id: { type: String },  // URL identifier
   strokes: { type: Array, default: [] },
   creationDate: { type: Date, default: Date.now() },
-  isFreeNote: { type: Boolean, default: true }
+  isFreeNote: { type: Boolean, default: true },
+  backgroundType: {type: String, default: "blank"},
+  backgroundOptions: {type: Object, default: {}}
+  /*
+  * Options:
+  * fileHash: hash of pdf file to request (used as url in frontend)
+  */
 })
 
 

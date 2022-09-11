@@ -24,7 +24,7 @@ import {
 } from "react-icons/fa";
 import Cookies from "universal-cookie";
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
-import GetApiPath from "../components/GetApiPath";
+import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
 import Link from "next/link";
 
 function DirListing({
@@ -90,9 +90,8 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
     >
       {showSelect && (
         <div
-          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
-            isSelected ? "text-slate-800" : "text-white"
-          } text-center`}
+          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
+            } text-center`}
         >
           x
         </div>
@@ -115,9 +114,8 @@ function Book({ title, onClick, showSelect = false, isSelected = false }) {
       <div className="realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
         {showSelect && (
           <div
-            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
-              isSelected ? "text-slate-800" : "text-white"
-            } text-center`}
+            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
+              } text-center`}
           >
             x
           </div>
@@ -171,15 +169,13 @@ function MobileMenu() {
         <FaBars className="text-3xl text-gray-500" />
       </button>
       <div
-        className={`fixed h-screen w-screen bg-black z-10 ${
-          open ? "opacity-50" : "opacity-0 pointer-events-none"
-        } transition-all duration-200 top-0 left-0`}
+        className={`fixed h-screen w-screen bg-black z-10 ${open ? "opacity-50" : "opacity-0 pointer-events-none"
+          } transition-all duration-200 top-0 left-0`}
         onClick={toggleOpen}
       ></div>
       <div
-        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        } transition-all duration-200 top-0 left-0 overflow-scroll`}
+        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${open ? "translate-x-0" : "-translate-x-full"
+          } transition-all duration-200 top-0 left-0 overflow-scroll`}
       >
         <FileTree className="pt-10 pb-52 w-full" />
       </div>
@@ -329,9 +325,8 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
         <div
           onDoubleClick={onDoubleClick}
           onClick={onClick}
-          className={`flex items-center hover:bg-gray-200 ${
-            target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
-          } text-md`}
+          className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
+            } text-md`}
         >
           {prefix} <Folder className="h-4 w-4" /> &nbsp;{" "}
           <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
@@ -389,9 +384,8 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
           <button
             disabled={!canMove}
             onClick={onMoveClick}
-            className={` ${
-              canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
-            } text-white w-fit px-4 py-1 rounded-full self-center`}
+            className={` ${canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
+              } text-white w-fit px-4 py-1 rounded-full self-center`}
           >
             Move files
           </button>
@@ -552,9 +546,8 @@ function PDFDropZone({ setPdfContent, setFileSize }) {
     <div
       {...getRootProps({
         className: `rounded-md p-3 border-dashed border-slate-500 border-2 text-sm h-16 italic 
-                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${
-          isDragActive ? "bg-slate-100" : ""
-        }
+                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${isDragActive ? "bg-slate-100" : ""
+          }
                   
                   `,
       })}
@@ -565,8 +558,7 @@ function PDFDropZone({ setPdfContent, setFileSize }) {
   );
 }
 
-function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess }) {
-  const [pdfContent, setPdfContent] = useState(null);
+function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPdfContent }) {
   const [fileSize, setFileSize] = useState(0);
   const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
 
@@ -603,6 +595,10 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess }) {
 }
 
 function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, importNoteURL, setImportNoteURL }) {
+  return <div
+    className="flex flex-col italic">
+    Soon
+  </div>
   return (
     <div>
       <div className="flex flex-col gap-6">
@@ -701,7 +697,26 @@ async function newFolderSubmit(name, parentDir, setFiles) {
 }
 
 async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, setFiles) {
-  alert("Imported PDF");
+
+  if (!pdfFileContent) {
+    return
+  }
+  // Add fields to formData
+  pdfFileContent.set("name", name)
+  pdfFileContent.set("parentDir", parentDir)
+  pdfFileContent.set("token", getAuthToken())
+  pdfFileContent.set("defaultAccess", publicAccess)
+
+  const response = await fetch(GetApiPath("/api/pdf/receive-pdf"), {
+    method: "post",
+    body: pdfFileContent,
+  });
+  const jsonReply = await response.json();
+
+  if (jsonReply.status == "success") {
+    const filesDict = processFilesData(jsonReply.files);
+    await setFiles(filesDict);
+  }
 }
 
 async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles) {
@@ -711,7 +726,7 @@ async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL
 async function createModalSubmit(state, name, parentDir, publicAccess, publicNoteURL, pdfFileContent, setFiles) {
   if (state == "note") return newNoteSubmit(name, parentDir, publicAccess, setFiles);
   else if (state == "folder") return newFolderSubmit(name, parentDir, setFiles);
-  else if (state == "import-pdf") return importPDFSubmit(name, publicAccess, pdfFileContent);
+  else if (state == "import-pdf") return importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, setFiles);
   else if (state == "import-note") return importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles);
   else alert("Invalid state");
 }
@@ -732,7 +747,7 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
 
   const submit = async () => {
     const parentDir = path.at(-1);
-    const result = await createModalSubmit(
+    const status = await createModalSubmit(
       modalState,
       name,
       parentDir,
@@ -778,6 +793,7 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
           setName={setName}
           publicAccess={publicAccess}
           setPublicAccess={setPublicAccess}
+          setPdfContent={setPdfContent}
         />
       );
       break;
@@ -1059,7 +1075,7 @@ export default function Explorer() {
     fileClickActionFactory = explorerItemClickActionFactory;
   } else {
     bookClickActionFactory = (f, idx) => () => setPath(path.concat([f._id]));
-    fileClickActionFactory = (f, idx) => () => window.open("/auth-note/" + f.fileId, "_blank");
+    fileClickActionFactory = (f, idx) => () => window.open("/note/" + f.fileId, "_blank");
   }
 
   const drawExplorerItem = (f, idx, _) => {

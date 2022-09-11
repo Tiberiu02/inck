@@ -14,15 +14,10 @@ export class NetworkConnection {
   private canWrite: boolean;
 
   constructor() {
-    const pathname = window.location.pathname;
-    const authWloc = pathname.match(/\/auth-note\/([\w\d_]+)/);
-
-    const isAuth = (authWloc && authWloc[1].trim() != "") || false;
     this.canWrite = false;
     this.socket = io(`${window.location.host.split(":")[0]}:${SERVER_PORT}`, {
       query: {
         authToken: getAuthToken(),
-        isAuthSocket: isAuth,
       },
     });
 

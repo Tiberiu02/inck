@@ -8,6 +8,7 @@ export const READ_WRITE = "read_write"
 export const READ_ONLY = "read_only"
 
 const VALID_VISIBILITIES = [PRIVATE, READ_ONLY, READ_WRITE]
+export const NEW_FILES_NAME_LENGTH = 6
 
 export async function getAccountDetailsFromToken(req, res) {
   try {
@@ -67,7 +68,7 @@ export async function getThrashedFilesFn(req, res) {
 
 function generateRandomString(n) {
   let randomString = '';
-  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
   for (let i = 0; i < n; i++) {
     randomString += characters.charAt(Math.floor(Math.random() * characters.length));
@@ -75,7 +76,7 @@ function generateRandomString(n) {
   return randomString;
 }
 
-async function generateNewFileName(n) {
+export async function generateNewFileName(n) {
 
   let name = generateRandomString(n)
 
@@ -99,13 +100,16 @@ async function generateNewFileName(n) {
 
 }
 
-async function insertNewNoteInDB(
-  type,
+export async function insertNewNoteInDB({
+  type,  // folder or note
   name,
   parentDir,
   owner,
   fileId,
-  defaultAccess) {
+  defaultAccess,
+  backgroundType = "blank",  // for now blank, pdf, in the future other things as well
+  backgroundOptions = {},
+}) {
   const filePromise = FileModel.create({
     type,
     name,
@@ -118,6 +122,8 @@ async function insertNewNoteInDB(
   const notePromise = NoteModel.create({
     id: fileId,
     isFreeNote: false,
+    backgroundType,
+    backgroundOptions,
   })
 
   await filePromise
@@ -134,15 +140,16 @@ export async function createFileFn(req, res) {
     }
 
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
-    const newFileId = await generateNewFileName(12)
+    const newFileId = await generateNewFileName(NEW_FILES_NAME_LENGTH)
 
-    await insertNewNoteInDB(
-      req.body.type,
-      req.body.name,
-      req.body.parentDir,
-      token.userId,
-      newFileId,
-      req.body.options && req.body.options.publicAccess
+    await insertNewNoteInDB({
+      type: req.body.type,
+      name: req.body.name,
+      parentDir: req.body.parentDir,
+      owner: token.userId,
+      fileId: newFileId,
+      defaultAccess: req.body.options && req.body.options.publicAccess,
+    }
     )
 
     const allFiles = await FileModel.find({
@@ -237,7 +244,7 @@ export async function importFreeNote(req, res) {
     console.log(name)
     console.log(visibility)
 
-    const wloc = freeNoteURL.match(/\/free-note\/([\w\d_]+)/)
+    const wloc = freeNoteURL.match(/\/note\/([\w\d_]+)/)
 
     if (wloc == null || wloc.length != 2) {
       res.status(400).send({ error: "Unable to import free note: free note does not exist" })
@@ -245,7 +252,7 @@ export async function importFreeNote(req, res) {
     const freeNoteId = wloc[1]
 
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
-    const newFileId = await generateNewFileName(12)
+    const newFileId = await generateNewFileName(NEW_FILES_NAME_LENGTH)
 
     // Get free note
     const freeNoteData = await NoteModel.findOne({
