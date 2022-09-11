@@ -1,6 +1,6 @@
 import { CanvasManager } from "./CanvasManager";
 import { PersistentGraphic, Graphic, GraphicTypes } from "./Drawing/Graphic";
-import * as PDFJS from "pdfjs-dist";
+import * as PDFJS from "pdfjs-dist/legacy/build/pdf";
 import Profiler from "./Profiler";
 import { ImageGraphic } from "./Drawing/ImageGraphic";
 import { RenderLoop } from "./Rendering/RenderLoop";
