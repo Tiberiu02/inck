@@ -25,8 +25,7 @@ export class GL {
   imageProgram: WebGLProgram;
 
   private mainBuffer: WebGLBuffer;
-  private texposBuffer: WebGLBuffer;
-  private texcoordBuffer: WebGLBuffer;
+  private texBuffer: WebGLBuffer;
 
   private layerTex: WebGLTexture;
   private layerFb: WebGLFramebuffer;
@@ -62,20 +61,12 @@ export class GL {
 
   private initTexBuffers() {
     // Create a buffer.
-    this.texposBuffer = this.ctx.createBuffer();
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texposBuffer);
+    this.texBuffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texBuffer);
 
     // Put a unit quad in the buffer
-    const positions = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
+    const positions = [0, 0, 0, 1, 1, 0, 1, 1];
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
-
-    // Create a buffer for texture coords
-    this.texcoordBuffer = this.ctx.createBuffer();
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texcoordBuffer);
-
-    // Put texcoords in the buffer
-    const texcoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1];
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(texcoords), this.ctx.STATIC_DRAW);
   }
 
   private initLayerTex(width: number, height: number) {
@@ -242,56 +233,71 @@ export class GL {
   renderVector(array: number[], uniforms: any): void {
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.mainBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
-    GL.setProgram(this.ctx, this.mainProgram, uniforms);
+
+    this.ctx.useProgram(this.mainProgram);
+
+    const stride = ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT;
+
+    // Set position attribute
+    const positionLocation = this.ctx.getAttribLocation(this.mainProgram, "a_Position");
+    this.ctx.vertexAttribPointer(positionLocation, 2, this.ctx.FLOAT, false, stride, 0);
+    this.ctx.enableVertexAttribArray(positionLocation);
+
+    // Set color attribute
+    const colorLocation = this.ctx.getAttribLocation(this.mainProgram, "a_Color");
+    this.ctx.vertexAttribPointer(colorLocation, 4, this.ctx.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+    this.ctx.enableVertexAttribArray(colorLocation);
+
+    // Set matrix uniform
+    const matrixLocation = this.ctx.getUniformLocation(this.mainProgram, "u_Matrix");
+    this.ctx.uniformMatrix4fv(matrixLocation, false, uniforms.u_Matrix);
+
     this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
   }
 
   renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number, opacity: number = 1) {
     console.log(`Drawing texture at (${x}px, ${y}px) of size (${width}px, ${height}px)`);
 
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, tex);
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texBuffer);
+    const array = [0, 0, 0, 1, 1, 0, 1, 1];
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
 
-    // Tell WebGL to use our shader program pair
+    // Set program
     this.ctx.useProgram(this.imageProgram);
 
-    // look up where the vertex data needs to go.
-    var positionLocation = this.ctx.getAttribLocation(this.imageProgram, "a_position");
-    var texcoordLocation = this.ctx.getAttribLocation(this.imageProgram, "a_texcoord");
-
-    // lookup uniforms
-    var matrixLocation = this.ctx.getUniformLocation(this.imageProgram, "u_matrix");
-    var textureLocation = this.ctx.getUniformLocation(this.imageProgram, "u_texture");
-    var alphaLocation = this.ctx.getUniformLocation(this.imageProgram, "u_alpha");
-
-    // Setup the attributes to pull data from our buffers
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texposBuffer);
+    // Set position attribute
+    const positionLocation = this.ctx.getAttribLocation(this.imageProgram, "a_Position");
+    this.ctx.vertexAttribPointer(positionLocation, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(positionLocation);
-    this.ctx.vertexAttribPointer(positionLocation, 2, this.ctx.FLOAT, false, 0, 0);
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texcoordBuffer);
-    this.ctx.enableVertexAttribArray(texcoordLocation);
-    this.ctx.vertexAttribPointer(texcoordLocation, 2, this.ctx.FLOAT, false, 0, 0);
 
-    // this matrix will convert from pixels to clip space
-    let matrix = m4.orthographic(0, this.ctx.canvas.width, this.ctx.canvas.height, 0, -1, 1);
+    // Set matrix uniform
+    const matrixLocation = this.ctx.getUniformLocation(this.imageProgram, "u_Matrix");
+    {
+      // this matrix will convert from pixels to clip space
+      let matrix = m4.orthographic(0, this.ctx.canvas.width, this.ctx.canvas.height, 0, -1, 1);
 
-    // this matrix will translate our quad to x, y
-    matrix = m4.translate(matrix, x, y, 0);
+      // this matrix will translate our quad to x, y
+      matrix = m4.translate(matrix, x, y, 0);
 
-    // this matrix will scale our 1 unit quad
-    // from 1 unit to width, height units
-    matrix = m4.scale(matrix, width, height, 1);
+      // this matrix will scale our 1 unit quad
+      // from 1 unit to width, height units
+      matrix = m4.scale(matrix, width, height, 1);
 
-    // Set the matrix.
-    this.ctx.uniformMatrix4fv(matrixLocation, false, matrix);
+      // Set the matrix.
+      this.ctx.uniformMatrix4fv(matrixLocation, false, matrix);
+    }
 
     // Tell the shader to get the texture from texture unit 0
+    const textureLocation = this.ctx.getUniformLocation(this.imageProgram, "u_Texture");
     this.ctx.uniform1i(textureLocation, 0);
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, tex);
 
     // Set texture opacity
+    const alphaLocation = this.ctx.getUniformLocation(this.imageProgram, "u_Alpha");
     this.ctx.uniform1f(alphaLocation, opacity);
 
-    // draw the quad (2 triangles, 6 vertices)
-    this.ctx.drawArrays(this.ctx.TRIANGLES, 0, 6);
+    // draw the quad (2 triangles, 4 vertices)
+    this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, 4);
   }
 
   clear() {
