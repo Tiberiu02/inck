@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FaPen, FaGlobe, FaCar, FaShippingFast, FaPlane, FaMobileAlt, FaArrowDown } from "react-icons/fa";
 import { MdOutlineAccountCircle } from "react-icons/md";
 import React, { useState } from "react";
+import Image from "next/image";
 
 function OpenNoteBtn() {
   const [noteId, setNoteId] = useState("");
@@ -71,6 +72,54 @@ function Item({ title, text, Icon }) {
   );
 }
 
+function Roadmap({ currentStage, stages }) {
+  return (
+    <div className="w-full p-10 overflow-auto no-scrollbar">
+      <div className="flex flex-row p-10 pl-12">
+        {stages.map(([title, ...features], ix) => {
+          const stageId = ix + 1;
+          const stageSuf = ["st", "nd", "rd"][ix % 10] || "th";
+          const status = stageId == currentStage ? 1 : stageId < currentStage ? 0 : 2;
+          const lastStage = stageId == stages.length;
+
+          const bgColor = ["bg-primary", "bg-yellow-500", "bg-gray-400"][status];
+          const textColor = ["text-primary", "text-yellow-500", "text-gray-400"][status];
+
+          const iconName = ["done", "magic_button", "schedule"][status];
+          const icon = (
+            <span class={`material-symbols-outlined mr-2 mt-1 ${textColor} rounded-full text-md`}>{iconName}</span>
+          );
+
+          return (
+            <div className="flex flex-col">
+              <div className="flex flex-row w-80 items-center">
+                <div
+                  className={`${bgColor} rounded-full justify-self-center text-white w-full max-w-[4rem] h-16 flex items-center justify-center`}
+                >
+                  <span class="material-symbols-outlined text-4xl">{iconName}</span>
+                </div>
+                <div className={`h-2 w-full justify-self-center ${bgColor} -ml-2 mr-2 rounded-full`}></div>
+              </div>
+
+              <div className={`mt-5 mr-10 ${!lastStage && "mb-10"}`}>
+                <div className="text-xl text-gray-400">{stageId + stageSuf} stage</div>
+                <div className="text-4xl">{title}</div>
+                <ul className="text-lg mt-4">
+                  {features.map(feature => (
+                    <li className="flex items-center leading-none mt-1">
+                      {icon} {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   return (
     <div>
@@ -120,6 +169,62 @@ export default function LandingPage() {
               <Item title="Access from anywhere" Icon={FaPlane} text="Take and review notes wherever you are." />
               <Item title="Cross-platform" Icon={FaMobileAlt} text="All you need is a web browser." />
             </div>
+          </div>
+        </div>
+
+        <div className="font-round w-full flex flex-col items-center py-32 px-10 justify-center bg-gray-100">
+          <div className="flex flex-col items-center w-[80vw] mb-20">
+            <p className="text-5xl text-black mb-2">Made at EPFL</p>
+            <p className="text-2xl text-gray-700 italic">For students, by students</p>
+          </div>
+
+          <img className="max-w-lg w-full drop-shadow-lg" src="/Logo_EPFL.svg" />
+        </div>
+
+        <div className="font-round w-full flex flex-col items-center py-20 min-h-[100vh] justify-center bg-white drop-shadow-md-vertical border-t-gray-100">
+          <div className="flex flex-col items-center w-full">
+            <h1 className="text-5xl text-center mb-20">Roadmap</h1>
+            <Roadmap
+              currentStage={3}
+              stages={[
+                ["Prototype", "Simple web-based note taking app", "Infinite scrollable canvas", "Full screen mode"],
+                [
+                  "MVP",
+                  "Ultra-smooth writing experience",
+                  "Live collaboration",
+                  "Tool wheel, more pens & colors",
+                  "Pen-following menu",
+                  "Selection Tool",
+                ],
+                [
+                  "Beta release",
+                  "PDF import",
+                  "User accounts",
+                  "File Explorer",
+                  "Optimized tool menu",
+                  "Shape recognition",
+                ],
+                ["Lecture Mode", "Lecture mode for professors", "Real time questions", "Picture-in-picture notes"],
+                ["Progressive Web App", "Ability to save the app locally", "Offline capabilities"],
+                [
+                  "More Features",
+                  "Typed text input",
+                  "Image input",
+                  "Lecture voice recording",
+                  "PDF export",
+                  "Hyperlinks",
+                  "Smart gestures",
+                  "etc.",
+                ],
+                [
+                  "Ultimate Note-Taking App",
+                  "Reduced input latency through pen prediction",
+                  "Text recognition, automatic table of content",
+                  "Moodle integration",
+                ],
+                ["More than hand written notes", "Desktop toolbar", "Shapes, arrows", "Sticky notes", "Tables"],
+              ]}
+            />
           </div>
         </div>
 
