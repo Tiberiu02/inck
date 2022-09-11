@@ -29,7 +29,7 @@ export class PdfCanvasManager implements CanvasManager {
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
     this.pdf = await PDFJS.getDocument(this.url).promise;
 
-    const scale = 3;
+    const scale = 5;
     const padding = 0.01; // %w
 
     let top = 0;

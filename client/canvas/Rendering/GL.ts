@@ -247,6 +247,8 @@ export class GL {
   }
 
   renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number, opacity: number = 1) {
+    console.log(`Drawing texture at (${x}px, ${y}px) of size (${width}px, ${height}px)`);
+
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, tex);
 
     // Tell WebGL to use our shader program pair
