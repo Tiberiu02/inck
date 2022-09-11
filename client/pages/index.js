@@ -75,7 +75,7 @@ function Item({ title, text, Icon }) {
 function Roadmap({ currentStage, stages }) {
   return (
     <div className="w-full p-10 overflow-auto no-scrollbar">
-      <div className="flex flex-row p-10 pl-12">
+      <div className="flex flex-row p-10 pl-12 sm:grid sm:grid-cols-3 lg:grid-cols-4 sm:gap-y-20 sm:w-full">
         {stages.map(([title, ...features], ix) => {
           const stageId = ix + 1;
           const stageSuf = ["st", "nd", "rd"][ix % 10] || "th";
@@ -87,26 +87,30 @@ function Roadmap({ currentStage, stages }) {
 
           const iconName = ["done", "magic_button", "schedule"][status];
           const icon = (
-            <span class={`material-symbols-outlined mr-2 mt-1 ${textColor} rounded-full text-md`}>{iconName}</span>
+            <span className={`material-symbols-outlined mr-2 mt-1 ${textColor} rounded-full text-md`}>{iconName}</span>
           );
 
           return (
-            <div className="flex flex-col">
-              <div className="flex flex-row w-80 items-center">
+            <div className="flex flex-col basis-80 shrink-0 sm:w-full" key={ix}>
+              <div className="flex flex-row w-full items-center">
                 <div
                   className={`${bgColor} rounded-full justify-self-center text-white w-full max-w-[4rem] h-16 flex items-center justify-center`}
                 >
-                  <span class="material-symbols-outlined text-4xl">{iconName}</span>
+                  <span className="material-symbols-outlined text-4xl">{iconName}</span>
                 </div>
-                <div className={`h-2 w-full justify-self-center ${bgColor} -ml-2 mr-2 rounded-full`}></div>
+                <div
+                  className={`h-2 w-full justify-self-center ${bgColor} -ml-2 mr-2 text-opacity-100 sm:text-opacity-0 rounded-full flex items-center justify-center text-7xl ${textColor}`}
+                >
+                  &gt;
+                </div>
               </div>
 
               <div className={`mt-5 mr-10 ${!lastStage && "mb-10"}`}>
                 <div className="text-xl text-gray-400">{stageId + stageSuf} stage</div>
                 <div className="text-4xl">{title}</div>
                 <ul className="text-lg mt-4">
-                  {features.map(feature => (
-                    <li className="flex items-center leading-none mt-1">
+                  {features.map((feature, ix) => (
+                    <li className="flex items-center leading-none mt-1" key={ix}>
                       {icon} {feature}
                     </li>
                   ))}
@@ -134,7 +138,7 @@ export default function LandingPage() {
           <div className="lg:max-w-4xl xl:max-w-6xl 2xl:max-w-7xl w-full">
             <div className="relative max-w-fit">
               <div className="absolute -inset-4 bg-white blur-lg"></div>
-              <p className="text-6xl sm:text-8xl font-cursive blur-0 font-bold">Welcome to Inck</p>
+              <p className="text-6xl sm:text-8xl font-cursive blur-0 font-bold">Welcome to Inck!</p>
             </div>
             <div className="h-2 w-20 bg-primary rounded-xl my-10" />
             <div className="relative max-w-fit">
@@ -173,12 +177,15 @@ export default function LandingPage() {
         </div>
 
         <div className="font-round w-full flex flex-col items-center py-32 px-10 justify-center bg-gray-100">
-          <div className="flex flex-col items-center w-[80vw] mb-20">
-            <p className="text-5xl text-black mb-2">Made at EPFL</p>
+          <div className="flex flex-col items-center w-[80vw] mb-20 text-center">
+            <p className="text-4xl sm:text-5xl text-black mb-2">Made at EPFL</p>
             <p className="text-2xl text-gray-700 italic">For students, by students</p>
           </div>
 
-          <img className="max-w-lg w-full drop-shadow-lg" src="/Logo_EPFL.svg" />
+          <picture className="max-w-lg w-full">
+            <source srcSet="/Logo_EPFL.svg" type="image/svg" />
+            <img className="w-full drop-shadow-lg" src="/Logo_EPFL.svg" alt="EPFL logo" />
+          </picture>
         </div>
 
         <div className="font-round w-full flex flex-col items-center py-20 min-h-[100vh] justify-center bg-white drop-shadow-md-vertical border-t-gray-100">
