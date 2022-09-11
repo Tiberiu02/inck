@@ -29,12 +29,13 @@ export class PdfCanvasManager implements CanvasManager {
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
     this.pdf = await PDFJS.getDocument(this.url).promise;
 
-    const scale = 5;
+    const scale = 3;
     const padding = 0.01; // %w
 
     let top = 0;
     for (let currentPage = 1; currentPage <= this.pdf.numPages; currentPage++) {
       const pixels = await RenderPage(this.pdf, currentPage, scale);
+      console.log(pixels.height, pixels.width);
       const image = {
         type: GraphicTypes.IMAGE,
         zIndex: -1,
