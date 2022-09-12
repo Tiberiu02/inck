@@ -14,6 +14,7 @@ import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
 import { PdfCanvasManager } from "./PDF";
 import { Vector2D } from "./Math/V2";
+import { postFetchAPI } from "../components/GetApiPath.js"
 
 export default class App {
   private canvasManager: CanvasManager;
@@ -58,14 +59,9 @@ export default class App {
     this.canvasManager = new NetworkCanvasManager(this.canvasManager, this.network);
 
     // PDF import
-    const wloc = window.location.pathname.match(/\/free-note\/([\w\d_]+)/);
+    const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/);
     const docId = (wloc && wloc[1]) || "";
-    if (docId == "pdf") {
-      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo.pdf", yMax);
-    }
-    if (docId == "pdf2") {
-      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo2.pdf", yMax);
-    }
+    this.checkBackground(docId, yMax)
 
     // Pointer tracker
     this.pointerTracker = new PointerTracker();
@@ -89,7 +85,7 @@ export default class App {
     RenderLoop.onRender(() => this.canvasManager.render());
   }
 
-  handlePenEvent(e: PenEvent) {
+  async handlePenEvent(e: PenEvent) {
     e.preventDefault(); // hide touch callout on iOS
 
     // Hide tool wheel if open
@@ -99,5 +95,33 @@ export default class App {
 
     this.toolManager.update(x, y, e.pressure, e.timeStamp);
     this.caddie.updatePointer(e.pressure ? new Vector2D(e.x, e.y) : null);
+  }
+
+  checkBackground(docId: String, yMax: MutableObservableProperty<number>) {
+
+    if (docId == "pdf") {
+      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo.pdf", yMax);
+    }
+    else if (docId == "pdf2") {
+      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo2.pdf", yMax);
+    }
+    else {
+      console.log("fetching")
+      postFetchAPI(
+        "/api/pdf/serve-pdf", {
+        docId
+      }).then(async response => {
+        if (response.status == "success" &&
+          response.backgroundType == "pdf") {
+            this.canvasManager = new PdfCanvasManager(
+              this.canvasManager,
+              response.pdfURL,
+              yMax
+            )
+        } else {
+          console.log("error while fetching background:")
+        }
+      })
+    }
   }
 }

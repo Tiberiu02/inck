@@ -6,15 +6,16 @@ import cookieParser from "cookie-parser";
 import { Server as SocketServer } from "socket.io";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import fileupload from 'express-fileupload'
 
 import dotend from "dotenv";
 dotend.config();
 
-import { UpdateDB, QueryDB, QueryAllDB, InsertDB } from "./Database.mjs";
 import { register as registerFn, login as loginFn, initializeResetPasswordUsingEmail, initializeResetPasswordUsingToken, changePasswordEndpoint } from "./Authentication.mjs";
 import { createFileFn, editFileFn, getAccountDetailsFromToken, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
 import { disconnect, newStroke, removeStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets.mjs";
 import { NoteModel } from "./Models.mjs";
+import { receivePDF, servePDF } from "./PDFAPI.mjs";
 
 const MILLIS_PER_WEEK = 604800000;
 const MILLIS_PER_DAY = 86400000
@@ -68,6 +69,7 @@ class Server {
 
   registerEndpoints() {
     const jsonBodyParser = bodyParser.json();
+    const fileuploadParser = fileupload()
     this.app.post("/api/auth/register", jsonBodyParser, registerFn);
     this.app.post("/api/auth/login", jsonBodyParser, loginFn);
 
@@ -83,6 +85,10 @@ class Server {
     this.app.post("/api/auth/reset-password-with-token", jsonBodyParser, initializeResetPasswordUsingToken)
     this.app.post("/api/auth/reset-password-with-email", jsonBodyParser, initializeResetPasswordUsingEmail)
     this.app.post("/api/auth/change-password", jsonBodyParser, changePasswordEndpoint)
+
+    // PDF loading/serving stuff
+    this.app.post("/api/pdf/receive-pdf", fileuploadParser, receivePDF)
+    this.app.post("/api/pdf/serve-pdf", jsonBodyParser, servePDF)
   }
 
   startSocketServer() {
@@ -91,7 +97,7 @@ class Server {
 
     this.io.on("connection", async (socket) => {
       console.log("Connection incoming")
-      const { authToken, isAuthSocket } = socket.handshake.query
+      const { authToken } = socket.handshake.query
 
       const user = {
         ip: socket.conn.remoteAddress.replace("::ffff:", ""),
@@ -99,7 +105,6 @@ class Server {
         docId: null,
         canWrite: false,
         authToken: authToken,
-        isAuthSocket: isAuthSocket === 'true',
         socket: socket,
       };
 

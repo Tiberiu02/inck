@@ -219,9 +219,7 @@ export async function initializeResetPasswordUsingToken(req, res) {
 }
 
 export async function changePasswordEndpoint(req, res) {
-  console.log("POLLED ENDPOINTS!!!!!")
   try {
-    console.log("asdf")
     const { newPassword, resetToken, email } = req.body
     const passHash = await bcrypt.hash(newPassword, Number(process.env.BCRYPT_SALT))
 

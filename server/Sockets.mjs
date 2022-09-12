@@ -33,7 +33,6 @@ async function removeStrokeFn(id, user, docs, socket) {
 
     await NoteModel.updateOne({
         id: user.docId,
-        isFreeNote: !user.isAuthSocket,
     }, {
         $pull: { strokes: { id: id } }
     })
@@ -43,8 +42,7 @@ async function newStrokeFn(stroke, user, docs, socket) {
     if (!user.docId || !user.canWrite) {
         return;
     }
-
-    console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /doc/${user.isAuthSocket ? "premium" : "free"}/${user.docId}`);
+    console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /note/${user.docId}`);
 
     const [uId, sId] = stroke.id.split("-");
 
@@ -63,7 +61,6 @@ async function newStrokeFn(stroke, user, docs, socket) {
 
     await NoteModel.updateOne({
         id: user.docId,
-        isFreeNote: !user.isAuthSocket,
     }, {
         $push: { strokes: stroke }
     })
@@ -73,7 +70,6 @@ async function docRights(docId, user) {
     // return read acces; write access
     const noteData = await NoteModel.findOne({
         id: docId,
-        isFreeNote: !user.isAuthSocket,
     })
 
     if (noteData.isFreeNote) {
@@ -92,7 +88,6 @@ async function docRights(docId, user) {
 
     let token = {
         userId: null,
-        defaultAccess: null
     };
     if (user.authToken !== undefined) {
         try {
@@ -135,29 +130,23 @@ async function requestDocumentFn(id, user, docs, socket) {
         return;
     }
 
-    const noteExists = await NoteModel.countDocuments({
+    const noteData = await NoteModel.findOne({
         id: id,
-        isFreeNote: !user.isAuthSocket
-    }) > 0
+    })
 
-    // if free + new note => good
-    if (!noteExists && !user.isAuthSocket) {
+    const noteExists = noteData !== null
+
+    // if note doesn't exist => create free note
+    if (!noteExists) {
         await NoteModel.create({
             id: id,
             isFreeNote: true
         })
     }
 
-    // if premium + doesnt exist, not good
-    if (!noteExists && user.isAuthSocket) {
-        console.log("Unauthorized access to non-existent note " + id)
-        socket.emit("unauthorized")
-        return
-    }
-
     // Check authentication here
     const [canRead, canWrite] = await docRights(id, user)
-    if (user.isAuthSocket && !canRead) {
+    if (!canRead) {
         socket.emit("unauthorized")
         return
     }
@@ -171,8 +160,7 @@ async function requestDocumentFn(id, user, docs, socket) {
 
     // Connect with other users only if can write
     if (user.canWrite) {
-        const noteType = user.isAuthSocket ? "auth" : "free"
-        console.log(`[${new Date().toLocaleString()}] ${user.ip} started drawing on /doc/${noteType}/${user.docId}`);
+        console.log(`[${new Date().toLocaleString()}] ${user.ip} started drawing on /note/${user.docId}`);
     }
     // Inform existing collaborators about new collaborator, and vice versa
     for (let other of docs[user.docId].users) {
@@ -192,7 +180,6 @@ async function requestDocumentFn(id, user, docs, socket) {
     let strokes;
     const noteParams = {
         id: id,
-        isFreeNote: !user.isAuthSocket,
     }
 
     NoteModel.find(noteParams).then((noteData) => {
