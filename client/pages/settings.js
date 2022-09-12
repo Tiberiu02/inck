@@ -23,7 +23,7 @@ import {
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
 import React, { useState, useEffect, useRef } from "react";
 import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
-
+import Link from 'next/link'
 
 
 function UserDetails({ }) {
@@ -150,11 +150,14 @@ export default function Settings() {
                         cursor-pointer">
                             <FaRegQuestionCircle className="text-2xl" />
                         </a>
-                        <a href="/explorer" className="hover:bg-gray-300 flex 
+                        <Link href="/explorer">
+                            <a className="hover:bg-gray-300 flex 
                         items-center justify-center w-10 h-10 rounded-full
                         cursor-pointer">
-                            <FaBook className="text-2xl" />
-                        </a>
+                                <FaBook className="text-2xl" />
+                            </a>
+                        </Link>
+
                     </div>
                 </div>
                 {/* Main body */}
