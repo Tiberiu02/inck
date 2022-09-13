@@ -7,53 +7,103 @@ import { RenderLoop } from "./Rendering/RenderLoop";
 import { CreateRectangleGraphic } from "./Drawing/Rectangle";
 import { MutableView, View } from "./View/View";
 import { MutableObservableProperty } from "./DesignPatterns/Observable";
+import { GL } from "./Rendering/GL";
+import { GetUniforms } from "./Rendering/BaseCanvasManager";
+import { RGB } from "./types";
+
+enum PdfPageStatus {
+  LOADED,
+  LOADING,
+  NOT_LOADED,
+}
+
+type PdfPage = {
+  number: number;
+  top: number;
+  height: number;
+  status: PdfPageStatus;
+  texture: WebGLTexture;
+};
+
+function CreateRectangleVector(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: RGB,
+  joinable: boolean = false
+): number[] {
+  const vector = [];
+
+  if (joinable) {
+    vector.push(x, y, ...color, 1);
+    vector.push(x, y, ...color, 1);
+  }
+  vector.push(x, y, ...color, 1);
+  vector.push(x + w, y, ...color, 1);
+  vector.push(x, y + h, ...color, 1);
+  vector.push(x + w, y + h, ...color, 1);
+  if (joinable) {
+    vector.push(x + w, y + h, ...color, 1);
+    vector.push(x + w, y + h, ...color, 1);
+  }
+
+  return vector;
+}
 
 export class PdfCanvasManager implements CanvasManager {
   private canvas: CanvasManager;
   private url: string;
   private pdf: PDFJS.PDFDocumentProxy;
-  private images: ImageGraphic[];
+  private pages: PdfPage[];
   private yMax: MutableObservableProperty<number>;
+  private skeletonVector: number[];
+  private skeletonBuffer: WebGLBuffer;
 
   constructor(canvas: CanvasManager, url: string, yMax: MutableObservableProperty<number>) {
     this.canvas = canvas;
     this.url = url;
     this.yMax = yMax;
-    this.images = [];
+    this.pages = [];
 
     MutableView.maxWidth = 3;
     this.init();
   }
 
   private async init() {
+    console.log("loading PDF");
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
     this.pdf = await PDFJS.getDocument(this.url).promise;
+    console.log("loaded PDF");
 
-    const size = 4096;
     const padding = 0.01; // %w
+
+    this.skeletonVector = [];
 
     let top = 0;
     for (let currentPage = 1; currentPage <= this.pdf.numPages; currentPage++) {
-      const pixels = await RenderPage(this.pdf, currentPage, size);
-      console.log(pixels.height, pixels.width);
-      const image = {
-        type: GraphicTypes.IMAGE,
-        zIndex: -1,
-        pixels,
-        left: 0,
+      const page = await this.pdf.getPage(currentPage);
+      const viewport = page.getViewport({ scale: 1 });
+      const height = viewport.height / viewport.width;
+
+      this.pages.push({
+        number: currentPage,
         top,
-        width: 1,
-        height: pixels.height / pixels.width,
-      };
+        height,
+        status: PdfPageStatus.NOT_LOADED,
+        texture: null,
+      });
+      this.skeletonVector.push(...CreateRectangleVector(0, top, 1, height, [1, 1, 1], true));
 
-      this.images.push(image);
-      this.yMax.set(Math.max(this.yMax.get(), image.top + image.height));
-
-      top += image.height + padding;
-      console.log("rendered page", currentPage);
-
-      RenderLoop.scheduleRender();
+      this.yMax.set(Math.max(this.yMax.get(), top + height));
+      top += height + padding;
     }
+
+    this.skeletonBuffer = GL.ctx.createBuffer();
+    GL.ctx.bindBuffer(GL.ctx.ARRAY_BUFFER, this.skeletonBuffer);
+    GL.ctx.bufferData(GL.ctx.ARRAY_BUFFER, new Float32Array(this.skeletonVector), GL.ctx.STATIC_DRAW);
+
+    RenderLoop.scheduleRender();
   }
 
   add(graphic: PersistentGraphic): void {
@@ -69,47 +119,83 @@ export class PdfCanvasManager implements CanvasManager {
     this.canvas.addForNextRender(graphic);
   }
   render(): void {
-    const bg = CreateRectangleGraphic(
+    const bgVector = CreateRectangleVector(
       View.getLeft(),
       View.getTop(),
       View.getWidth(),
       View.getHeight(),
-      [0.9, 0.9, 0.9],
-      -1
+      [0.9, 0.9, 0.9]
     );
-    this.canvas.addForNextRender(bg);
 
-    for (const image of this.images) {
-      this.canvas.addForNextRender(image);
+    GL.renderVector(bgVector, GetUniforms());
+
+    if (this.skeletonBuffer) {
+      GL.renderVector(this.skeletonVector, GetUniforms(), this.skeletonBuffer);
     }
+
+    const pageIsVisible = (page: PdfPage) =>
+      page && page.top + page.height > View.getTop() && page.top < View.getTop() + View.getHeight();
+
+    let pageToLoad = null;
+
+    for (let i = 0; i < this.pages.length; i++) {
+      const page = this.pages[i];
+
+      const show = pageIsVisible(page) || pageIsVisible(this.pages[i - 1]) || pageIsVisible(this.pages[i + 1]);
+
+      if (show) {
+        if (page.status == PdfPageStatus.LOADED) {
+          const [x, y] = View.getScreenCoords(0, page.top);
+          const [w, h] = View.getScreenCoords(1, page.height, true);
+          const r = window.devicePixelRatio;
+          GL.renderTexture(page.texture, w * r, h * r, x * r, y * r);
+        } else if (pageToLoad == null) {
+          pageToLoad = page;
+        }
+      } else {
+        if (page.status == PdfPageStatus.LOADED) {
+          GL.ctx.deleteTexture(page.texture);
+          page.status = PdfPageStatus.NOT_LOADED;
+        }
+      }
+    }
+
+    if (pageToLoad && this.pdf && this.pages.every(page => page.status != PdfPageStatus.LOADING)) {
+      this.startLoadingPage(pageToLoad);
+    }
+
     this.canvas.render();
   }
-}
 
-async function RenderPage(pdf: PDFJS.PDFDocumentProxy, currentPage: number, size: number): Promise<HTMLCanvasElement> {
-  Profiler.start("rendering page");
-  const page = await pdf.getPage(currentPage);
+  async startLoadingPage(pageData: PdfPage) {
+    pageData.status = PdfPageStatus.LOADING;
 
-  console.log("Printing " + currentPage);
+    const size = 4096;
 
-  let viewport = page.getViewport({ scale: 1 });
-  console.log(viewport);
-  const scale = size / Math.max(viewport.width, viewport.height);
-  viewport = page.getViewport({ scale });
+    const page = await this.pdf.getPage(pageData.number);
 
-  const canvas = document.createElement("canvas"),
-    ctx = canvas.getContext("2d");
-  const renderContext = { canvasContext: ctx, viewport: viewport };
+    let viewport = page.getViewport({ scale: 1 });
+    const scale = size / Math.max(viewport.width, viewport.height);
+    viewport = page.getViewport({ scale });
 
-  canvas.height = viewport.height;
-  canvas.width = viewport.width;
-  canvas.style.position = "fixed";
-  canvas.style.top = "0px";
-  canvas.style.left = "0px";
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const renderContext = { canvasContext: ctx, viewport: viewport };
 
-  await page.render(renderContext).promise;
-  Profiler.stop("rendering page");
-  console.log("renering PDF page took (ms):", Profiler.getProfiler().performance("rendering page"));
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    canvas.style.position = "fixed";
+    canvas.style.top = "0px";
+    canvas.style.left = "0px";
 
-  return canvas;
+    await page.render(renderContext).promise;
+
+    Profiler.stop("rendering page");
+
+    pageData.texture = GL.createTexture(canvas);
+
+    pageData.status = PdfPageStatus.LOADED;
+
+    RenderLoop.scheduleRender();
+  }
 }

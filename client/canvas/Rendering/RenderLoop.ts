@@ -1,4 +1,5 @@
 import { TestFastRenderingSupport } from "../DeviceProps";
+import { GL } from "./GL";
 
 export class RenderLoop {
   private static renderFn: Function[];
@@ -26,6 +27,9 @@ export class RenderLoop {
 
     RenderLoop.rendering = true;
     const renderStart = performance.now();
+
+    GL.ensureCanvasSize();
+    GL.clear();
 
     for (const fn of RenderLoop.renderFn) {
       fn();

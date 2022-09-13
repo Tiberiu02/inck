@@ -19,20 +19,23 @@ export function desynchronizedHintAvailable() {
 }
 
 export class GL {
-  ctx: WebGLRenderingContext;
+  static ctx: WebGLRenderingContext;
 
-  mainProgram: WebGLProgram;
-  imageProgram: WebGLProgram;
+  static mainProgram: WebGLProgram;
+  static imageProgram: WebGLProgram;
 
-  private mainBuffer: WebGLBuffer;
-  private texBuffer: WebGLBuffer;
+  private static mainBuffer: WebGLBuffer;
+  private static texBuffer: WebGLBuffer;
 
-  private layerTex: WebGLTexture;
-  private layerFb: WebGLFramebuffer;
-  private width: number;
-  private height: number;
+  private static layerTex: WebGLTexture;
+  private static layerFb: WebGLFramebuffer;
+  private static width: number;
+  private static height: number;
 
-  constructor(canvas: HTMLCanvasElement) {
+  static init() {
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+
     // Init context
     this.ctx = canvas.getContext("webgl", { desynchronized: true, alpha: false });
 
@@ -59,7 +62,20 @@ export class GL {
     this.initTexBuffers();
   }
 
-  private initTexBuffers() {
+  public static ensureCanvasSize() {
+    const width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
+    const height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
+
+    if (this.ctx.canvas.width != width || this.ctx.canvas.height != height) {
+      this.ctx.canvas.style.width = document.documentElement.clientWidth + "px";
+      this.ctx.canvas.style.height = document.documentElement.clientHeight + "px";
+      this.ctx.canvas.width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
+      this.ctx.canvas.height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
+      GL.viewport(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    }
+  }
+
+  private static initTexBuffers() {
     // Create a buffer.
     this.texBuffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texBuffer);
@@ -69,7 +85,7 @@ export class GL {
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
   }
 
-  private initLayerTex(width: number, height: number) {
+  private static initLayerTex(width: number, height: number) {
     this.width = width;
     this.height = height;
 
@@ -112,7 +128,7 @@ export class GL {
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
   }
 
-  beginLayer() {
+  static beginLayer() {
     // render to our targetTexture by binding the framebuffer
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.layerFb);
     //this.ctx.disable(this.ctx.DEPTH_TEST);
@@ -122,7 +138,7 @@ export class GL {
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
   }
 
-  finishLayer(opacity: number = 1) {
+  static finishLayer(opacity: number = 1) {
     // render to the canvas
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
     //this.ctx.disable(this.ctx.DEPTH_TEST);
@@ -130,7 +146,7 @@ export class GL {
     this.renderTexture(this.layerTex, this.width, -this.height, 0, this.height, opacity);
   }
 
-  createProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
+  static createProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
     const gl = this.ctx;
 
     // Create Shaders
@@ -193,18 +209,18 @@ export class GL {
     gl.uniformMatrix4fv(location, false, val);
   }
 
-  static setProgram(gl: WebGLRenderingContext, program: WebGLProgram, uniforms: object) {
-    gl.useProgram(program);
+  static setProgram(program: WebGLProgram, uniforms: object) {
+    this.ctx.useProgram(program);
 
-    GL.setAttribute(gl, program, "a_Position", 2, 0);
-    GL.setAttribute(gl, program, "a_Color", 4, 2);
+    GL.setAttribute(this.ctx, program, "a_Position", 2, 0);
+    GL.setAttribute(this.ctx, program, "a_Color", 4, 2);
 
     for (let name in uniforms) {
       const u = uniforms[name];
       if (typeof u == "number") {
-        GL.setUniform1f(gl, program, name, u);
+        GL.setUniform1f(this.ctx, program, name, u);
       } else if (u.length == 16) {
-        GL.setUniformMatrix4fv(gl, program, name, u);
+        GL.setUniformMatrix4fv(this.ctx, program, name, u);
       } else {
         throw new Error("Unknown uniform:", u);
       }
@@ -214,7 +230,7 @@ export class GL {
   // creates a texture info { width: w, height: h, texture: tex }
   // The texture will start with 1x1 pixels and be updated
   // when the image has loaded
-  createTexture(img: HTMLCanvasElement | HTMLImageElement): WebGLTexture {
+  static createTexture(img: HTMLCanvasElement | HTMLImageElement): WebGLTexture {
     const gl = this.ctx;
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -231,9 +247,13 @@ export class GL {
     return texture;
   }
 
-  renderVector(array: number[], uniforms: any): void {
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.mainBuffer);
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
+  static renderVector(array: number[], uniforms: any, buffer?: WebGLBuffer): void {
+    if (!buffer) {
+      this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.mainBuffer);
+      this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
+    } else {
+      this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, buffer);
+    }
 
     this.ctx.useProgram(this.mainProgram);
 
@@ -256,7 +276,7 @@ export class GL {
     this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
   }
 
-  renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number, opacity: number = 1) {
+  static renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number, opacity: number = 1) {
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texBuffer);
     const array = [0, 0, 0, 1, 1, 0, 1, 1];
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
@@ -299,12 +319,12 @@ export class GL {
     this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, 4);
   }
 
-  clear() {
+  static clear() {
     this.ctx.clearColor(1, 1, 1, 1);
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
   }
 
-  viewport(x: number, y: number, width: number, height: number) {
+  static viewport(x: number, y: number, width: number, height: number) {
     this.ctx.viewport(x, y, width, height);
     this.initLayerTex(width, height);
   }

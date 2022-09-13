@@ -15,6 +15,7 @@ import { PageSizeTracker } from "./Drawing/PageSizeTracker";
 import { PdfCanvasManager } from "./PDF";
 import { Vector2D } from "./Math/V2";
 import GetApiPath, { postFetchAPI } from "../components/GetApiPath.js";
+import { GL } from "./Rendering/GL";
 
 export default class App {
   private canvasManager: CanvasManager;
@@ -46,6 +47,9 @@ export default class App {
       overflow: "hidden",
     });
     window.addEventListener("contextmenu", e => e.preventDefault());
+
+    // Init graphics
+    GL.init();
 
     // Canvas
     this.canvasManager = new BaseCanvasManager();
