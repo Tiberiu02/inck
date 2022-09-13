@@ -8,7 +8,7 @@ export abstract class Thresholds {
   static readonly RIGHT_ANGLE_MIN_THRESHOLD_RECT: number = Math.PI / 3; // 60
   static readonly RIGHT_ANGLE_MAX_THRESHOLD_RECT: number = (2 * Math.PI) / 3; // 120
   //If all the rectangle sides have a ratio close to 1.5 then detect that it's a square
-  static readonly EQUAL_SIDE_RATIO_THRESHOLD: number = 1.3;
+  static readonly EQUAL_SIDE_RATIO_THRESHOLD: number = 1.2;
   //If the shape is this far from the axis or more, don't align it
   static readonly ALIGNED_AXIS_THRESHOLD: number = (Math.PI / 180) * 15;
   //If a triangle has an angle in this range then detect that it's a right angle

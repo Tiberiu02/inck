@@ -53,8 +53,8 @@ export function DetectShape(inputs: StrokePoint[]): StrokePoint[] {
       const right_angle_index = DetectTriangleRightAngle(polyline);
       if (right_angle_index !== -1) {
         return CreateRightAngle(polyline, right_angle_index);
-      } else if (DetectEqualSides(polyline)) {
-        return CreateEquilateral(polyline);
+        //} else if (DetectEqualSides(polyline)) {
+        //  return CreateEquilateral(polyline);
       } else {
         return polyline;
       }
