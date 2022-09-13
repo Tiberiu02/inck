@@ -15,7 +15,7 @@ import { register as registerFn, login as loginFn, initializeResetPasswordUsingE
 import { createFileFn, editFileFn, getAccountDetailsFromToken, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
 import { disconnect, newStroke, removeStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets.mjs";
 import { NoteModel } from "./Models.mjs";
-import { getPDF, receivePDF, servePDF } from "./PDFAPI.mjs";
+import { getPDF, receivePDF } from "./PDFAPI.mjs";
 
 const MILLIS_PER_WEEK = 604800000;
 const MILLIS_PER_DAY = 86400000
@@ -88,7 +88,6 @@ class Server {
 
     // PDF loading/serving stuff
     this.app.post("/api/pdf/receive-pdf", fileuploadParser, receivePDF)
-    this.app.post("/api/pdf/serve-pdf", jsonBodyParser, servePDF)
     this.app.get("/api/pdf/get-pdf/:pdfName.pdf", getPDF);
   }
 

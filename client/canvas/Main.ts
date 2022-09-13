@@ -59,7 +59,9 @@ export default class App {
     this.canvasManager = new NetworkCanvasManager(this.canvasManager, this.network);
 
     // PDF import
-    this.loadPdfBackground(yMax);
+    this.network.on("load pdf", (url: string) => {
+      this.canvasManager = new PdfCanvasManager(this.canvasManager, GetApiPath(url), yMax);
+    });
 
     // Pointer tracker
     this.pointerTracker = new PointerTracker();

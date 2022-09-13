@@ -64,37 +64,6 @@ export async function receivePDF(req, res) {
     }
 }
 
-
-export async function servePDF(req, res) {
-    try {
-        const { docId } = req.body
-        const noteData = await NoteModel.findOne({
-            id: docId
-        })
-
-        if (noteData === null) {
-            return res.status(400).send({ error: "Unable to serve PDF (432)" })
-        }
-
-        let responseOptions = {
-            status: "success",
-            backgroundType: noteData.backgroundType
-        }
-
-        if (noteData.backgroundType == "pdf") {
-            responseOptions.pdfURL = `/api/pdf/get-pdf/${noteData.backgroundOptions.fileHash}.pdf`
-        }
-
-        res.status(201).send(responseOptions)
-
-
-    } catch (err) {
-        console.log("Error while serving PDF:")
-        console.log(err)
-        res.status(400).send({ error: "Unable to serve PDF (999)" })
-    }
-}
-
 export async function getPDF(req, res) {
     const pdfName = req.params.pdfName;
     res.sendFile(join(__dirname, `pdfs/${pdfName}.pdf`));

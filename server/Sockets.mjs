@@ -189,8 +189,15 @@ async function requestDocumentFn(id, user, docs, socket) {
         } else {
             strokes = noteData[0].strokes
         }
+        
         socket.emit("can write", user.canWrite)
         socket.emit("load strokes", strokes, user.id)
+        
+        // Send pdf
+        if (noteData[0].backgroundType == "pdf") {
+            const url = `/api/pdf/get-pdf/${noteData[0].backgroundOptions.fileHash}.pdf`;
+            socket.emit("load pdf", url);
+        }
     })
 }
 
