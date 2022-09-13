@@ -3,6 +3,11 @@ import crypto from "crypto"
 import { generateNewFileName, insertNewNoteInDB, NEW_FILES_NAME_LENGTH } from "./FileExplorer.mjs"
 import jwt from "jsonwebtoken";
 import { FileModel, NoteModel } from "./Models.mjs";
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const fs = _fs.promises
 
@@ -22,7 +27,7 @@ export async function receivePDF(req, res) {
         const pdfFileName = `${pdfDataHash}.pdf`
         const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
 
-        const pdfPath = `client/public/pdfs/${pdfFileName}`
+        const pdfPath = `server/pdfs/${pdfFileName}`
         const fsPromise = fs.writeFile(pdfPath, pdfData)
 
 
@@ -77,7 +82,7 @@ export async function servePDF(req, res) {
         }
 
         if (noteData.backgroundType == "pdf") {
-            responseOptions.pdfURL = `/pdfs/${noteData.backgroundOptions.fileHash}.pdf`
+            responseOptions.pdfURL = `/api/pdf/get-pdf/${noteData.backgroundOptions.fileHash}.pdf`
         }
 
         res.status(201).send(responseOptions)
@@ -88,4 +93,9 @@ export async function servePDF(req, res) {
         console.log(err)
         res.status(400).send({ error: "Unable to serve PDF (999)" })
     }
-} 
+}
+
+export async function getPDF(req, res) {
+    const pdfName = req.params.pdfName;
+    res.sendFile(join(__dirname, `pdfs/${pdfName}.pdf`));
+}
