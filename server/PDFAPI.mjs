@@ -61,15 +61,11 @@ export async function receivePDF(req, res) {
 
 
 export async function servePDF(req, res) {
-    console.log("requested pdf")
     try {
         const { docId } = req.body
-        console.log("poll database")
         const noteData = await NoteModel.findOne({
             id: docId
         })
-        console.log(noteData)
-        console.log("polled database")
 
         if (noteData === null) {
             return res.status(400).send({ error: "Unable to serve PDF (432)" })
