@@ -54,9 +54,8 @@ export default class ToolWheel {
 
     this.wheel = this.buildToolWheel(this.R);
 
-    ToolWheel.addStyleSheets();
     this.hide();
-    document.body.appendChild(this.wheel);
+    ToolWheel.addStyleSheets(() => document.body.appendChild(this.wheel));
 
     this.widthsWheels = {
       pen: this.buildWidthsWheel(this.R, "pen", w => (this.width.pen = w)),
@@ -173,11 +172,26 @@ export default class ToolWheel {
         i == w ? "rgba(220, 220, 220, 1)" : "rgba(240, 240, 240, 1)";
   }
 
-  static addStyleSheets() {
+  static addStyleSheets(callback) {
+    const src = RES_ROOT + "styles.css";
+
     let e = document.createElement("link");
     e.rel = "stylesheet";
     e.href = RES_ROOT + "styles.css";
     document.head.appendChild(e);
+
+    // add callback
+    if (typeof e.onload != "undefined") {
+      e.onload = callback;
+    } else {
+      var img = document.createElement("img");
+      img.onerror = function () {
+        callback();
+        document.body.removeChild(img);
+      };
+      document.body.appendChild(img);
+      img.src = src;
+    }
   }
 
   private buildToolWheel(R) {

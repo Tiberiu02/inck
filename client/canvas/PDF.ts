@@ -190,8 +190,6 @@ export class PdfCanvasManager implements CanvasManager {
 
     await page.render(renderContext).promise;
 
-    Profiler.stop("rendering page");
-
     pageData.texture = GL.createTexture(canvas);
 
     pageData.status = PdfPageStatus.LOADED;
