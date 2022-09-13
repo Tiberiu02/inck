@@ -29,12 +29,12 @@ export class PdfCanvasManager implements CanvasManager {
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
     this.pdf = await PDFJS.getDocument(this.url).promise;
 
-    const scale = 5;
+    const size = 4096;
     const padding = 0.01; // %w
 
     let top = 0;
     for (let currentPage = 1; currentPage <= this.pdf.numPages; currentPage++) {
-      const pixels = await RenderPage(this.pdf, currentPage, scale);
+      const pixels = await RenderPage(this.pdf, currentPage, size);
       console.log(pixels.height, pixels.width);
       const image = {
         type: GraphicTypes.IMAGE,
@@ -86,15 +86,20 @@ export class PdfCanvasManager implements CanvasManager {
   }
 }
 
-async function RenderPage(pdf: PDFJS.PDFDocumentProxy, currentPage: number, scale: number): Promise<HTMLCanvasElement> {
+async function RenderPage(pdf: PDFJS.PDFDocumentProxy, currentPage: number, size: number): Promise<HTMLCanvasElement> {
   Profiler.start("rendering page");
   const page = await pdf.getPage(currentPage);
 
   console.log("Printing " + currentPage);
-  var viewport = page.getViewport({ scale });
-  var canvas = document.createElement("canvas"),
+
+  let viewport = page.getViewport({ scale: 1 });
+  console.log(viewport);
+  const scale = size / Math.max(viewport.width, viewport.height);
+  viewport = page.getViewport({ scale });
+
+  const canvas = document.createElement("canvas"),
     ctx = canvas.getContext("2d");
-  var renderContext = { canvasContext: ctx, viewport: viewport };
+  const renderContext = { canvasContext: ctx, viewport: viewport };
 
   canvas.height = viewport.height;
   canvas.width = viewport.width;
