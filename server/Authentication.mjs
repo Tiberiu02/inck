@@ -3,32 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getRelativePath } from './utils.mjs'
 import crypto from "crypto"
-import nodemailer from "nodemailer"
+import { sendPasswordConfirmationEmail, sendPasswordRecoveryEmail, sendRegistrationEmail } from "./mailer_code.mjs";
 
-let transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.MAIL_USERNAME,
-    pass: process.env.APP_PASSWORD
-  }
-});
-
-
-export default async function sendEmail(recipient, content) {
-  let mailOptions = {
-    from: "inck.noreply@gmail.com", // sender address
-    to: recipient, // list of receivers
-    subject: "Inck password reset requested", // Subject line
-    text: content, // plain text body
-    //html: ""// html body
-  };
-  try {
-    await transporter.sendMail(mailOptions);
-  } catch (err) {
-    console.log(err)
-  }
-
-}
 
 function validateEmail(email) {
   return String(email)
@@ -69,6 +45,11 @@ export async function register(req, res) {
     if (!validateEmail(email))
       return res.status(400).send({ error: "invalid email" })
 
+    const emailDomain = email.split("@")[1]
+    if (emailDomain !== "epfl.ch") {
+      return res.status(400).send({ error: "Only @epfl.ch addresses are allowed for now" })
+    }
+
     if (await UserModel.findOne({ email }))
       return res.status(409).send({ error: "user already exists" });
 
@@ -94,6 +75,12 @@ export async function register(req, res) {
     );
 
     user.token = token;
+    sendRegistrationEmail(
+      email,
+      firstName,
+      lastName
+    )
+
     return res.status(201).send({ email, token });
 
   } catch (err) {
@@ -134,28 +121,6 @@ export async function login(req, res) {
   }
 }
 
-async function sendPasswordResetLinkEmail(targetEmail, resetLink) {
-  const content = `Someone has requested a reset of your email. To proceed, visit the following link:\n
-  ${resetLink}\n
-  If you didn't request a password reset, please ignore this message.
-
-  Best regards,
-  the Inck team
-  
-  `
-  sendEmail(targetEmail, content)
-}
-
-async function sendPasswordResetConfirmation(targetEmail) {
-  const content = `Your email was successfully modified.\n
-  If you didn't request a password reset, please change your password email immediately and request an inck password reset.
-
-  Best regards,
-  the Inck team
-  `
-  sendEmail(targetEmail, content)
-}
-
 function createPasswordResetToken() {
   return crypto.randomBytes(64).toString("hex")
 }
@@ -189,7 +154,12 @@ async function resetUserPassword(userEntry) {
 
   console.log("Password reset requested:")
   console.log(passwordResetLink)
-  sendPasswordResetLinkEmail(userEntry.email, passwordResetLink)
+  await sendPasswordRecoveryEmail(
+    userEntry.email,
+    userEntry.firstName,
+    userEntry.lastName,
+    passwordResetLink
+  )
 }
 
 export async function initializeResetPasswordUsingEmail(req, res) {
@@ -233,7 +203,7 @@ export async function changePasswordEndpoint(req, res) {
       return res.status(400).send({ error: "Unable to reset password (432)" })
     }
 
-    await UserModel.updateOne({
+    const userEntry = await UserModel.findOneAndUpdate({
       _id: entry.userId
     }, {
       password: passHash
@@ -244,7 +214,11 @@ export async function changePasswordEndpoint(req, res) {
     })
 
     res.status(201).send({ status: "success" })
-    sendPasswordResetConfirmation(email)
+    await sendPasswordConfirmationEmail(
+      userEntry.email,
+      userEntry.firstName,
+      userEntry.lastName
+    )
 
   } catch (err) {
     console.log("Error while setting new password")

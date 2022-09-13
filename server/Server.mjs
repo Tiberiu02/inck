@@ -8,8 +8,8 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import fileupload from 'express-fileupload'
 
-import dotend from "dotenv";
-dotend.config();
+import dotenv from "dotenv";
+dotenv.config();
 
 import { register as registerFn, login as loginFn, initializeResetPasswordUsingEmail, initializeResetPasswordUsingToken, changePasswordEndpoint } from "./Authentication.mjs";
 import { createFileFn, editFileFn, getAccountDetailsFromToken, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
