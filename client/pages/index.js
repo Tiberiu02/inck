@@ -54,7 +54,7 @@ function SignInBtn({ className }) {
         <button className="flex flex-row w-full py-3 px-6 items-center justify-center bg-primary hover:bg-primary-dark duration-200 rounded-xl">
           Sign in <MdOutlineAccountCircle className="mr-1 ml-3" />
         </button>
-        <div className="flex flex-col pointer-events-none items-end absolute top-[50%] right-0 text-red font-cursive font-bold w-40">
+        <div className="flex flex-col pointer-events-none items-end absolute top-[50%] right-0 text-inck-red font-cursive font-bold w-40">
           <div className="realtive mr-5 z-10">
             <span className="material-symbols-outlined text-6xl -scale-x-100 -rotate-12 drop-shadow-md">
               switch_access_shortcut

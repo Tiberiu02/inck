@@ -646,8 +646,7 @@ function CreateModalHeaderElement({ modalState, setModalState, buttonText, activ
     <button
       onClick={() => setModalState(activeState)}
       className={
-        "w-full p-1 gap-2 rounded-md " +
-        (modalState == activeState ? "bg-slate-800 text-white" : "hover:bg-slate-700 hover:text-white")
+        "p-4 gap-2 rounded-md border-2 border-gray-300 text-slate-800  bg-gray-100 hover:bg-slate-800 hover:border-slate-800 hover:text-white"
       }
     >
       {buttonText}
@@ -657,35 +656,47 @@ function CreateModalHeaderElement({ modalState, setModalState, buttonText, activ
 
 function CreateModalHeader({ modalState, setModalState }) {
   return (
-    <div className="grid grid-cols-2 grid-rows-2 w-full bg-gray-100 rounded-md gap-1">
-      {/* New note */}
-      <CreateModalHeaderElement
-        modalState={modalState}
-        setModalState={setModalState}
-        buttonText={"Create note"}
-        activeState={"note"}
-      />
+    <div className="grid grid-cols-1 gap-3 w-fit">
       {/* New folder */}
       <CreateModalHeaderElement
         modalState={modalState}
         setModalState={setModalState}
-        buttonText={"Create folder"}
+        buttonText={
+          <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+            <span class="material-symbols-outlined">folder</span> Folder
+          </div>
+        }
         activeState={"folder"}
+      />
+      {/* New note */}
+      <CreateModalHeaderElement
+        modalState={modalState}
+        setModalState={setModalState}
+        buttonText={
+          <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+            <span class="material-symbols-outlined">description</span> Simple note
+          </div>
+        }
+        activeState={"note"}
       />
       {/* Import PDF */}
       <CreateModalHeaderElement
         modalState={modalState}
         setModalState={setModalState}
-        buttonText={"Import PDF"}
+        buttonText={
+          <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+            <span class="material-symbols-outlined">picture_as_pdf</span> Pdf note
+          </div>
+        }
         activeState={"import-pdf"}
       />
-      {/* Import note */}
+      {/* Import note 
       <CreateModalHeaderElement
         modalState={modalState}
         setModalState={setModalState}
         buttonText={"Import note"}
         activeState={"import-note"}
-      />
+      />*/}
     </div>
   );
 }
@@ -737,12 +748,13 @@ async function createModalSubmit(state, name, parentDir, publicAccess, publicNot
 function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
   /**
    * valid states:
+   * select-type - shows the user all cfile creation options
    * note - will create a new file
    * folder - will create a new directory
    * import-pdf - will create a new note with a pdf
    * import-note - import a free note
    */
-  const [modalState, setModalState] = useState("note");
+  const [modalState, setModalState] = useState("select-type");
   const [name, setName] = useState("");
   const [publicAccess, setPublicAccess] = useState("private");
   const [pdfContent, setPdfContent] = useState(null);
@@ -767,6 +779,10 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
   let modalBody;
 
   switch (modalState) {
+    case "select-type":
+      modalBody = <CreateModalHeader setModalState={setModalState} modalState={modalState} />;
+      break;
+
     case "note":
       modalBody = (
         <CreateNoteSubmodal
@@ -817,23 +833,33 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
 
   return (
     <div
-      className={
-        (!visible ? "hidden" : "") +
-        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
-      }
+      className={`absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center ${
+        !visible ? "hidden" : ""
+      }`}
     >
       <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
-      <div className="relative w-96 h-96 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between">
-        <CreateModalHeader setModalState={setModalState} modalState={modalState} />
+      <div className="relative w-96 h-96 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg">
+        <div className="flex flex-row-reverse justify-between">
+          <button className="self-end hover:text-red-500" onClick={() => setVisible(false)}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+          {modalState != "select-type" && (
+            <button className="self-end hover:text-blue-500" onClick={() => setModalState("select-type")}>
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+          )}
+        </div>
 
-        {modalBody}
+        <div className="flex flex-col basis-full justify-center items-center">{modalBody}</div>
 
-        <button
-          onClick={submit}
-          className="w-full bg-slate-800 hover:bg-black text-white px-4 py-1 rounded-md self-center"
-        >
-          Create
-        </button>
+        {modalState != "select-type" && (
+          <button
+            onClick={submit}
+            className="w-full bg-slate-800 hover:bg-black text-white px-4 py-1 rounded-md self-center"
+          >
+            Create
+          </button>
+        )}
       </div>
     </div>
   );

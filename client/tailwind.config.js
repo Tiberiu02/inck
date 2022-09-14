@@ -6,7 +6,7 @@ module.exports = {
         primary: "#3fbd15",
         "primary-dark": "#3a991a",
         "primary-light": "#47d119",
-        red: "#ff2020",
+        "inck-red": "#ff2020",
       },
       fontFamily: {
         cursive: ['"Shadows Into Light Two"', "cursive"],
