@@ -26,6 +26,7 @@ import Cookies from "universal-cookie";
 import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
 import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
 import Link from "next/link";
+import { TrackFolderCreation, TrackNoteCreation } from "../components/Analytics.js";
 
 function DirListing({
   Symbol,
@@ -98,7 +99,7 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
         </div>
       )}
 
-      <p className="relative py-1 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-2">
+      <p className="relative py-2 px-2 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
         {title}
       </p>
     </button>
@@ -702,12 +703,14 @@ function CreateModalHeader({ modalState, setModalState }) {
 }
 
 async function newNoteSubmit(name, parentDir, publicAccess, setFiles) {
+  TrackNoteCreation("simple");
   addFile(name, "note", parentDir, setFiles, {
     publicAccess: publicAccess,
   });
 }
 
 async function newFolderSubmit(name, parentDir, setFiles) {
+  TrackFolderCreation();
   addFile(name, "folder", parentDir, setFiles);
 }
 
@@ -728,12 +731,14 @@ async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, se
   const jsonReply = await response.json();
 
   if (jsonReply.status == "success") {
+    TrackNoteCreation("pdf");
     const filesDict = processFilesData(jsonReply.files);
     await setFiles(filesDict);
   }
 }
 
 async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles) {
+  TrackNoteCreation("public-import");
   await importFreeNote(name, parentDir, setFiles, publicAccess, publicNoteURL);
 }
 
@@ -1209,7 +1214,7 @@ export default function Explorer() {
               <PathNavigator files={files} path={path} setPath={setPath} />
 
               {/** Notes */}
-              <div className="flex flex-row flex-wrap gap-4 sm:gap-8 m-auto pb-40 justify-evenly">
+              <div className="flex flex-row flex-wrap gap-4 sm:gap-8 m-auto pb-40 justify-start">
                 {files && files[path.at(-1)].children.map(drawExplorerItem)}
 
                 <AddButton

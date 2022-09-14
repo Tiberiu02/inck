@@ -30,3 +30,16 @@ export function TrackLogin(email) {
     email_provider: email.split("@")[1],
   });
 }
+
+export function TrackNoteCreation(type) {
+  gtag("event", "note_creation", {
+    event_label: "Note Creation",
+    note_type: type,
+  });
+}
+
+export function TrackFolderCreation(type) {
+  gtag("event", "folder_creation", {
+    event_label: "Folder Creation",
+  });
+}
