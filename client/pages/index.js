@@ -50,14 +50,17 @@ function CreateNoteBtn({ className }) {
 function SignInBtn({ className }) {
   return (
     <Link href="/auth">
-      <button
-        className={
-          "flex flex-row items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl lg:w-104 w-full max-w-lg " +
-          className
-        }
-      >
-        Sign in <MdOutlineAccountCircle className="mr-1 ml-3" />
-      </button>
+      <div className={`relative lg:w-104 w-full max-w-lg ${className}`}>
+        <button className="flex flex-row w-full py-3 px-6 items-center justify-center bg-primary hover:bg-primary-dark duration-200 rounded-xl">
+          Sign in <MdOutlineAccountCircle className="mr-1 ml-3" />
+        </button>
+        <div className="flex flex-col pointer-events-none items-end absolute top-[50%] right-0 text-red-600 font-cursive font-bold w-40">
+          <div className="mr-5">
+            <span class="material-symbols-outlined text-6xl -scale-x-100 -rotate-12">switch_access_shortcut</span>
+          </div>
+          <div className="text-right text-4xl">Ready to start the semester?</div>
+        </div>
+      </div>
     </Link>
   );
 }
@@ -148,7 +151,7 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="flex flex-col gap-8 text-lg sm:text-3xl font-round text-white">
-              <div className="flex flex-col lg:flex-row mt-20 ">
+              <div className="flex flex-col lg:flex-row mt-20  mb-28 ">
                 <CreateNoteBtn className="" />
                 <SignInBtn className="mt-4 lg:mt-0 lg:ml-4" />
               </div>
