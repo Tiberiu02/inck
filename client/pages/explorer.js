@@ -661,7 +661,7 @@ function CreateModalHeader({ modalState, setModalState }) {
           setModalState={setModalState}
           buttonText={
             <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span class="material-symbols-outlined">folder</span> Folder
+              <span className="material-symbols-outlined">folder</span> Folder
             </div>
           }
           activeState={"folder"}
@@ -672,7 +672,7 @@ function CreateModalHeader({ modalState, setModalState }) {
           setModalState={setModalState}
           buttonText={
             <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span class="material-symbols-outlined">description</span> Simple note
+              <span className="material-symbols-outlined">description</span> Simple note
             </div>
           }
           activeState={"note"}
@@ -683,7 +683,7 @@ function CreateModalHeader({ modalState, setModalState }) {
           setModalState={setModalState}
           buttonText={
             <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span class="material-symbols-outlined">picture_as_pdf</span> Pdf note
+              <span className="material-symbols-outlined">picture_as_pdf</span> Pdf note
             </div>
           }
           activeState={"import-pdf"}
@@ -1118,6 +1118,10 @@ export default function Explorer() {
     let longPressTimeout;
 
     const handlePointerDown = e => {
+      if (e.button != 0) {
+        handleLongPress();
+        e.preventDefault();
+      }
       if (longPressTimeout) {
         window.clearTimeout(longPressTimeout);
         longPressTimeout = null;
@@ -1133,7 +1137,7 @@ export default function Explorer() {
     };
 
     return (
-      <div onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+      <div onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onContextMenu={e => e.preventDefault()}>
         {f.type == "folder" ? (
           <Book key={f.name} isSelected={isSelected} showSelect={isSelecting} title={f.name} />
         ) : (

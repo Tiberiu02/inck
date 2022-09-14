@@ -27,7 +27,7 @@ export async function receivePDF(req, res) {
         const pdfFileName = `${pdfDataHash}.pdf`
         const token = jwt.verify(req.body.token, process.env.JWT_TOKEN)
 
-        const pdfPath = `server/pdfs/${pdfFileName}`
+        const pdfPath = `user-data/pdfs/${pdfFileName}`
         const fsPromise = fs.writeFile(pdfPath, pdfData)
 
 
@@ -66,5 +66,5 @@ export async function receivePDF(req, res) {
 
 export async function getPDF(req, res) {
     const pdfName = req.params.pdfName;
-    res.sendFile(join(__dirname, `pdfs/${pdfName}.pdf`));
+    res.sendFile(join(__dirname, `../user-data/pdfs/${pdfName}.pdf`));
 }

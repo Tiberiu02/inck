@@ -32,4 +32,4 @@ yarn-error.log*
 .vercel
 
 # user data
-/server/pdfs/*
+/user-data/*
