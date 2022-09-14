@@ -86,18 +86,19 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
   return (
     <button
       onClick={onClick}
-      className='relative w-24 h-32 sm:w-32 sm:h-40 bg-[url("/img/note-sample.png")] bg-cover border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100'
+      className="relative flex flex-col items-center justify-center w-24 h-32 sm:w-32 sm:h-40 bg-note border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100 overflow-hidden"
     >
       {showSelect && (
         <div
-          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
-            } text-center`}
+          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
+            isSelected ? "text-slate-800" : "text-white"
+          } text-center`}
         >
           x
         </div>
       )}
 
-      <p className="absolute bottom-[10%] py-1 -mx-[2px] border-slate-800 bg-slate-800 w-[calc(100%+4px)] text-white text-sm sm:text-lg text-center line-clamp-2">
+      <p className="relative py-1 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-2">
         {title}
       </p>
     </button>
@@ -114,8 +115,9 @@ function Book({ title, onClick, showSelect = false, isSelected = false }) {
       <div className="realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
         {showSelect && (
           <div
-            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${isSelected ? "text-slate-800" : "text-white"
-              } text-center`}
+            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
+              isSelected ? "text-slate-800" : "text-white"
+            } text-center`}
           >
             x
           </div>
@@ -169,13 +171,15 @@ function MobileMenu() {
         <FaBars className="text-3xl text-gray-500" />
       </button>
       <div
-        className={`fixed h-screen w-screen bg-black z-10 ${open ? "opacity-50" : "opacity-0 pointer-events-none"
-          } transition-all duration-200 top-0 left-0`}
+        className={`fixed h-screen w-screen bg-black z-10 ${
+          open ? "opacity-50" : "opacity-0 pointer-events-none"
+        } transition-all duration-200 top-0 left-0`}
         onClick={toggleOpen}
       ></div>
       <div
-        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${open ? "translate-x-0" : "-translate-x-full"
-          } transition-all duration-200 top-0 left-0 overflow-scroll`}
+        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } transition-all duration-200 top-0 left-0 overflow-scroll`}
       >
         <FileTree className="pt-10 pb-52 w-full" />
       </div>
@@ -325,8 +329,9 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
         <div
           onDoubleClick={onDoubleClick}
           onClick={onClick}
-          className={`flex items-center hover:bg-gray-200 ${target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
-            } text-md`}
+          className={`flex items-center hover:bg-gray-200 ${
+            target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
+          } text-md`}
         >
           {prefix} <Folder className="h-4 w-4" /> &nbsp;{" "}
           <span className={forbidden.has(folder._id) ? "line-through" : ""}>{folder.name}</span>
@@ -384,8 +389,9 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
           <button
             disabled={!canMove}
             onClick={onMoveClick}
-            className={` ${canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
-              } text-white w-fit px-4 py-1 rounded-full self-center`}
+            className={` ${
+              canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-400"
+            } text-white w-fit px-4 py-1 rounded-full self-center`}
           >
             Move files
           </button>
@@ -546,8 +552,9 @@ function PDFDropZone({ setPdfContent, setFileSize }) {
     <div
       {...getRootProps({
         className: `rounded-md p-3 border-dashed border-slate-500 border-2 text-sm h-16 italic 
-                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${isDragActive ? "bg-slate-100" : ""
-          }
+                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${
+          isDragActive ? "bg-slate-100" : ""
+        }
                   
                   `,
       })}
@@ -595,10 +602,7 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
 }
 
 function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, importNoteURL, setImportNoteURL }) {
-  return <div
-    className="flex flex-col italic">
-    Soon
-  </div>
+  return <div className="flex flex-col italic">Soon</div>;
   return (
     <div>
       <div className="flex flex-col gap-6">
@@ -697,15 +701,14 @@ async function newFolderSubmit(name, parentDir, setFiles) {
 }
 
 async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, setFiles) {
-
   if (!pdfFileContent) {
-    return
+    return;
   }
   // Add fields to formData
-  pdfFileContent.set("name", name)
-  pdfFileContent.set("parentDir", parentDir)
-  pdfFileContent.set("token", getAuthToken())
-  pdfFileContent.set("defaultAccess", publicAccess)
+  pdfFileContent.set("name", name);
+  pdfFileContent.set("parentDir", parentDir);
+  pdfFileContent.set("token", getAuthToken());
+  pdfFileContent.set("defaultAccess", publicAccess);
 
   const response = await fetch(GetApiPath("/api/pdf/receive-pdf"), {
     method: "post",
