@@ -85,7 +85,7 @@ function DirListing({
 
 function Note({ title, onClick, showSelect = false, isSelected = false }) {
   return (
-    <button className="relative flex flex-col items-center justify-center w-24 h-32 sm:w-32 sm:h-40 bg-note border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100 overflow-hidden">
+    <button className="relative select-none flex flex-col items-center justify-center w-24 h-32 sm:w-32 sm:h-40 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100 overflow-hidden">
       <p className="relative py-2 px-2 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
         {title}
       </p>
@@ -105,7 +105,7 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
 
 function Book({ title, onClick, showSelect = false, isSelected = false }) {
   return (
-    <button className="relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col">
+    <button className="relative select-none w-24 h-32 sm:w-32 sm:h-40 text-white duration-100 flex flex-col">
       <div className="bg-slate-800 h-5 w-12 rounded-t-xl -mb-2"></div>
       <div className="realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
         {showSelect && (
@@ -228,7 +228,7 @@ function PathNavigator({ files, path, setPath }) {
     <div
       key={p.length}
       onClick={() => setPath(path.slice(0, 1))}
-      className="flex flex-row items-center gap-3 hover:bg-gray-200 -ml-4 px-4 py-1 rounded-full cursor-pointer"
+      className="flex flex-row items-center gap-3 -ml-4 px-4 py-1 rounded-full cursor-pointer"
     >
       <FaBook />
       {files && files[path[0]].name}
@@ -241,7 +241,7 @@ function PathNavigator({ files, path, setPath }) {
       <p
         key={p.length}
         onClick={() => setPath(path.slice(0, i + 1))}
-        className="hover:bg-gray-200 px-2 sm:px-4 py-1 rounded-full cursor-pointer"
+        className="px-2 sm:px-4 py-1 rounded-full cursor-pointer"
       >
         {files[path[i]].name}
       </p>
@@ -1139,9 +1139,20 @@ export default function Explorer() {
         handleClick();
       }
     };
+    const handlePointerCancel = e => {
+      if (longPressTimeout) {
+        window.clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+      }
+    };
 
     return (
-      <div onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onContextMenu={e => e.preventDefault()}>
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onContextMenu={e => e.preventDefault()}
+      >
         {f.type == "folder" ? (
           <Book key={f.name} isSelected={isSelected} showSelect={isSelecting} title={f.name} />
         ) : (
