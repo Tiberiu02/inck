@@ -47,7 +47,7 @@ export async function register(req, res) {
 
     const emailDomain = email.split("@")[1]
     if (emailDomain !== "epfl.ch") {
-      return res.status(400).send({ error: "Only @epfl.ch addresses are allowed for now" })
+      return res.status(400).send({ error: "sorry, only EPFL students are currently allowed" })
     }
 
     if (await UserModel.findOne({ email }))

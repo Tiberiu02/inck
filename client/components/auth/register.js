@@ -8,7 +8,8 @@ import GetApiPath from "../GetApiPath";
 const PW_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
 
 function checkPassword(pwd) {
-  return PW_REGEX.test(pwd);
+  //return PW_REGEX.test(pwd);
+  return pwd.length >= 6;
 }
 
 export default function Register({ toLoginCallback, toResetPasswordCallback }) {
@@ -34,17 +35,17 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
     setError("");
 
     if (!checkPassword(password)) {
-      setTimedError("Invalid password: check requirements");
+      setTimedError("password is not strong enough");
       return;
     }
 
     if (password != repeatedPass) {
-      setTimedError("Passwords don't match");
+      setTimedError("passwords don't match");
       return;
     }
 
     if (!acceptTerms) {
-      setTimedError("Accept terms of services to use Inck");
+      setTimedError("accept terms of services");
       return;
     }
 
@@ -108,16 +109,17 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
           ></input>
         </div>
 
-        <input
-          className={textFieldStyle}
-          placeholder="Email address"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-        ></input>
         <div className="flex flex-col">
-          <div className="italic text-xs font-extralight">
-            At least 8 characters long, one letter, one number and one special character
-          </div>
+          <div className="italic text-xs font-extralight">Only EPFL emails allowed, welcome to the team!</div>
+          <input
+            className={textFieldStyle}
+            placeholder="Email address"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          ></input>
+        </div>
+        <div className="flex flex-col">
+          <div className="italic text-xs font-extralight">At least 6 characters long, your notes are at stake!</div>
           <input
             className={textFieldStyle}
             type="password"
@@ -169,7 +171,7 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
             Register
           </button>
 
-          <div className="flex justify-end self-end font-extrabold text-sm text-gray-500">
+          <div className="mt-4 flex justify-end self-end font-extrabold text-sm text-gray-500">
             Already have an account?
             <div onClick={toLoginCallback} className={undelineStyle}>
               {" "}
