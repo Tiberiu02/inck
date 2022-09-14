@@ -20,6 +20,7 @@ export function AnalyticsScript() {
 export function TrackSignUp(email) {
   gtag("event", "sign_up", {
     event_label: "New Sign Up",
+    enail: email,
     email_provider: email.split("@")[1],
   });
 }
@@ -27,6 +28,7 @@ export function TrackSignUp(email) {
 export function TrackLogin(email) {
   gtag("event", "login", {
     event_label: "User Login",
+    email: email,
     email_provider: email.split("@")[1],
   });
 }
