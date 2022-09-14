@@ -34,7 +34,7 @@ export default function AuthPage() {
 
   return (
     <div className="flex flex-row justify-around pt-10 pb-20 min-h-screen h-full font-round bg-gray-100 items-center">
-      <div className="hidden flex flex-col gap-y-10">
+      <div className="hidden flex-col gap-y-10">
         <div className="w-32 h-32 bg-blue-800 rounded-full"></div>
         <h1 className=" font-bold text-4xl">Welcome to the future of note taking</h1>
         <div className="text-gray-500  font-bold italic">

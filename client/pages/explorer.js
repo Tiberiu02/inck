@@ -553,7 +553,7 @@ function PDFDropZone({ setPdfContent, setFileSize }) {
       })}
     >
       <input {...getInputProps()} />
-      <p className="truncate text-ellipsis">{dropZoneContent}</p>
+      <p className="truncate text-ellipsis w-72">{dropZoneContent}</p>
     </div>
   );
 }
@@ -588,7 +588,9 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
 
       <div>
         <PDFDropZone setFileSize={setFileSize} setPdfContent={setPdfContent} />
-        {fileSize > 0.0 && <p className="text-sm text-right italic">* File size: {fileSizeFormat} MB</p>}
+        <p className={`text-sm text-right italic ${fileSize > 0.0 ? "" : "invisible"}`}>
+          File size: {fileSizeFormat} MB
+        </p>
       </div>
     </div>
   );
@@ -651,7 +653,9 @@ function CreateModalHeader({ modalState, setModalState }) {
   return (
     <div className="flex items-center">
       <div className="text-3xl text-center">
-        Create<br></br>new
+        Create
+        <br />
+        new
       </div>
       <div className="w-1 h-60 bg-gray-200  rounded-full mx-8"></div>
       <div className="grid grid-cols-1 gap-3 w-fit">
@@ -672,7 +676,7 @@ function CreateModalHeader({ modalState, setModalState }) {
           setModalState={setModalState}
           buttonText={
             <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span className="material-symbols-outlined">description</span> Simple note
+              <span className="material-symbols-outlined">description</span> Note
             </div>
           }
           activeState={"note"}
@@ -683,7 +687,7 @@ function CreateModalHeader({ modalState, setModalState }) {
           setModalState={setModalState}
           buttonText={
             <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span className="material-symbols-outlined">picture_as_pdf</span> Pdf note
+              <span className="material-symbols-outlined">picture_as_pdf</span> PDF Note
             </div>
           }
           activeState={"import-pdf"}

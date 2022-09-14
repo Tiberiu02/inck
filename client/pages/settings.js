@@ -41,11 +41,6 @@ function UserDetails({}) {
     setTimeout(() => setError(""), MSG_DISPLAY_TIME);
   };
 
-  const setTempMessage = msg => {
-    setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(""), MSG_DISPLAY_TIME);
-  };
-
   const fetchAccountDetails = async () => {
     try {
       const json = await postFetchAPI("/api/settings/account-details", { token: getAuthToken() });
@@ -67,7 +62,7 @@ function UserDetails({}) {
     try {
       const json = await postFetchAPI("/api/auth/reset-password-with-token", { token: getAuthToken() });
       if (json.status == "success") {
-        setTempMessage("Please check your email");
+        setSuccessMessage("Please check your email");
       } else {
         setTempError("Unable to reset password");
       }
@@ -90,12 +85,14 @@ function UserDetails({}) {
           <div>Last name: {lastName}</div>
           <div>Email address: {email}</div>
           <div>Password: *********</div>
-          <button
-            onClick={resetPassword}
-            className="text-l h-8 bg-gray-200 font-medium hover:text-slate-50 hover:bg-slate-800 flex items-center justify-center rounded-md px-10 w-fit"
-          >
-            Reset password
-          </button>
+          {successMessage == "" && (
+            <button
+              onClick={resetPassword}
+              className="text-l h-8 bg-gray-200 font-medium hover:text-slate-50 hover:bg-slate-800 flex items-center justify-center rounded-md px-10 w-fit"
+            >
+              Reset password
+            </button>
+          )}
           <div
             className={`${
               successMessage == "" ? "hidden" : ""
