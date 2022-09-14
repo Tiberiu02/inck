@@ -85,10 +85,11 @@ function DirListing({
 
 function Note({ title, onClick, showSelect = false, isSelected = false }) {
   return (
-    <button
-      onClick={onClick}
-      className="relative flex flex-col items-center justify-center w-24 h-32 sm:w-32 sm:h-40 bg-note border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100 overflow-hidden"
-    >
+    <button className="relative flex flex-col items-center justify-center w-24 h-32 sm:w-32 sm:h-40 bg-note border-2 border-slate-800 rounded-xl shadow-inner hover:scale-110 duration-100 overflow-hidden">
+      <p className="relative py-2 px-2 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
+        {title}
+      </p>
+
       {showSelect && (
         <div
           className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
@@ -98,20 +99,13 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
           x
         </div>
       )}
-
-      <p className="relative py-2 px-2 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
-        {title}
-      </p>
     </button>
   );
 }
 
 function Book({ title, onClick, showSelect = false, isSelected = false }) {
   return (
-    <button
-      onClick={onClick}
-      className="relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col"
-    >
+    <button className="relative w-24 h-32 sm:w-32 sm:h-40 text-white hover:scale-110 duration-100 flex flex-col">
       <div className="bg-slate-800 h-5 w-12 rounded-t-xl -mb-2"></div>
       <div className="realtive bottom-0 h-full w-full flex flex-col justify-around p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
         {showSelect && (
@@ -276,10 +270,8 @@ function RemoveFilesModal({ visible, setVisible, removeFiles }) {
         <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">Remove notes</div>
 
         <div>
-          <div>Are you sure you want to remove your beloved notes ?</div>
-          <div className="text-sm italic mt-3">
-            *They will be removed permanently. Notes inside removed folder will be deleted recursively.
-          </div>
+          <div>Are you sure you want to delete these notes?</div>
+          <div className="text-red-500 font-bold mt-2">This connot be undone</div>
         </div>
 
         <div className="flex justify-between">
@@ -657,47 +649,53 @@ function CreateModalHeaderElement({ modalState, setModalState, buttonText, activ
 
 function CreateModalHeader({ modalState, setModalState }) {
   return (
-    <div className="grid grid-cols-1 gap-3 w-fit">
-      {/* New folder */}
-      <CreateModalHeaderElement
-        modalState={modalState}
-        setModalState={setModalState}
-        buttonText={
-          <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-            <span class="material-symbols-outlined">folder</span> Folder
-          </div>
-        }
-        activeState={"folder"}
-      />
-      {/* New note */}
-      <CreateModalHeaderElement
-        modalState={modalState}
-        setModalState={setModalState}
-        buttonText={
-          <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-            <span class="material-symbols-outlined">description</span> Simple note
-          </div>
-        }
-        activeState={"note"}
-      />
-      {/* Import PDF */}
-      <CreateModalHeaderElement
-        modalState={modalState}
-        setModalState={setModalState}
-        buttonText={
-          <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-            <span class="material-symbols-outlined">picture_as_pdf</span> Pdf note
-          </div>
-        }
-        activeState={"import-pdf"}
-      />
-      {/* Import note 
+    <div className="flex items-center">
+      <div className="text-3xl text-center">
+        Create<br></br>new
+      </div>
+      <div className="w-1 h-60 bg-gray-200  rounded-full mx-8"></div>
+      <div className="grid grid-cols-1 gap-3 w-fit">
+        {/* New folder */}
+        <CreateModalHeaderElement
+          modalState={modalState}
+          setModalState={setModalState}
+          buttonText={
+            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+              <span class="material-symbols-outlined">folder</span> Folder
+            </div>
+          }
+          activeState={"folder"}
+        />
+        {/* New note */}
+        <CreateModalHeaderElement
+          modalState={modalState}
+          setModalState={setModalState}
+          buttonText={
+            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+              <span class="material-symbols-outlined">description</span> Simple note
+            </div>
+          }
+          activeState={"note"}
+        />
+        {/* Import PDF */}
+        <CreateModalHeaderElement
+          modalState={modalState}
+          setModalState={setModalState}
+          buttonText={
+            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+              <span class="material-symbols-outlined">picture_as_pdf</span> Pdf note
+            </div>
+          }
+          activeState={"import-pdf"}
+        />
+        {/* Import note 
       <CreateModalHeaderElement
         modalState={modalState}
         setModalState={setModalState}
         buttonText={"Import note"}
         activeState={"import-note"}
       />*/}
+      </div>
     </div>
   );
 }
@@ -1027,9 +1025,10 @@ export default function Explorer() {
   const [removeFileModal, setRemoveFileModal] = useState(false);
   const [moveFileModal, setMoveFileModal] = useState(false);
 
-  const [isSelecting, setIsSelecting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState({});
   const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]];
+
+  const isSelecting = Object.keys(selectedFiles).length > 0;
 
   const setFilesAfterChange = newFiles => {
     setFiles(newFiles);
@@ -1037,12 +1036,6 @@ export default function Explorer() {
   };
 
   let selectionWidget;
-  const toggleFileSelection = newVal => {
-    if (newVal) {
-      setSelectedFiles({});
-    }
-    setIsSelecting(newVal);
-  };
 
   // Toggle file selection
   if (isSelecting) {
@@ -1051,8 +1044,11 @@ export default function Explorer() {
 
     selectionWidget = (
       <div className="flex w-full justify-between rounded-xl border-2 overflow-clip">
-        <button className="hover:bg-gray-300 px-4 py-3 hover" onClick={() => toggleFileSelection(false)}>
-          <FaRegWindowClose />
+        <button
+          className="hover:bg-gray-300 px-3 flex items-center justify-center"
+          onClick={() => setSelectedFiles({})}
+        >
+          <span className="material-symbols-outlined text-xl">close</span>
         </button>
         <button
           onClick={() => setRemoveFileModal(true)}
@@ -1071,21 +1067,14 @@ export default function Explorer() {
         <button
           onClick={() => setMoveFileModal(true)}
           disabled={noSelection}
-          className="hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3"
+          className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4"
         >
-          <FaExchangeAlt />
+          <span className="material-symbols-outlined text-xl">drive_file_move</span>
         </button>
       </div>
     );
   } else {
-    selectionWidget = (
-      <button
-        onClick={() => toggleFileSelection(true)}
-        className="py-2 text-l bg-gray-200 font-medium hover:text-slate-50 hover:bg-slate-800 flex items-center justify-center rounded-md px-3"
-      >
-        Select...
-      </button>
-    );
+    selectionWidget = <></>;
   }
 
   let fileClickActionFactory;
@@ -1114,27 +1103,44 @@ export default function Explorer() {
 
   const drawExplorerItem = (f, idx, _) => {
     const isSelected = isSelecting && f._id in selectedFiles;
-    if (f.type == "folder") {
-      return (
-        <Book
-          key={f.name}
-          isSelected={isSelected}
-          showSelect={isSelecting}
-          title={f.name}
-          onClick={bookClickActionFactory(f, idx)}
-        />
-      );
-    } else {
-      return (
-        <Note
-          key={f.fileId}
-          isSelected={isSelected}
-          showSelect={isSelecting}
-          title={f.name}
-          onClick={fileClickActionFactory(f, idx)}
-        />
-      );
-    }
+
+    const handleClick = f.type == "folder" ? bookClickActionFactory(f, idx) : fileClickActionFactory(f, idx);
+    const handleLongPress = () => {
+      longPressTimeout = null;
+      if (!isSelecting) {
+        setSelectedFiles({ [f._id]: f });
+      } else {
+        handleClick();
+      }
+    };
+
+    const LONG_PRESS_DURAION = 500;
+    let longPressTimeout;
+
+    const handlePointerDown = e => {
+      if (longPressTimeout) {
+        window.clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+      }
+      longPressTimeout = window.setTimeout(handleLongPress, LONG_PRESS_DURAION);
+    };
+    const handlePointerUp = e => {
+      if (longPressTimeout) {
+        window.clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+        handleClick();
+      }
+    };
+
+    return (
+      <div onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+        {f.type == "folder" ? (
+          <Book key={f.name} isSelected={isSelected} showSelect={isSelecting} title={f.name} />
+        ) : (
+          <Note key={f.fileId} isSelected={isSelected} showSelect={isSelecting} title={f.name} />
+        )}
+      </div>
+    );
   };
 
   const reloadFiles = () => LoadFiles(setFiles);
@@ -1155,13 +1161,16 @@ export default function Explorer() {
         <div className="relative flex flex-col w-[100vw] h-[100vh]">
           {/** Top bar */}
           <div className="flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300">
-            <MobileMenu />
+            {/* A menu that slides from the left
+            Maybe add back one day
+            <MobileMenu />*/}
+
             <div className="hidden sm:flex flex-row gap-3 items-center text-gray-800">
               <FaPencilAlt className="text-2xl" />
               <p className="font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]">Inck</p>
             </div>
 
-            <div className="w-48 justify-center align-middle flex">{selectionWidget}</div>
+            <div className="justify-center align-middle">{selectionWidget}</div>
             {/* Spacer invisible div */}
             <div className="w-full" />
             {/*
@@ -1181,24 +1190,27 @@ export default function Explorer() {
             
             */}
 
-            <div className="hidden sm:flex flex-row gap-2">
-              <button
-                onClick={disconnect}
-                className="text-l bg-gray-200 font-medium hover:text-slate-50 hover:bg-slate-800 flex items-center justify-center rounded-md px-3"
-              >
-                Disconnect
-              </button>
+            <div className="flex flex-row gap-2">
+              {/*}
               <Link href="/faq">
                 <a className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
                   <FaRegQuestionCircle className="text-2xl" />
                 </a>
               </Link>
+          */}
 
               <Link href="/settings">
                 <a className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
                   <FaRegSun className="text-2xl" />
                 </a>
               </Link>
+
+              <button
+                onClick={disconnect}
+                className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full"
+              >
+                <span className="material-symbols-outlined text-2xl">logout</span>
+              </button>
             </div>
           </div>
 
@@ -1210,11 +1222,11 @@ export default function Explorer() {
               className="hidden sm:flex pb-10 w-96 border-r-[1px] border-gray-300"
             />
 
-            <div className="relative flex flex-col w-full h-full px-10 gap-12 py-3 overflow-scroll">
+            <div className="relative flex flex-col w-full h-full px-10 py-3 overflow-scroll">
               <PathNavigator files={files} path={path} setPath={setPath} />
 
               {/** Notes */}
-              <div className="flex flex-row flex-wrap gap-4 sm:gap-8 m-auto pb-40 justify-start">
+              <div className="flex flex-row flex-wrap gap-4 sm:gap-8 pt-8 sm:pt-16 pb-40 justify-around sm:justify-start">
                 {files && files[path.at(-1)].children.map(drawExplorerItem)}
 
                 <AddButton
@@ -1247,7 +1259,7 @@ export default function Explorer() {
             setFiles={setFilesAfterChange}
             save={(id, newName, newVisibility, options) => {
               editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options);
-              toggleFileSelection(false);
+              setSelectedFiles({});
             }}
           />
         )}
@@ -1259,7 +1271,7 @@ export default function Explorer() {
             setFiles={setFilesAfterChange}
             removeFiles={() => {
               removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange);
-              toggleFileSelection(false);
+              setSelectedFiles({});
             }}
           />
         )}
@@ -1273,7 +1285,7 @@ export default function Explorer() {
             setFiles={setFilesAfterChange}
             moveFiles={target => {
               moveFilesAPICall(selectedFiles, target, setFilesAfterChange);
-              toggleFileSelection(false);
+              setSelectedFiles({});
             }}
           />
         )}
