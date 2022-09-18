@@ -226,6 +226,7 @@ export class MySelection extends SelectionBase implements MyTool {
         data: this.selected.map(SerializeGraphic),
       })
     );
+    this.deselect();
   }
 
   cutSelection(): void {
