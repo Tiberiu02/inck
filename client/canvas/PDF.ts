@@ -67,14 +67,15 @@ export class PdfCanvasManager implements CanvasManager {
     this.pages = [];
 
     MutableView.maxWidth = 3;
+    RenderLoop.scheduleRender();
     this.init();
   }
 
   private async init() {
-    console.log("loading PDF");
+    document.getElementById("pdf-spinner").style.display = "flex";
+
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
     this.pdf = await PDFJS.getDocument(this.url).promise;
-    console.log("loaded PDF");
 
     const padding = 0.01; // %w
 
@@ -102,6 +103,8 @@ export class PdfCanvasManager implements CanvasManager {
     this.skeletonBuffer = GL.ctx.createBuffer();
     GL.ctx.bindBuffer(GL.ctx.ARRAY_BUFFER, this.skeletonBuffer);
     GL.ctx.bufferData(GL.ctx.ARRAY_BUFFER, new Float32Array(this.skeletonVector), GL.ctx.STATIC_DRAW);
+
+    document.getElementById("pdf-spinner").style.display = "none";
 
     RenderLoop.scheduleRender();
   }

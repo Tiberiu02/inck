@@ -53,7 +53,7 @@ export class CaddieMenu {
     this.state = STATES.IDLE;
 
     this.frame = new Vector2D(0, 0);
-    this.target = new Vector2D(CORNER_PADDING, PAGE_PADDING);
+    this.target = new Vector2D(PAGE_PADDING, CORNER_PADDING);
     this.pos = this.target;
     this.opacity = MAX_OPACITY;
     this.lastUpdate = performance.now();
@@ -161,8 +161,8 @@ export class CaddieMenu {
     this.el.style.borderRadius = "1rem";
     this.el.style.overflow = "hidden";
     this.el.style.display = "flex";
-    this.el.style.top = "0.5rem";
-    this.el.style.left = "5rem";
+    this.el.style.top = "5rem";
+    this.el.style.left = "0.5rem";
 
     // Add buttons
 

@@ -88,3 +88,43 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: #555; 
 }
+
+
+
+/* Spinner animation */
+
+.spinner {
+  animation: rotator 2s linear infinite;
+}
+
+@keyframes rotator {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner > .path {
+  stroke-dasharray: 187;
+  stroke-dashoffset: 0;
+  transform-origin: center;
+  animation: dash 2s ease-in-out infinite, colors 8s ease-in-out infinite;
+}
+
+@keyframes colors {
+	0% { stroke: #4285F4; }
+	25% { stroke: #DE3E35; }
+	50% { stroke: #F7C223; }
+	75% { stroke: #1B9A59; }
+  100% { stroke: #4285F4; }
+}
+
+@keyframes dash {
+ 0% { stroke-dashoffset: 160; }
+ 50% {
+   stroke-dashoffset: 45;
+   transform:rotate(135deg);
+ }
+ 100% {
+   stroke-dashoffset: 160;
+   transform:rotate(360deg);
+ }
+}

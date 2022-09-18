@@ -30,8 +30,9 @@ export class NetworkCanvasManager implements CanvasManager {
     const pathname = window.location.pathname;
     const wloc = pathname.match(/\/note\/([\w\d_]+)/);
 
-    const docId = (wloc && wloc[1]) ||  "";
-    //network.close()
+    const docId = (wloc && wloc[1]) || "";
+
+    document.getElementById("note-spinner").style.display = "flex";
 
     network.emit("request document", docId);
 
@@ -51,6 +52,7 @@ export class NetworkCanvasManager implements CanvasManager {
         }
       }
 
+      document.getElementById("note-spinner").style.display = "none";
       RenderLoop.scheduleRender();
     });
 
