@@ -5,6 +5,9 @@ import { MutableObservableProperty } from "../DesignPatterns/Observable";
 import { GL } from "../Rendering/GL";
 import { RGB } from "../types";
 
+export const BG_COLOR: RGB = [0.9, 0.9, 0.9];
+export const PAGE_GAP = 0.01; // %w
+
 enum PdfPageStatus {
   LOADED,
   LOADING,
@@ -71,8 +74,6 @@ export class PdfBackground {
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
     this.pdf = await PDFJS.getDocument(this.url).promise;
 
-    const padding = 0.01; // %w
-
     this.skeletonVector = [];
 
     let top = 0;
@@ -91,7 +92,7 @@ export class PdfBackground {
       this.skeletonVector.push(...CreateRectangleVector(0, top, 1, height, [1, 1, 1], true));
 
       this.yMax.set(Math.max(this.yMax.get(), top + height));
-      top += height + padding;
+      top += height + PAGE_GAP;
     }
 
     this.skeletonBuffer = GL.ctx.createBuffer();
@@ -103,14 +104,12 @@ export class PdfBackground {
     RenderLoop.scheduleRender();
   }
 
+  getURL() {
+    return this.url;
+  }
+
   render(): void {
-    const bgVector = CreateRectangleVector(
-      View.getLeft(),
-      View.getTop(),
-      View.getWidth(),
-      View.getHeight(),
-      [0.9, 0.9, 0.9]
-    );
+    const bgVector = CreateRectangleVector(View.getLeft(), View.getTop(), View.getWidth(), View.getHeight(), BG_COLOR);
 
     GL.renderVector(bgVector, View.getTransformMatrix());
 

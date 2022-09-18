@@ -16,9 +16,10 @@ import { PdfBackground } from "./PDF/PdfBackground";
 import { Vector2D } from "./Math/V2";
 import GetApiPath from "../components/GetApiPath.js";
 import { GL } from "./Rendering/GL";
+import { DownloadAsPdf } from "./PDF/PdfExport";
 
-const NUM_LAYERS = 2;
-const HIGHLIGHTER_OPACITY = 0.35;
+export const NUM_LAYERS = 2;
+export const HIGHLIGHTER_OPACITY = 0.35;
 
 export default class App {
   private strokeContainer: LayeredStrokeContainer;
@@ -102,6 +103,8 @@ export default class App {
       this.strokeContainer.render(1);
       this.toolManager.render(1);
     });
+
+    window["PdfExport"] = () => DownloadAsPdf(yMax, this.strokeContainer, this.pdfBackground);
   }
 
   async handlePenEvent(e: PenEvent) {
