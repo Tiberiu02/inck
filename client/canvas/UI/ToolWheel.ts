@@ -193,7 +193,7 @@ export default class ToolWheel {
   }
 
   private buildToolWheel(R) {
-    const apple = navigator.vendor == "Apple Computer, Inc.";
+    const hoverDisabled = true; //navigator.vendor == "Apple Computer, Inc.";
 
     const spin = (r, a, d = 0) => [R - r * Math.cos(a + d / r), R - r * Math.sin(a + d / r)];
     const spinO = (r, a, d = 0) => ({ x: R - r * Math.cos(a + d / r), y: R - r * Math.sin(a + d / r) });
@@ -207,14 +207,14 @@ export default class ToolWheel {
 
     // Colors
     for (let i = 0; i < N; i++) {
-      let part = createElement("g", { class: apple ? "" : "color_slice" });
+      let part = createElement("g", { class: hoverDisabled ? "" : "color_slice" });
 
       // Main color slice
       const a1 = SLICE_ANGLE * i + COLORS_START_ANGLE;
       const a2 = SLICE_ANGLE * (i + 1) + COLORS_START_ANGLE;
       const a = (a1 + a2) / 2;
 
-      let pen = createElement("g", { class: apple ? "" : "pen" });
+      let pen = createElement("g", { class: hoverDisabled ? "" : "pen" });
       pen.addEventListener("pointerdown", e => {
         this.setColor(COLORS_PEN_HEX[i]);
         this.setTool("pen");
@@ -238,7 +238,7 @@ export default class ToolWheel {
       // Pen icon
       const iconSize = R / 6;
       const ai = a + 0.03;
-      const r = apple ? r1 * 0.3 + r2 * 0.7 : (r1 + r2) / 2;
+      const r = hoverDisabled ? r1 * 0.3 + r2 * 0.7 : (r1 + r2) / 2;
       pen.appendChild(
         createElement("image", {
           class: "pen-img",
