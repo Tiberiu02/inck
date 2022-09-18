@@ -67,6 +67,8 @@ export class PdfCanvasManager implements CanvasManager {
     this.pages = [];
 
     MutableView.maxWidth = 3;
+    MutableView.documentTop = -0.2;
+
     RenderLoop.scheduleRender();
     this.init();
   }

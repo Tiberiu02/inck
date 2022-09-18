@@ -129,9 +129,10 @@ export class View {
 
 export class MutableView extends View {
   static maxWidth: number;
+  static documentTop: number;
 
   private static clip() {
-    View.top = Math.max(0, View.top);
+    View.top = Math.max(this.documentTop || 0, View.top);
     const W = this.maxWidth || 1;
     View.left = Math.max(0.5 - W / 2, Math.min(0.5 + W / 2 - 1 / View.zoom, View.left));
     View.zoom = Math.max(1 / W, Math.min(10, View.zoom));
