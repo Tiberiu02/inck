@@ -1,10 +1,12 @@
-import { CanvasManager } from "../../CanvasManager";
+import { LayeredStrokeContainer } from "../../LayeredStrokeContainer";
 import { DeserializeStroke, SerializedStroke, SerializeStroke } from "../../Drawing/Stroke";
 import { StrokeBuilder } from "../../Drawing/StrokeBuilder";
 import { RGB, StrokePoint } from "../../types";
 import { SerializedTool, MyTool, TheirTool } from "../Tool";
 import { CreateEmitterClass, ProtectInstance } from "../../DesignPatterns/RemoteStateManagement";
 import { RenderLoop } from "../../Rendering/RenderLoop";
+import { GL } from "../../Rendering/GL";
+import { View } from "../../View/View";
 
 export interface SerializedPen extends SerializedTool {
   readonly color: RGB;
@@ -24,17 +26,17 @@ export class TheirPen implements PenController, TheirTool {
   private width: number;
   private zIndex: number;
 
-  private canvasManager: CanvasManager;
+  private strokeContainer: LayeredStrokeContainer;
 
   private drawing: boolean;
   private strokeBuilder: StrokeBuilder;
 
-  constructor(color: RGB, width: number, zIndex: number, canvasManager: CanvasManager) {
+  constructor(color: RGB, width: number, zIndex: number, strokeContainer: LayeredStrokeContainer) {
     this.color = color;
     this.width = width;
     this.zIndex = zIndex;
 
-    this.canvasManager = canvasManager;
+    this.strokeContainer = strokeContainer;
   }
 
   loadPoints(newPoints: StrokePoint[]): void {
@@ -63,9 +65,10 @@ export class TheirPen implements PenController, TheirTool {
     this.width = width;
   }
 
-  render(): void {
-    if (this.strokeBuilder) {
-      this.canvasManager.addForNextRender(this.strokeBuilder.getGraphic());
+  render(layerRendered: number): void {
+    if (this.strokeBuilder && layerRendered == this.zIndex) {
+      const vector = this.strokeBuilder.getGraphic().vector;
+      GL.renderVector(vector, View.getTransformMatrix());
     }
   }
 
@@ -73,8 +76,8 @@ export class TheirPen implements PenController, TheirTool {
     return ProtectInstance(this, PenController);
   }
 
-  static deserialize(data: SerializedPen, canvasManager: CanvasManager): TheirPen {
-    const pen = new TheirPen(data.color, data.width, data.zIndex, canvasManager);
+  static deserialize(data: SerializedPen, strokeContainer: LayeredStrokeContainer): TheirPen {
+    const pen = new TheirPen(data.color, data.width, data.zIndex, strokeContainer);
 
     if (data.stroke) {
       const stroke = DeserializeStroke(data.stroke);

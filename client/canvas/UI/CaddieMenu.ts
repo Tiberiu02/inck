@@ -203,7 +203,6 @@ export class CaddieMenu {
     const eraseBtn = button();
     eraseBtn.innerHTML = CaddieMenu.EraserIcon();
     eraseBtn.addEventListener("pointerup", () => {
-      console.log(dragging);
       if (!dragging) {
         if (this.toolManager.isErasing) {
           this.toolManager.disableEraser();
@@ -231,7 +230,6 @@ export class CaddieMenu {
       if (relativePos) {
         const pointer = V2.div(new Vector2D(e.x, e.y), Display.DPI);
         dragging = dragging || V2.dist(pointer, initialClick) > DRAG_START;
-        console.log(dragging);
         this.target = this.pos = V2.add(pointer, relativePos);
       }
     };

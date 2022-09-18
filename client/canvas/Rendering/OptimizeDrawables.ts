@@ -1,13 +1,15 @@
 import { Graphic, GraphicTypes } from "../Drawing/Graphic";
 import { VectorGraphic } from "../Drawing/VectorGraphic";
-import { BUFFER_SIZE, NUM_LAYERS } from "./BaseCanvasManager";
+import { BUFFER_SIZE } from "./BaseStrokeContainer";
 
 export function OptimizeDrawables(drawables: Graphic[]): Graphic[] {
   const vectors: VectorGraphic[] = drawables.filter(d => d.type == GraphicTypes.VECTOR) as VectorGraphic[];
   const nonVectors = drawables.filter(d => d.type != GraphicTypes.VECTOR);
 
+  const layers = new Set(drawables.map(d => d.zIndex));
+
   const optimized = [];
-  for (let layer = 0; layer < NUM_LAYERS; layer++) {
+  for (const layer of layers) {
     const v = vectors.filter(g => g.zIndex == layer);
     if (v.length) {
       let compounded = v[0];

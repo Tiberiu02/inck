@@ -1,17 +1,17 @@
 import { ActionStack } from "./ActionsStack";
-import { CanvasManager } from "../CanvasManager";
+import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { MyTool } from "./Tool";
 import { NetworkConnection } from "../Network/NetworkConnection";
 
 export class StrokeEraser implements MyTool {
   private x: number;
   private y: number;
-  private canvasManager: CanvasManager;
+  private strokeContainer: LayeredStrokeContainer;
   private actionStack: ActionStack;
   private network: NetworkConnection;
 
-  constructor(canvasManager: CanvasManager, actionStack: ActionStack, network: NetworkConnection) {
-    this.canvasManager = canvasManager;
+  constructor(strokeContainer: LayeredStrokeContainer, actionStack: ActionStack, network: NetworkConnection) {
+    this.strokeContainer = strokeContainer;
     this.actionStack = actionStack;
     this.network = network;
   }
@@ -25,18 +25,18 @@ export class StrokeEraser implements MyTool {
       this.y = y;
 
       const line = { x1: x, y1: y, x2, y2 };
-      this.canvasManager
+      this.strokeContainer
         .getAll()
         .filter(s => s && s.geometry.intersectsLine(line))
         .forEach(s => {
-          this.canvasManager.remove(s.id);
+          this.strokeContainer.remove(s.id);
           this.actionStack.push({
             undo: () => {
               // TODO: Add stroke at the same index as before
-              this.canvasManager.add((s = { ...s, id: window.userId + "-" + Date.now() }));
+              this.strokeContainer.add((s = { ...s, id: window.userId + "-" + Date.now() }));
               return true;
             },
-            redo: () => this.canvasManager.remove(s.id),
+            redo: () => this.strokeContainer.remove(s.id),
           });
         });
     } else {

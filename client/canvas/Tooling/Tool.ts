@@ -4,12 +4,12 @@ export interface SerializedTool {
 
 export interface MyTool {
   update(x: number, y: number, pressure: number, timestamp: number): void;
-  render(): void;
+  render(layerRendered: number): void;
   release(): void;
   serialize(): SerializedTool;
 }
 
 export interface TheirTool {
-  render(): void;
+  render(layerRendered: number): void;
   protected(): any;
 }

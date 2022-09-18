@@ -1,15 +1,9 @@
-import { CanvasManager } from "./CanvasManager";
-import { PersistentGraphic, Graphic, GraphicTypes } from "./Drawing/Graphic";
 import * as PDFJS from "pdfjs-dist/legacy/build/pdf";
-import Profiler from "./Profiler";
-import { ImageGraphic } from "./Drawing/ImageGraphic";
-import { RenderLoop } from "./Rendering/RenderLoop";
-import { CreateRectangleGraphic } from "./Drawing/Rectangle";
-import { MutableView, View } from "./View/View";
-import { MutableObservableProperty } from "./DesignPatterns/Observable";
-import { GL } from "./Rendering/GL";
-import { GetUniforms } from "./Rendering/BaseCanvasManager";
-import { RGB } from "./types";
+import { RenderLoop } from "../Rendering/RenderLoop";
+import { MutableView, View } from "../View/View";
+import { MutableObservableProperty } from "../DesignPatterns/Observable";
+import { GL } from "../Rendering/GL";
+import { RGB } from "../types";
 
 enum PdfPageStatus {
   LOADED,
@@ -51,8 +45,7 @@ function CreateRectangleVector(
   return vector;
 }
 
-export class PdfCanvasManager implements CanvasManager {
-  private canvas: CanvasManager;
+export class PdfBackground {
   private url: string;
   private pdf: PDFJS.PDFDocumentProxy;
   private pages: PdfPage[];
@@ -60,8 +53,7 @@ export class PdfCanvasManager implements CanvasManager {
   private skeletonVector: number[];
   private skeletonBuffer: WebGLBuffer;
 
-  constructor(canvas: CanvasManager, url: string, yMax: MutableObservableProperty<number>) {
-    this.canvas = canvas;
+  constructor(url: string, yMax: MutableObservableProperty<number>) {
     this.url = url;
     this.yMax = yMax;
     this.pages = [];
@@ -111,18 +103,6 @@ export class PdfCanvasManager implements CanvasManager {
     RenderLoop.scheduleRender();
   }
 
-  add(graphic: PersistentGraphic): void {
-    this.canvas.add(graphic);
-  }
-  remove(id: string): boolean {
-    return this.canvas.remove(id);
-  }
-  getAll(): PersistentGraphic[] {
-    return this.canvas.getAll();
-  }
-  addForNextRender(graphic: Graphic): void {
-    this.canvas.addForNextRender(graphic);
-  }
   render(): void {
     const bgVector = CreateRectangleVector(
       View.getLeft(),
@@ -132,10 +112,10 @@ export class PdfCanvasManager implements CanvasManager {
       [0.9, 0.9, 0.9]
     );
 
-    GL.renderVector(bgVector, GetUniforms());
+    GL.renderVector(bgVector, View.getTransformMatrix());
 
     if (this.skeletonBuffer) {
-      GL.renderVector(this.skeletonVector, GetUniforms(), this.skeletonBuffer);
+      GL.renderVector(this.skeletonVector, View.getTransformMatrix(), this.skeletonBuffer);
     }
 
     const pageIsVisible = (page: PdfPage) =>
@@ -168,8 +148,6 @@ export class PdfCanvasManager implements CanvasManager {
     if (pageToLoad && this.pdf && this.pages.every(page => page.status != PdfPageStatus.LOADING)) {
       this.startLoadingPage(pageToLoad);
     }
-
-    this.canvas.render();
   }
 
   async startLoadingPage(pageData: PdfPage) {

@@ -1,29 +1,16 @@
-import { CanvasManager } from "../CanvasManager";
+import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "../Rendering/RenderLoop";
-import { SerializedTool, MyTool, TheirTool } from "../Tooling/Tool";
-import { View } from "../View/View";
 import { NetworkConnection } from "./NetworkConnection";
-import { Vector2D } from "../Math/V2";
-import {
-  Graphic,
-  PersistentGraphic,
-  SerializedGraphic,
-  SerializeGraphic,
-  DeserializeGraphic,
-} from "../Drawing/Graphic";
-import { RGB } from "../types";
-import { TheirPen, SerializedPen } from "../Tooling/Pen/TheirPen";
-import { TheirSelection, SerializedSelection } from "../Tooling/Selection/TheirSelection";
-import { V3 } from "../Math/V3";
+import { PersistentGraphic, SerializedGraphic, SerializeGraphic, DeserializeGraphic } from "../Drawing/Graphic";
 import { Collaborator } from "./Collaborator";
 
-export class NetworkCanvasManager implements CanvasManager {
-  private baseCanvas: CanvasManager;
+export class NetworkStrokeContainer implements LayeredStrokeContainer {
+  private baseCanvas: LayeredStrokeContainer;
   private network: NetworkConnection;
   private collabs: { [id: number]: Collaborator };
   private collabsContainer: HTMLDivElement;
 
-  constructor(baseCanvas: CanvasManager, network: NetworkConnection) {
+  constructor(baseCanvas: LayeredStrokeContainer, network: NetworkConnection) {
     this.baseCanvas = baseCanvas;
     this.network = network;
 
@@ -104,15 +91,11 @@ export class NetworkCanvasManager implements CanvasManager {
     return this.baseCanvas.getAll();
   }
 
-  addForNextRender(drawable: Graphic): void {
-    this.baseCanvas.addForNextRender(drawable);
-  }
+  render(layerIndex: number): void {
+    this.baseCanvas.render(layerIndex);
 
-  render(): void {
     for (let c of Object.values(this.collabs)) {
-      c.render();
+      c.render(layerIndex);
     }
-
-    this.baseCanvas.render();
   }
 }

@@ -1,24 +1,27 @@
 import { PageNavigation } from "./View/PageNavigation";
 import { ScrollBars } from "./UI/Scrollbars";
 import ToolWheel from "./UI/ToolWheel";
-import { NetworkCanvasManager } from "./Network/NetworkCanvasManager";
+import { NetworkStrokeContainer } from "./Network/NetworkStrokeContainer";
 import { NetworkConnection } from "./Network/NetworkConnection";
-import { CanvasManager } from "./CanvasManager";
+import { LayeredStrokeContainer } from "./LayeredStrokeContainer";
 import { CaddieMenu } from "./UI/CaddieMenu";
 import { PenEvent, PointerTracker } from "./UI/PointerTracker";
 import { ToolManager } from "./Tooling/ToolManager";
-import { BaseCanvasManager } from "./Rendering/BaseCanvasManager";
+import { BaseStrokeContainer } from "./Rendering/BaseStrokeContainer";
 import { View } from "./View/View";
 import { MutableObservableProperty, ObservableProperty } from "./DesignPatterns/Observable";
 import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
-import { PdfCanvasManager } from "./PDF";
+import { PdfBackground } from "./PDF/PdfBackground";
 import { Vector2D } from "./Math/V2";
-import GetApiPath, { postFetchAPI } from "../components/GetApiPath.js";
+import GetApiPath from "../components/GetApiPath.js";
 import { GL } from "./Rendering/GL";
 
+const NUM_LAYERS = 2;
+const HIGHLIGHTER_OPACITY = 0.35;
+
 export default class App {
-  private canvasManager: CanvasManager;
+  private strokeContainer: LayeredStrokeContainer;
 
   private network: NetworkConnection;
   private toolManager: ToolManager;
@@ -29,6 +32,7 @@ export default class App {
   private scrollBars: ScrollBars;
   private wheel: ToolWheel;
   private caddie: CaddieMenu;
+  pdfBackground: PdfBackground;
 
   constructor() {
     Object.assign(document.body.style, {
@@ -52,19 +56,19 @@ export default class App {
     GL.init();
 
     // Canvas
-    this.canvasManager = new BaseCanvasManager();
+    this.strokeContainer = new BaseStrokeContainer(NUM_LAYERS);
 
     // Horizontal page size
     const yMax = new MutableObservableProperty<number>(0);
-    this.canvasManager = new PageSizeTracker(this.canvasManager, yMax);
+    this.strokeContainer = new PageSizeTracker(this.strokeContainer, yMax);
 
     // Network
     this.network = new NetworkConnection();
-    this.canvasManager = new NetworkCanvasManager(this.canvasManager, this.network);
+    this.strokeContainer = new NetworkStrokeContainer(this.strokeContainer, this.network);
 
     // PDF import
     this.network.on("load pdf", (url: string) => {
-      this.canvasManager = new PdfCanvasManager(this.canvasManager, GetApiPath(url), yMax);
+      this.pdfBackground = new PdfBackground(GetApiPath(url), yMax);
     });
 
     // Pointer tracker
@@ -77,7 +81,7 @@ export default class App {
     View.onUpdate(() => RenderLoop.scheduleRender());
 
     // Enable tooling
-    this.toolManager = new ToolManager(this.canvasManager, this.network);
+    this.toolManager = new ToolManager(this.strokeContainer, this.network);
 
     // Create UI
     this.scrollBars = new ScrollBars(yMax as ObservableProperty<number>);
@@ -85,8 +89,19 @@ export default class App {
     this.caddie = new CaddieMenu(this.toolManager, this.wheel);
 
     // Enable rendering
-    RenderLoop.onRender(() => this.toolManager.render());
-    RenderLoop.onRender(() => this.canvasManager.render());
+    RenderLoop.onRender(() => {
+      if (this.pdfBackground) {
+        this.pdfBackground.render();
+      }
+
+      GL.beginLayer();
+      this.strokeContainer.render(0);
+      this.toolManager.render(0);
+      GL.finishLayer(HIGHLIGHTER_OPACITY);
+
+      this.strokeContainer.render(1);
+      this.toolManager.render(1);
+    });
   }
 
   async handlePenEvent(e: PenEvent) {
@@ -99,27 +114,5 @@ export default class App {
 
     this.toolManager.update(x, y, e.pressure, e.timeStamp);
     this.caddie.updatePointer(e.pressure ? new Vector2D(e.x, e.y) : null);
-  }
-
-  async loadPdfBackground(yMax: MutableObservableProperty<number>) {
-    const wloc = window.location.pathname.match(/\/note\/([\w\d_]+)/);
-    const docId = (wloc && wloc[1]) || "";
-
-    if (docId == "pdf") {
-      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo.pdf", yMax);
-    } else if (docId == "pdf2") {
-      this.canvasManager = new PdfCanvasManager(this.canvasManager, "/demo2.pdf", yMax);
-    } else {
-      console.log("fetching");
-      const response = await postFetchAPI("/api/pdf/serve-pdf", {
-        docId,
-      });
-
-      if (response.status == "success" && response.backgroundType == "pdf") {
-        this.canvasManager = new PdfCanvasManager(this.canvasManager, GetApiPath(response.pdfURL), yMax);
-      } else {
-        console.log("error while fetching background:", response);
-      }
-    }
   }
 }

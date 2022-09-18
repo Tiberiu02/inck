@@ -1,4 +1,4 @@
-import { CanvasManager } from "../../CanvasManager";
+import { LayeredStrokeContainer } from "../../LayeredStrokeContainer";
 import { DeserializeGraphic, SerializedGraphic } from "../../Drawing/Graphic";
 import { StrokePoint } from "../../types";
 import { SerializedTool, TheirTool } from "../Tool";
@@ -28,8 +28,8 @@ export class SelectionController {
 }
 
 export class TheirSelection extends SelectionBase implements SelectionController, TheirTool {
-  constructor(canvasManager: CanvasManager) {
-    super(canvasManager);
+  constructor(strokeContainer: LayeredStrokeContainer) {
+    super(strokeContainer);
   }
 
   protected(): SelectionController {
@@ -40,8 +40,12 @@ export class TheirSelection extends SelectionBase implements SelectionController
     this.updateSelection(selected.map(DeserializeGraphic));
   }
 
-  static deserialize(data: SerializedSelection, canvasManager: CanvasManager, collab: Collaborator): TheirSelection {
-    const s = new TheirSelection(canvasManager);
+  static deserialize(
+    data: SerializedSelection,
+    strokeContainer: LayeredStrokeContainer,
+    collab: Collaborator
+  ): TheirSelection {
+    const s = new TheirSelection(strokeContainer);
     s.lassoColor = collab.getColor(0.8);
     s.lassoConnectorColor = collab.getColor(0.85);
     s.shadowColor = collab.getColor(0.9);

@@ -1,5 +1,5 @@
 import { ActionStack } from "../ActionsStack";
-import { CanvasManager } from "../../CanvasManager";
+import { LayeredStrokeContainer } from "../../LayeredStrokeContainer";
 import { SerializeStroke } from "../../Drawing/Stroke";
 import { StrokeBuilder } from "../../Drawing/StrokeBuilder";
 import { RGB, StrokePoint } from "../../types";
@@ -10,6 +10,7 @@ import { NetworkConnection } from "../../Network/NetworkConnection";
 import { RenderLoop } from "../../Rendering/RenderLoop";
 import { EmitterPen, PenController, SerializedPen } from "./TheirPen";
 import { DetectShape } from "../../ShapeRecognition/ShapeRecognition";
+import { GL } from "../../Rendering/GL";
 
 const LONG_PRESS_TIME = 500; // (ms)
 const INTERVAL_TIME = 100; //   (ms)
@@ -21,7 +22,7 @@ export class MyPen implements MyTool {
   private zIndex: number;
   private timestamp: number;
 
-  private canvasManager: CanvasManager;
+  private strokeContainer: LayeredStrokeContainer;
   private actionStack: ActionStack;
   private network: NetworkConnection;
 
@@ -37,7 +38,7 @@ export class MyPen implements MyTool {
     color: RGB,
     width: number,
     zIndex: number,
-    canvasManager: CanvasManager,
+    strokeContainer: LayeredStrokeContainer,
     actionStack: ActionStack,
     network: NetworkConnection
   ) {
@@ -45,7 +46,7 @@ export class MyPen implements MyTool {
     this.width = width;
     this.zIndex = zIndex;
 
-    this.canvasManager = canvasManager;
+    this.strokeContainer = strokeContainer;
     this.actionStack = actionStack;
     this.network = network;
 
@@ -81,9 +82,10 @@ export class MyPen implements MyTool {
     RenderLoop.supportsFastRender ? RenderLoop.render() : RenderLoop.scheduleRender();
   }
 
-  render(): void {
-    if (this.strokeBuilder) {
-      this.canvasManager.addForNextRender(this.strokeBuilder.getGraphic());
+  render(layerRendered: number): void {
+    if (this.strokeBuilder && layerRendered == this.zIndex) {
+      const vector = this.strokeBuilder.getGraphic().vector;
+      GL.renderVector(vector, View.getTransformMatrix());
     }
   }
 
@@ -144,10 +146,10 @@ export class MyPen implements MyTool {
       // Add stroke
       const id = window.userId + "-" + Date.now();
       const stroke = this.strokeBuilder.getStroke(id);
-      this.canvasManager.add(stroke);
+      this.strokeContainer.add(stroke);
       this.actionStack.push({
-        undo: (): boolean => this.canvasManager.remove(stroke.id),
-        redo: () => this.canvasManager.add(stroke),
+        undo: (): boolean => this.strokeContainer.remove(stroke.id),
+        redo: () => this.strokeContainer.add(stroke),
       });
 
       // Reset pen

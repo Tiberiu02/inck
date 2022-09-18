@@ -162,8 +162,6 @@ export default class ToolWheel {
   }
 
   showWidths(a, type) {
-    console.log(a);
-
     this.widthsWheels[type].style.display = "";
     this.widthsWheels[type].style.transform = `rotate(${a - SLICE_ANGLE * this.width[type]}rad)`;
     const w = this.width[type];
@@ -500,7 +498,6 @@ export default class ToolWheel {
       let part = createElement("g", { class: "button_group" });
       part.addEventListener("pointerup", () => {
         setW(i);
-        console.log("width", i);
         menu.style.display = "none";
         this.registerClose();
       });

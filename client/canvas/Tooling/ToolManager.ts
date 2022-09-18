@@ -1,5 +1,5 @@
 import { ActionStack } from "./ActionsStack";
-import { CanvasManager } from "../CanvasManager";
+import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { NetworkConnection } from "../Network/NetworkConnection";
 import { RGB } from "../types";
 import { StrokeEraser } from "./Eraser";
@@ -10,15 +10,15 @@ import { DeserializeGraphic, SerializedGraphic, TranslatePersistentGraphic } fro
 
 export class ToolManager {
   private tool: MyTool;
-  private canvasManager: CanvasManager;
+  private strokeContainer: LayeredStrokeContainer;
   private actionStack: ActionStack;
   private network: NetworkConnection;
 
   public isErasing: boolean;
   private getLastTool: Function;
 
-  constructor(canvasManager: CanvasManager, network: NetworkConnection) {
-    this.canvasManager = canvasManager;
+  constructor(strokeContainer: LayeredStrokeContainer, network: NetworkConnection) {
+    this.strokeContainer = strokeContainer;
     this.network = network;
     this.actionStack = new ActionStack();
 
@@ -63,7 +63,7 @@ export class ToolManager {
   selectPen(color: RGB, width: number, zIndex: number) {
     this.isErasing = false;
     if (this.tool) this.tool.release();
-    this.tool = new MyPen(color, width, zIndex, this.canvasManager, this.actionStack, this.network);
+    this.tool = new MyPen(color, width, zIndex, this.strokeContainer, this.actionStack, this.network);
     this.network.setTool(this.tool.serialize());
     this.getLastTool = () => this.selectPen(color, width, zIndex);
   }
@@ -71,7 +71,7 @@ export class ToolManager {
   selectSelection() {
     this.isErasing = false;
     if (this.tool) this.tool.release();
-    this.tool = new MySelection(this.canvasManager, this.actionStack, this.network);
+    this.tool = new MySelection(this.strokeContainer, this.actionStack, this.network);
     this.network.setTool(this.tool.serialize());
     this.getLastTool = () => this.selectSelection();
   }
@@ -80,7 +80,7 @@ export class ToolManager {
     if (!this.isErasing) {
       this.isErasing = true;
       if (this.tool) this.tool.release();
-      this.tool = new StrokeEraser(this.canvasManager, this.actionStack, this.network);
+      this.tool = new StrokeEraser(this.strokeContainer, this.actionStack, this.network);
       this.network.setTool(this.tool.serialize());
     }
   }
@@ -99,9 +99,9 @@ export class ToolManager {
     this.actionStack.redo();
   }
 
-  render() {
+  render(layerIndex: number) {
     if (this.tool) {
-      this.tool.render();
+      this.tool.render(layerIndex);
     }
   }
 }

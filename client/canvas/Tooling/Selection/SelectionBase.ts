@@ -1,7 +1,6 @@
-import { CanvasManager } from "../../CanvasManager";
+import { LayeredStrokeContainer } from "../../LayeredStrokeContainer";
 import { Display } from "../../DeviceProps";
 import {
-  DeserializeGraphic,
   Graphic,
   GraphicTypes,
   PersistentGraphic,
@@ -9,8 +8,6 @@ import {
   RotatePersistentGraphic,
   ScaleGraphic,
   ScalePersistentGraphic,
-  SerializedGraphic,
-  SerializeGraphic,
   Serializers,
   TranslateGraphic,
   TranslatePersistentGraphic,
@@ -27,7 +24,7 @@ import { Stroke } from "../../Drawing/Stroke";
 import { DottedStrokeBuilder } from "./DottedStrokeBuilder";
 import { OptimizeDrawables } from "../../Rendering/OptimizeDrawables";
 import { m4 } from "../../Math/M4";
-import { syncBuiltinESMExports } from "module";
+import { GL } from "../../Rendering/GL";
 
 const LASSO_ZINDEX = 1;
 
@@ -39,7 +36,7 @@ export const SHADOW_COLOR: RGB = [0.7, 0.9, 1];
 export const SHADOW_SIZE = 0.2; // in
 
 export class SelectionBase {
-  protected canvasManager: CanvasManager;
+  protected strokeContainer: LayeredStrokeContainer;
   protected selecting: boolean;
   protected selected: PersistentGraphic[];
   protected points: StrokePoint[];
@@ -56,8 +53,8 @@ export class SelectionBase {
   private active: Graphic[];
   private lasso: DottedStrokeBuilder;
 
-  constructor(canvasManager: CanvasManager) {
-    this.canvasManager = canvasManager;
+  constructor(strokeContainer: LayeredStrokeContainer) {
+    this.strokeContainer = strokeContainer;
 
     this.selected = [];
     this.active = [];
@@ -74,7 +71,6 @@ export class SelectionBase {
   }
 
   updateLasso(x: number, y: number, pressure: number, timestamp: number) {
-    console.log("updating lasso");
     const width = View.getCanvasCoords(Display.DPI * LASSO_WIDTH, 0, true)[0];
 
     if (!this.selecting) {
@@ -103,7 +99,7 @@ export class SelectionBase {
 
     // Compute selection
     const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
-    const newSelection = this.canvasManager.getAll().filter(d => d.geometry.overlapsPoly(polygon));
+    const newSelection = this.strokeContainer.getAll().filter(d => d.geometry.overlapsPoly(polygon));
 
     this.updateSelection(newSelection);
 
@@ -165,14 +161,14 @@ export class SelectionBase {
     RenderLoop.scheduleRender();
   }
 
-  render() {
-    const uniforms = !this.selecting && this.GetUniforms();
+  render(layerRendered: number) {
+    const transformMatrix = this.selecting ? View.getTransformMatrix() : this.GetTransformMatrix();
 
-    this.active.forEach(s =>
-      this.canvasManager.addForNextRender(
-        s.type == GraphicTypes.VECTOR ? ({ ...s, glUniforms: uniforms } as VectorGraphic) : s
-      )
-    );
+    this.active.forEach(s => {
+      if (s.type == GraphicTypes.VECTOR && s.zIndex == layerRendered) {
+        GL.renderVector((s as VectorGraphic).vector, transformMatrix);
+      }
+    });
   }
 
   protected computeShadows() {
@@ -185,7 +181,7 @@ export class SelectionBase {
     this.selectionCenter = new Vector2D((bBox.xMin + bBox.xMax) / 2, (bBox.yMin + bBox.yMax) / 2);
   }
 
-  private GetUniforms() {
+  private GetTransformMatrix() {
     const { x: cx, y: cy } = this.selectionCenter;
     const { x, y } = this.toTranslateBy;
 
@@ -198,14 +194,11 @@ export class SelectionBase {
       View.getTransformMatrix(),
     ];
 
-    return {
-      u_Matrix: m.reduce((a, b) => m4.multiply(b, a)),
-    };
+    return m.reduce((a, b) => m4.multiply(b, a));
   }
 }
 
 function GetShadow(drawable: PersistentGraphic, shadowColor: RGB): VectorGraphic {
-  console.log(drawable);
   if (drawable.serializer == Serializers.STROKE) {
     const s = drawable as Stroke;
     const shadowWidth = View.getCanvasCoords(Display.DPI * SHADOW_SIZE, 0, true)[0];

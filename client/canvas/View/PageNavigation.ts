@@ -63,8 +63,6 @@ export class PageNavigation {
     const { fingers, timeStamp } = e;
     const pointers = fingers.map(f => new Vector2D(f.x, f.y));
 
-    //console.log(type);
-
     if (pointers.length == this.pointers.length && pointers.length > 0) {
       const [x0, y0, r0] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
       this.updatePointers(pointers);

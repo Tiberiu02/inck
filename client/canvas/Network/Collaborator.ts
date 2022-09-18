@@ -1,4 +1,4 @@
-import { CanvasManager } from "../CanvasManager";
+import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "../Rendering/RenderLoop";
 import { SerializedTool, TheirTool } from "../Tooling/Tool";
 import { View } from "../View/View";
@@ -26,11 +26,11 @@ export class Collaborator implements CollaboratorInterface {
   private tool: TheirTool;
   private protectedTool: any;
   private el: HTMLElement;
-  private canvasManager: CanvasManager;
+  private strokeContainer: LayeredStrokeContainer;
 
-  constructor(id: string, collabsContainer: HTMLDivElement, canvasManager: CanvasManager) {
+  constructor(id: string, collabsContainer: HTMLDivElement, strokeContainer: LayeredStrokeContainer) {
     this.id = id;
-    this.canvasManager = canvasManager;
+    this.strokeContainer = strokeContainer;
 
     this.el = this.createPointerElement(collabsContainer);
   }
@@ -63,9 +63,9 @@ export class Collaborator implements CollaboratorInterface {
     if (!data) return;
 
     if (data.deserializer == "pen") {
-      this.tool = TheirPen.deserialize(data as SerializedPen, this.canvasManager);
+      this.tool = TheirPen.deserialize(data as SerializedPen, this.strokeContainer);
     } else if (data.deserializer == "selection") {
-      this.tool = TheirSelection.deserialize(data as SerializedSelection, this.canvasManager, this);
+      this.tool = TheirSelection.deserialize(data as SerializedSelection, this.strokeContainer, this);
     }
 
     if (this.tool) {
@@ -79,7 +79,7 @@ export class Collaborator implements CollaboratorInterface {
     }
   }
 
-  render() {
+  render(layerRendered: number) {
     this.el.style.display = "none";
 
     if (this.pointer) {
@@ -95,7 +95,7 @@ export class Collaborator implements CollaboratorInterface {
     }
 
     if (this.tool) {
-      this.tool.render();
+      this.tool.render(layerRendered);
     }
   }
 

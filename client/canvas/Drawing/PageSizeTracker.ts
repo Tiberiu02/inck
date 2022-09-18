@@ -1,12 +1,12 @@
-import { CanvasManager } from "../CanvasManager";
+import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { MutableObservableProperty } from "../DesignPatterns/Observable";
 import { Graphic, PersistentGraphic } from "./Graphic";
 
-export class PageSizeTracker implements CanvasManager {
-  private canvas: CanvasManager;
+export class PageSizeTracker implements LayeredStrokeContainer {
+  private canvas: LayeredStrokeContainer;
   private yMax: MutableObservableProperty<number>;
 
-  constructor(canvas: CanvasManager, yMax: MutableObservableProperty<number>) {
+  constructor(canvas: LayeredStrokeContainer, yMax: MutableObservableProperty<number>) {
     this.canvas = canvas;
     this.yMax = yMax;
   }
@@ -22,10 +22,7 @@ export class PageSizeTracker implements CanvasManager {
   getAll(): PersistentGraphic[] {
     return this.canvas.getAll();
   }
-  addForNextRender(graphic: Graphic): void {
-    this.canvas.addForNextRender(graphic);
-  }
-  render(): void {
-    this.canvas.render();
+  render(layerRendered: number): void {
+    this.canvas.render(layerRendered);
   }
 }

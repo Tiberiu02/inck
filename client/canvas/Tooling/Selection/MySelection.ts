@@ -1,4 +1,4 @@
-import { CanvasManager } from "../../CanvasManager";
+import { LayeredStrokeContainer } from "../../LayeredStrokeContainer";
 import { Display } from "../../DeviceProps";
 import {
   DeserializeGraphic,
@@ -37,8 +37,8 @@ export class MySelection extends SelectionBase implements MyTool {
   private padding: number;
   private inUse: boolean;
 
-  constructor(canvasManager: CanvasManager, actionStack: ActionStack, network: NetworkConnection) {
-    super(canvasManager);
+  constructor(strokeContainer: LayeredStrokeContainer, actionStack: ActionStack, network: NetworkConnection) {
+    super(strokeContainer);
 
     this.selected = [];
     this.actionStack = actionStack;
@@ -73,7 +73,7 @@ export class MySelection extends SelectionBase implements MyTool {
       if (this.selecting) {
         super.releaseLasso();
         this.remoteController.releaseLasso();
-        this.selected.forEach(d => this.canvasManager.remove(d.id));
+        this.selected.forEach(d => this.strokeContainer.remove(d.id));
       }
     }
   }
@@ -96,8 +96,8 @@ export class MySelection extends SelectionBase implements MyTool {
         } else {
           let success = false;
           for (const e of initialSelection) {
-            if (this.canvasManager.remove(e.id)) {
-              this.canvasManager.add(e);
+            if (this.strokeContainer.remove(e.id)) {
+              this.strokeContainer.add(e);
               success = true;
             }
           }
@@ -109,8 +109,8 @@ export class MySelection extends SelectionBase implements MyTool {
           this.updateSelection(newSelection);
         } else {
           for (const e of newSelection) {
-            if (this.canvasManager.remove(e.id)) {
-              this.canvasManager.add(e);
+            if (this.strokeContainer.remove(e.id)) {
+              this.strokeContainer.add(e);
             }
           }
         }
@@ -161,27 +161,29 @@ export class MySelection extends SelectionBase implements MyTool {
     this.registerAction(initialSelection);
   }
 
-  render(): void {
-    super.render();
+  render(layerRendered: number): void {
+    super.render(layerRendered);
 
-    if (this.selected.length) {
-      const box = this.selected.map(d => d.geometry.boundingBox).reduce(UniteRectangles);
-      const [sw, sh] = [(box.xMax - box.xMin) / 2, (box.yMax - box.yMin) / 2];
-      const [cx, cy] = [box.xMin + sw, box.yMin + sh];
-      const { x, y } = this.toTranslateBy;
+    if (layerRendered == 0) {
+      if (this.selected.length) {
+        const box = this.selected.map(d => d.geometry.boundingBox).reduce(UniteRectangles);
+        const [sw, sh] = [(box.xMax - box.xMin) / 2, (box.yMax - box.yMin) / 2];
+        const [cx, cy] = [box.xMin + sw, box.yMin + sh];
+        const { x, y } = this.toTranslateBy;
 
-      const [x1, y1] = View.getScreenCoords(cx - sw * this.toScaleBy + x, cy - sh * this.toScaleBy + y);
-      const [x2, y2] = View.getScreenCoords(cx + sw * this.toScaleBy + x, cy + sh * this.toScaleBy + y);
-      const w = this.padding * Display.DPI * this.toScaleBy;
+        const [x1, y1] = View.getScreenCoords(cx - sw * this.toScaleBy + x, cy - sh * this.toScaleBy + y);
+        const [x2, y2] = View.getScreenCoords(cx + sw * this.toScaleBy + x, cy + sh * this.toScaleBy + y);
+        const w = this.padding * Display.DPI * this.toScaleBy;
 
-      this.ui.style.left = `${x1 - w}px`;
-      this.ui.style.top = `${y1 - w}px`;
-      this.ui.style.width = `${x2 - x1 + 2 * w}px`;
-      this.ui.style.height = `${y2 - y1 + 2 * w}px`;
-      this.ui.style.visibility = "visible";
-      this.ui.style.transform = `rotate(${this.toRotateBy}rad)`;
-    } else {
-      this.ui.style.visibility = "hidden";
+        this.ui.style.left = `${x1 - w}px`;
+        this.ui.style.top = `${y1 - w}px`;
+        this.ui.style.width = `${x2 - x1 + 2 * w}px`;
+        this.ui.style.height = `${y2 - y1 + 2 * w}px`;
+        this.ui.style.visibility = "visible";
+        this.ui.style.transform = `rotate(${this.toRotateBy}rad)`;
+      } else {
+        this.ui.style.visibility = "hidden";
+      }
     }
   }
 
@@ -198,7 +200,7 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   deselect(): void {
-    this.selected.forEach(d => this.canvasManager.add(d));
+    this.selected.forEach(d => this.strokeContainer.add(d));
     this.clearSelection();
     this.remoteController.clearSelection();
   }
@@ -207,11 +209,11 @@ export class MySelection extends SelectionBase implements MyTool {
     const selection = this.selected;
     this.actionStack.push({
       undo: () => {
-        selection.forEach(e => this.canvasManager.add(e));
+        selection.forEach(e => this.strokeContainer.add(e));
         return true;
       },
       redo: () => {
-        selection.forEach(e => this.canvasManager.remove(e.id));
+        selection.forEach(e => this.strokeContainer.remove(e.id));
       },
     });
 
@@ -254,11 +256,11 @@ export class MySelection extends SelectionBase implements MyTool {
           this.deleteSelection();
           return true;
         } else {
-          return selection.map(e => this.canvasManager.remove(e.id)).every(s => s);
+          return selection.map(e => this.strokeContainer.remove(e.id)).every(s => s);
         }
       },
       redo: () => {
-        selection.forEach(e => this.canvasManager.add(e));
+        selection.forEach(e => this.strokeContainer.add(e));
       },
     });
   }

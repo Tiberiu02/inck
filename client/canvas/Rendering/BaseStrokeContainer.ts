@@ -1,11 +1,8 @@
 import { Graphic, GraphicTypes, PersistentGraphic } from "../Drawing/Graphic";
 import { PersistentVectorGraphic, VectorGraphic } from "../Drawing/VectorGraphic";
 import { ELEMENTS_PER_VERTEX, GL } from "./GL";
-import { CanvasManager } from "../CanvasManager";
+import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "./RenderLoop";
-
-import { ImageGraphic } from "../Drawing/ImageGraphic";
-import { Display } from "../DeviceProps";
 import { View } from "../View/View";
 
 export function GetUniforms() {
@@ -15,7 +12,6 @@ export function GetUniforms() {
 }
 
 export const BUFFER_SIZE = 5e4;
-export const NUM_LAYERS = 2;
 
 class StrokeBuffer {
   private array: number[];
@@ -117,16 +113,12 @@ class StrokeCluster {
   }
 }
 
-export class BaseCanvasManager implements CanvasManager {
-  private canvas: HTMLCanvasElement;
-  private gl: GL;
+export class BaseStrokeContainer implements LayeredStrokeContainer {
   private layers: StrokeCluster[];
-  private activeStrokes: Graphic[];
   private strokes: { [id: string]: PersistentVectorGraphic };
 
-  constructor() {
-    this.layers = [...Array(NUM_LAYERS)].map(_ => new StrokeCluster());
-    this.activeStrokes = [];
+  constructor(numLayers: number) {
+    this.layers = [...Array(numLayers)].map(_ => new StrokeCluster());
     this.strokes = {};
   }
 
@@ -158,50 +150,7 @@ export class BaseCanvasManager implements CanvasManager {
     return Object.values(this.strokes);
   }
 
-  addForNextRender(drawable: Graphic) {
-    if (drawable.type == GraphicTypes.VECTOR) {
-      this.activeStrokes.push(drawable);
-    } else if (drawable.type == GraphicTypes.IMAGE) {
-      const image = drawable as ImageGraphic;
-      this.activeStrokes.push(image);
-    }
-  }
-
-  render(): void {
-    for (let ix = 0; ix < NUM_LAYERS; ix++) {
-      if (ix == 0)
-        //continue;
-        GL.beginLayer();
-
-      if (this.layers[ix]) {
-        this.layers[ix].render();
-      }
-      this.activeStrokes
-        .filter(graphic => graphic.zIndex == ix)
-        .forEach(graphic => {
-          if (graphic.type == GraphicTypes.VECTOR) {
-            const vector = graphic as VectorGraphic;
-            GL.renderVector(vector.vector, vector.glUniforms || GetUniforms());
-          } else if (graphic.type == GraphicTypes.IMAGE && 0) {
-            const image = graphic as ImageGraphic;
-            if (image.top + image.height >= View.getTop() && image.top < View.getTop() + View.getHeight()) {
-              if (!image.texture) {
-                image.texture = GL.createTexture(image.pixels);
-              }
-              const [x, y] = View.getScreenCoords(image.left, image.top);
-              const [w, h] = View.getScreenCoords(image.width, image.height, true);
-              const r = window.devicePixelRatio;
-              GL.renderTexture(image.texture, w * r, h * r, x * r, y * r);
-            } else if (image.texture) {
-              GL.ctx.deleteTexture(image.texture);
-              image.texture = null;
-            }
-          }
-        });
-
-      if (ix == 0) GL.finishLayer(0.35);
-    }
-
-    this.activeStrokes = [];
+  render(layerIndex: number): void {
+    this.layers[layerIndex].render();
   }
 }

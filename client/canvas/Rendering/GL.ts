@@ -247,7 +247,7 @@ export class GL {
     return texture;
   }
 
-  static renderVector(array: number[], uniforms: any, buffer?: WebGLBuffer): void {
+  static renderVector(array: number[], transformMatrix: Matrix4, buffer?: WebGLBuffer): void {
     if (!buffer) {
       this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.mainBuffer);
       this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
@@ -271,7 +271,7 @@ export class GL {
 
     // Set matrix uniform
     const matrixLocation = this.ctx.getUniformLocation(this.mainProgram, "u_Matrix");
-    this.ctx.uniformMatrix4fv(matrixLocation, false, uniforms.u_Matrix);
+    this.ctx.uniformMatrix4fv(matrixLocation, false, transformMatrix);
 
     this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
   }

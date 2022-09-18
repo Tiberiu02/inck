@@ -40,7 +40,6 @@ export interface SerializedGraphic {
 }
 
 export function SerializeGraphic(graphic: PersistentGraphic): SerializedGraphic {
-  console.log(graphic);
   if (graphic.serializer == Serializers.STROKE) {
     return SerializeStroke(graphic as Stroke);
   }
