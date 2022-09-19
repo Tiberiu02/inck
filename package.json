@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"cd client && next dev -- -p 3080\" \"ts-node --esm --project server/tsconfig.json server/index.mts\"",
     "build": "cd client && next build",
-    "frontend": "cd client && next dev -- -p 3080",
+    "frontend": "cd client && next start -- -p 3080",
     "backend": "sudo ts-node --esm --project server/tsconfig.json server/index.mts || ts-node --esm --project server/tsconfig.json server/index.mts",
     "lint": "cd client && next lint"
   },
@@ -45,6 +45,7 @@
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.5.1",
     "ts-node": "^10.9.1",
+    "typescript": "^4.8.3",
     "universal-cookie": "^4.0.4",
     "uuid": "^9.0.0"
   },
@@ -63,7 +64,6 @@
     "ngrok": "^4.3.1",
     "postcss": "^8.4.12",
     "postman": "^0.2.0",
-    "tailwindcss": "^3.0.24",
-    "typescript": "^4.9.0-dev.20220919"
+    "tailwindcss": "^3.0.24"
   }
 }
