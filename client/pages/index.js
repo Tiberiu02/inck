@@ -214,11 +214,11 @@ export default function LandingPage() {
                 ],
                 [
                   "Beta release",
-                  "PDF import",
                   "User accounts",
                   "File Explorer",
-                  "Optimized tool menu",
                   "Shape recognition",
+                  "PDF import & export",
+                  "Optimized tool menu",
                 ],
                 ["Lecture Mode", "Lecture mode for professors", "Real time questions", "Picture-in-picture notes"],
                 ["Progressive Web App", "Ability to save the app locally", "Offline capabilities"],
