@@ -15,17 +15,17 @@ const SES_CONFIG = {
 const AWS_SES = new AWS.SES(SES_CONFIG);
 
 async function loadRegistrationTemplate() {
-  const template = await fs.readFile("server/email_templates/invitation.html");
+  const template = await fs.readFile("server/email/templates/invitation.html");
   return template.toString();
 }
 
 async function loadPasswordResetTemplate() {
-  const template = await fs.readFile("server/email_templates/password-recovery.html");
+  const template = await fs.readFile("server/email/templates/password-recovery.html");
   return template.toString();
 }
 
 async function loadPasswordConfirmationTemplate() {
-  const template = await fs.readFile("server/email_templates/password-recovery-confirmation.html");
+  const template = await fs.readFile("server/email/templates/password-recovery-confirmation.html");
   return template.toString();
 }
 

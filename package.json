@@ -4,12 +4,11 @@
   "private": true,
   "proxy": "http://localhost:443",
   "scripts": {
-    "dev": "concurrently \"cd client && next dev -- -p 3080\" \"node server/index.mjs\"",
-    "dev-ubt": "concurrently \"cd client && next dev -- -p 3080\" \"sudo node server/index.mjs\"",
+    "dev": "concurrently \"cd client && next dev -- -p 3080\" \"ts-node --esm --project server/tsconfig.json server/index.mts\"",
     "build": "cd client && next build",
-    "start": "concurrently \"cd client && next start -- -p 3080\" \"sudo node server/index.mjs\"",
-    "start-win": "concurrently \"cd client && next start -- -p 3080\" \"node server/index.mjs\"",
-    "lint": "next lint"
+    "frontend": "cd client && next dev -- -p 3080",
+    "backend": "sudo ts-node --esm --project server/tsconfig.json server/index.mts || ts-node --esm --project server/tsconfig.json server/index.mts",
+    "lint": "cd client && next lint"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.169.0",
@@ -45,10 +44,18 @@
     "react-icons": "^4.4.0",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.5.1",
+    "ts-node": "^10.9.1",
     "universal-cookie": "^4.0.4",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/body-parser": "^1.19.2",
+    "@types/cookie-parser": "^1.4.3",
+    "@types/express": "^4.17.14",
+    "@types/express-fileupload": "^1.4.1",
+    "@types/jsonwebtoken": "^8.5.9",
+    "@types/nodemailer": "^6.4.6",
     "@types/react": "^18.0.14",
     "autoprefixer": "^10.4.4",
     "eslint": "8.13.0",
@@ -56,6 +63,7 @@
     "ngrok": "^4.3.1",
     "postcss": "^8.4.12",
     "postman": "^0.2.0",
-    "tailwindcss": "^3.0.24"
+    "tailwindcss": "^3.0.24",
+    "typescript": "^4.9.0-dev.20220919"
   }
 }

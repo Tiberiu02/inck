@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import { PRIVATE, READ_ONLY, READ_WRITE } from "./FileExplorer.mjs";
-import { FileModel, NoteModel } from "./Models.mjs";
+import { PRIVATE, READ_ONLY, READ_WRITE } from "./api/FileExplorer.mjs";
+import { FileModel, NoteModel } from "./db/Models.mjs";
 
 function disconnectFn(user, docs, socket) {
   if (!user.docId) {

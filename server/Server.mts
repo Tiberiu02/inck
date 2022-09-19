@@ -17,7 +17,7 @@ import {
   initializeResetPasswordUsingEmail,
   initializeResetPasswordUsingToken,
   changePasswordEndpoint,
-} from "./Authentication.mjs";
+} from "./api/Authentication.mjs";
 import {
   createFileFn,
   editFileFn,
@@ -26,7 +26,7 @@ import {
   importFreeNote,
   moveFilesFn,
   removeFilesFn,
-} from "./FileExplorer.mjs";
+} from "./api/FileExplorer.mjs";
 import {
   disconnect,
   newStroke,
@@ -35,13 +35,13 @@ import {
   remoteControl,
   directedRemoteControl,
 } from "./Sockets.mjs";
-import { NoteModel } from "./Models.mjs";
-import { getPDF, receivePDF } from "./PDFAPI.mjs";
+import { NoteModel } from "./db/Models.mjs";
+import { getPDF, receivePDF } from "./api/Pdf.mjs";
 
 const MILLIS_PER_WEEK = 604800000;
 const MILLIS_PER_DAY = 86400000;
 
-class Server {
+export class Server {
   constructor(port = 8080) {
     mongoose.connect(process.env.MONGO_URI);
 
@@ -141,5 +141,3 @@ class Server {
     });
   }
 }
-
-export default Server;
