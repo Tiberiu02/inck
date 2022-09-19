@@ -27,6 +27,10 @@ import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../compo
 import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
 import Link from "next/link";
 import { TrackFolderCreation, TrackNoteCreation } from "../components/Analytics.js";
+import { NoteToPdf } from "../canvas/PDF/PdfExport";
+import download from "downloadjs";
+import JSZip from "jszip";
+import { Spinner } from "../components/Spinner.js";
 
 function DirListing({
   Symbol,
@@ -336,7 +340,7 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
 
   const tree = files ? TreeRepr(files["f/notes"], setSelected) : <></>;
 
-  return <div className="overflow-scroll border-4 rounded-lg h-44">{tree}</div>;
+  return <div className="overflow-scroll border-4 rounded-lg h-44 cursor-pointer select-none">{tree}</div>;
 }
 
 function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, moveFiles }) {
@@ -362,17 +366,17 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
     >
       <div onClick={closeModal} className="absolute inset-0"></div>
       <div className={`relative w-96 h-84 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
-        <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">Move notes</div>
+        <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center mb-8">Move notes</div>
 
         <div>
           <MoveModalListing files={files} setSelected={setTarget} target={target} selectedFiles={selectedFiles} />
         </div>
 
         <div className="italic text-sm text-center">
-          * Click to select, double-click to open. Impossible to move to dashed folders. TODO: point to FAQ
+          * Click to select, double-click to open. Impossible to move to dashed folders.
         </div>
 
-        <div className="flex justify-between">
+        <div className="flex justify-between mt-8">
           <button
             className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
             onClick={closeModal}
@@ -388,6 +392,75 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
           >
             Move files
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExportFilesModal({ setVisible, selectedFiles = {}, setSelectedFiles }) {
+  const [exporting, setExporting] = useState(false);
+
+  const downloadNotes = async () => {
+    const files = Object.values(selectedFiles);
+
+    const exportFiles = async (root, files) => {
+      for (const file of files) {
+        if (file.type == "note") {
+          const bytes = await NoteToPdf(file.fileId);
+          root.file(file.name + ".pdf", bytes);
+        } else if (file.type == "folder") {
+          const newFolder = root.folder(file.name);
+          await exportFiles(newFolder, file.children);
+        }
+      }
+    };
+
+    setExporting(true);
+
+    if (files.length == 1 && files[0].type == "note") {
+      const bytes = await NoteToPdf(files[0].fileId);
+      download(bytes, files[0].name + ".pdf", "application/pdf");
+    } else {
+      let zip = new JSZip();
+      await exportFiles(zip, files);
+      const zipBytes = await zip.generateAsync({ type: "blob" });
+
+      download(zipBytes, `Inck Notes Export.zip`, "application/zip");
+    }
+
+    setExporting(false);
+    setVisible(false);
+    setSelectedFiles({});
+  };
+
+  return (
+    <div className={"absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"}>
+      <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
+      <div className={`relative w-96 h-84 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
+        <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center mb-8">Export to PDF</div>
+
+        <div className="text-sm text-center mb-8">Would you like to download selected notes as PDF?</div>
+
+        <div className="flex justify-between ">
+          {exporting ? (
+            <Spinner className="h-10 mx-auto" />
+          ) : (
+            <>
+              <button
+                className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
+                onClick={() => setVisible(false)}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={downloadNotes}
+                className="hover:bg-slate-700 bg-slate-600 text-white w-fit px-4 py-1 rounded-full self-center"
+              >
+                Download
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -1028,6 +1101,7 @@ export default function Explorer() {
   const [editFileModal, setEditFileModal] = useState(false);
   const [removeFileModal, setRemoveFileModal] = useState(false);
   const [moveFileModal, setMoveFileModal] = useState(false);
+  const [exportFileModal, setExportFileModal] = useState(false);
 
   const [selectedFiles, setSelectedFiles] = useState({});
   const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]];
@@ -1074,6 +1148,13 @@ export default function Explorer() {
           className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4"
         >
           <span className="material-symbols-outlined text-xl">drive_file_move</span>
+        </button>
+        <button
+          onClick={() => setExportFileModal(true)}
+          disabled={noSelection}
+          className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4"
+        >
+          <span className="material-symbols-outlined text-xl">download</span>
         </button>
       </div>
     );
@@ -1306,6 +1387,14 @@ export default function Explorer() {
               moveFilesAPICall(selectedFiles, target, setFilesAfterChange);
               setSelectedFiles({});
             }}
+          />
+        )}
+        {exportFileModal && (
+          <ExportFilesModal
+            selectedFiles={selectedFiles}
+            setSelectedFiles={setSelectedFiles}
+            visible={moveFileModal}
+            setVisible={setExportFileModal}
           />
         )}
       </main>

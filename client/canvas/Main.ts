@@ -16,7 +16,7 @@ import { PdfBackground } from "./PDF/PdfBackground";
 import { Vector2D } from "./Math/V2";
 import GetApiPath from "../components/GetApiPath.js";
 import { GL } from "./Rendering/GL";
-import { DownloadAsPdf } from "./PDF/PdfExport";
+import { NoteToPdf } from "./PDF/PdfExport";
 
 export const NUM_LAYERS = 2;
 export const HIGHLIGHTER_OPACITY = 0.35;
@@ -67,9 +67,11 @@ export default class App {
     this.network = new NetworkConnection();
     this.strokeContainer = new NetworkStrokeContainer(this.strokeContainer, this.network);
 
-    // PDF import
-    this.network.on("load pdf", (url: string) => {
-      this.pdfBackground = new PdfBackground(GetApiPath(url), yMax);
+    this.network.on("load note", (data: any) => {
+      // PDF import
+      if (data.pdfUrl) {
+        this.pdfBackground = new PdfBackground(GetApiPath(data.pdfUrl), yMax);
+      }
     });
 
     // Pointer tracker
@@ -104,7 +106,7 @@ export default class App {
       this.toolManager.render(1);
     });
 
-    window["PdfExport"] = () => DownloadAsPdf(yMax, this.strokeContainer, this.pdfBackground);
+    window["PdfExport"] = id => NoteToPdf(id);
   }
 
   async handlePenEvent(e: PenEvent) {

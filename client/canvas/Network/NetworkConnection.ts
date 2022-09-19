@@ -5,7 +5,7 @@ import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../../co
 import { Vector2D } from "../Math/V2";
 import { Socket } from "socket.io-client";
 
-const SERVER_PORT = 8080;
+export const SERVER_PORT = 8080;
 
 export class NetworkConnection {
   private socket: Socket;
@@ -15,9 +15,16 @@ export class NetworkConnection {
 
   constructor() {
     this.canWrite = false;
+
+    const pathname = window.location.pathname;
+    const wloc = pathname.match(/\/note\/([\w\d_]+)/);
+
+    const docId = (wloc && wloc[1]) || "";
+
     this.socket = io(`${window.location.host.split(":")[0]}:${SERVER_PORT}`, {
       query: {
         authToken: getAuthToken(),
+        docId: docId,
       },
     });
 
@@ -26,8 +33,8 @@ export class NetworkConnection {
       window.location.href = "/";
     });
 
-    this.socket.on("can write", (canWrite: boolean) => {
-      this.canWrite = canWrite;
+    this.socket.on("load note", (data: any) => {
+      this.canWrite = data.canWrite;
     });
 
     this.socket.on("unauthorized", async () => {

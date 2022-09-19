@@ -1,53 +1,81 @@
 import { PDFDocument, rgb } from "pdf-lib";
-import download from "downloadjs";
 
-import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
-import { BG_COLOR, PAGE_GAP, PdfBackground } from "./PdfBackground";
-import { ObservableProperty } from "../DesignPatterns/Observable";
-import { GraphicTypes } from "../Drawing/Graphic";
+import { BG_COLOR, PAGE_GAP, PDF_FULL_WIDTH, PDF_PADDING_TOP } from "./PdfBackground";
+import { DeserializeGraphic, GraphicTypes, PersistentGraphic } from "../Drawing/Graphic";
 import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { ELEMENTS_PER_VERTEX } from "../Rendering/GL";
 import { HIGHLIGHTER_OPACITY, NUM_LAYERS } from "../Main";
-import { MutableView, View } from "../View/View";
+import { SERVER_PORT } from "../Network/NetworkConnection";
+import { io } from "socket.io-client";
+import { getAuthToken } from "../../components/AuthToken";
+import GetApiPath from "../../components/GetApiPath";
 
 const PAGE_WIDTH = 1000;
 const PADDING_BOTTOM = 500; // %w
 
-export async function DownloadAsPdf(
-  yMax: ObservableProperty<number>,
-  strokeContainer: LayeredStrokeContainer,
-  pdfBackground: PdfBackground
-) {
+function LoadNote(id): Promise<[PersistentGraphic[], string]> {
+  return new Promise((resolve, reject) => {
+    const socket = io(`${window.location.host.split(":")[0]}:${SERVER_PORT}`, {
+      query: {
+        authToken: getAuthToken(),
+        docId: id,
+      },
+    });
+
+    socket.on("load note", (data: any) => {
+      const strokes = data.strokes.map(DeserializeGraphic);
+      const pdfUrl = data.pdfUrl;
+      socket.disconnect();
+
+      resolve([strokes, pdfUrl]);
+    });
+  });
+}
+
+export async function NoteToPdf(noteId) {
+  const [strokes, pdfBgUrl] = await LoadNote(noteId);
+  const yMax = strokes.map(s => s.geometry.boundingBox.yMax).reduce((a, b) => Math.max(a, b), 0);
+
   // Create a new PDFDocument
   const pdfDoc = await PDFDocument.create();
 
   // Add a blank page to the document
-  const W = MutableView.maxWidth || 1;
-  const paddingTop = -MutableView.documentTop || 0;
-  const page = pdfDoc.addPage([PAGE_WIDTH * W, PAGE_WIDTH * (yMax.get() + paddingTop) + PADDING_BOTTOM]);
-
-  if (pdfBackground) {
-    // Add gray background
-    const { width, height } = page.getSize();
-    page.moveTo(0, height);
-
-    const svgPath = `M 0,0 L ${width},0 L ${width},${height} L 0,${height} L 0,0`;
-    page.drawSvgPath(svgPath, { color: rgb(...BG_COLOR) });
-  }
+  const W = pdfBgUrl ? PDF_FULL_WIDTH : 1;
+  const PADDING_TOP = pdfBgUrl ? PDF_PADDING_TOP * PAGE_WIDTH : 0;
+  const page = pdfDoc.addPage([PAGE_WIDTH * W, PAGE_WIDTH * yMax + PADDING_TOP + PADDING_BOTTOM]);
 
   const x = ((W - 1) / 2) * PAGE_WIDTH;
-  page.moveTo(x, PAGE_WIDTH * yMax.get() + PADDING_BOTTOM);
+  page.moveTo(x, PAGE_WIDTH * yMax + PADDING_BOTTOM);
 
-  if (pdfBackground) {
-    // Add background PDF pages
-    const url = pdfBackground.getURL();
-    const bytes = await fetch(url).then(res => res.arrayBuffer());
+  if (pdfBgUrl) {
+    const bytes = await fetch(GetApiPath(pdfBgUrl)).then(res => res.arrayBuffer());
     const bgPdf = await PDFDocument.load(bytes);
 
     let y = 0;
 
     const indices = bgPdf.getPages().map((_, i) => i);
     const bgPages = await pdfDoc.embedPdf(bgPdf, indices);
+
+    {
+      let bgHeight = bgPages.map(p => p.height / p.width + PAGE_GAP).reduce((a, b) => a + b);
+      bgHeight = bgHeight * PAGE_WIDTH + PADDING_TOP + PADDING_BOTTOM;
+
+      if (bgHeight > page.getHeight()) {
+        page.setHeight(bgHeight);
+      }
+    }
+
+    // Add gray background
+
+    const { width, height } = page.getSize();
+    page.moveTo(0, height);
+
+    const svgPath = `M 0,0 L ${width},0 L ${width},${height} L 0,${height} L 0,0`;
+    page.drawSvgPath(svgPath, { color: rgb(...BG_COLOR) });
+
+    // Add background PDF pages
+
+    page.moveTo(x, page.getHeight() - PADDING_TOP);
 
     for (const bgPage of bgPages) {
       const aspect = bgPage.height / bgPage.width;
@@ -59,7 +87,7 @@ export async function DownloadAsPdf(
       page.drawSvgPath(svgPath, { color: rgb(1, 1, 1) });
       page.drawPage(bgPage, {
         x: x,
-        y: page.getHeight() - (y + height + paddingTop * PAGE_WIDTH),
+        y: page.getHeight() - (y + height + PADDING_TOP),
         width: PAGE_WIDTH,
         height: PAGE_WIDTH * aspect,
       });
@@ -68,11 +96,14 @@ export async function DownloadAsPdf(
     }
   }
 
-  // Draw the SVG path as a black line
+  // Draw the SVG strokes
   for (let layer = 0; layer < NUM_LAYERS; layer++) {
-    for (const { graphic } of strokeContainer.getAll()) {
+    for (const { graphic } of strokes) {
       if (graphic.type == GraphicTypes.VECTOR && graphic.zIndex == layer) {
         const { vector } = graphic as VectorGraphic;
+
+        if (!vector || !vector.length || vector.length % ELEMENTS_PER_VERTEX) continue;
+
         let x, y, r, g, b, a;
         let lines = [[], []];
         for (let i = 0; i < vector.length; i += ELEMENTS_PER_VERTEX) {
@@ -85,11 +116,8 @@ export async function DownloadAsPdf(
       }
     }
   }
+
   // Serialize the PDFDocument to bytes (a Uint8Array)
   const pdfBytes = await pdfDoc.save();
-
-  console.log(download);
-
-  // Trigger the browser to download the PDF document
-  download(pdfBytes, "pdf-lib_creation_example.pdf", "application/pdf");
+  return pdfBytes;
 }

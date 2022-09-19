@@ -6,20 +6,40 @@ import cookieParser from "cookie-parser";
 import { Server as SocketServer } from "socket.io";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import fileupload from 'express-fileupload'
+import fileupload from "express-fileupload";
 
 import dotenv from "dotenv";
 dotenv.config();
 
-import { register as registerFn, login as loginFn, initializeResetPasswordUsingEmail, initializeResetPasswordUsingToken, changePasswordEndpoint } from "./Authentication.mjs";
-import { createFileFn, editFileFn, getAccountDetailsFromToken, getFilesFn, importFreeNote, moveFilesFn, removeFilesFn } from "./FileExplorer.mjs";
-import { disconnect, newStroke, removeStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets.mjs";
+import {
+  register as registerFn,
+  login as loginFn,
+  initializeResetPasswordUsingEmail,
+  initializeResetPasswordUsingToken,
+  changePasswordEndpoint,
+} from "./Authentication.mjs";
+import {
+  createFileFn,
+  editFileFn,
+  getAccountDetailsFromToken,
+  getFilesFn,
+  importFreeNote,
+  moveFilesFn,
+  removeFilesFn,
+} from "./FileExplorer.mjs";
+import {
+  disconnect,
+  newStroke,
+  removeStroke,
+  requestDocument,
+  remoteControl,
+  directedRemoteControl,
+} from "./Sockets.mjs";
 import { NoteModel } from "./Models.mjs";
 import { getPDF, receivePDF } from "./PDFAPI.mjs";
 
 const MILLIS_PER_WEEK = 604800000;
-const MILLIS_PER_DAY = 86400000
-
+const MILLIS_PER_DAY = 86400000;
 
 class Server {
   constructor(port = 8080) {
@@ -45,7 +65,7 @@ class Server {
     this.app.use(cookieParser());
 
     // Start automatic collection of old notes
-    setInterval(async () => this.removeOutdatedNotes(), MILLIS_PER_DAY)
+    setInterval(async () => this.removeOutdatedNotes(), MILLIS_PER_DAY);
   }
 
   start() {
@@ -58,18 +78,18 @@ class Server {
   }
 
   async removeOutdatedNotes() {
-    console.log("Collecting two weeks old notes")
-    const now = Date.now()
+    console.log("Collecting two weeks old notes");
+    const now = Date.now();
     const minTime = now - 2 * MILLIS_PER_WEEK;
     await NoteModel.deleteMany({
       isFreeNote: true,
-      creationDate: { $lte: minTime }
-    })
+      creationDate: { $lte: minTime },
+    });
   }
 
   registerEndpoints() {
     const jsonBodyParser = bodyParser.json();
-    const fileuploadParser = fileupload()
+    const fileuploadParser = fileupload();
     this.app.post("/api/auth/register", jsonBodyParser, registerFn);
     this.app.post("/api/auth/login", jsonBodyParser, loginFn);
 
@@ -80,14 +100,14 @@ class Server {
     this.app.post("/api/explorer/movefiles", jsonBodyParser, moveFilesFn);
     this.app.post("/api/explorer/import-free-note", jsonBodyParser, importFreeNote);
 
-    this.app.post("/api/settings/account-details", jsonBodyParser, getAccountDetailsFromToken)
+    this.app.post("/api/settings/account-details", jsonBodyParser, getAccountDetailsFromToken);
     // Request a password change (send email, save request in db, etc)
-    this.app.post("/api/auth/reset-password-with-token", jsonBodyParser, initializeResetPasswordUsingToken)
-    this.app.post("/api/auth/reset-password-with-email", jsonBodyParser, initializeResetPasswordUsingEmail)
-    this.app.post("/api/auth/change-password", jsonBodyParser, changePasswordEndpoint)
+    this.app.post("/api/auth/reset-password-with-token", jsonBodyParser, initializeResetPasswordUsingToken);
+    this.app.post("/api/auth/reset-password-with-email", jsonBodyParser, initializeResetPasswordUsingEmail);
+    this.app.post("/api/auth/change-password", jsonBodyParser, changePasswordEndpoint);
 
     // PDF loading/serving stuff
-    this.app.post("/api/pdf/receive-pdf", fileuploadParser, receivePDF)
+    this.app.post("/api/pdf/receive-pdf", fileuploadParser, receivePDF);
     this.app.get("/api/pdf/get-pdf/:pdfName.pdf", getPDF);
   }
 
@@ -95,9 +115,9 @@ class Server {
     // Map docId: Int => {users: List[socket]}
     this.docs = {};
 
-    this.io.on("connection", async (socket) => {
-      console.log("Connection incoming")
-      const { authToken } = socket.handshake.query
+    this.io.on("connection", async socket => {
+      console.log("Connection incoming");
+      const { authToken, docId } = socket.handshake.query;
 
       const user = {
         ip: socket.conn.remoteAddress.replace("::ffff:", ""),
@@ -108,12 +128,12 @@ class Server {
         socket: socket,
       };
 
+      requestDocument(user, this.docs, socket)(docId);
       socket.emit("userId", user.id);
 
       socket.on("disconnect", disconnect(user, this.docs, socket));
       socket.on("remove stroke", removeStroke(user, this.docs, socket));
       socket.on("new stroke", newStroke(user, this.docs, socket));
-      socket.on("request document", requestDocument(user, this.docs, socket));
 
       // LIVE COLLABORATION
       socket.on("remote control", remoteControl(user, this.docs, socket));

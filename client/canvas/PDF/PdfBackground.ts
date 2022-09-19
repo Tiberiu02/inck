@@ -7,6 +7,8 @@ import { RGB } from "../types";
 
 export const BG_COLOR: RGB = [0.9, 0.9, 0.9];
 export const PAGE_GAP = 0.01; // %w
+export const PDF_FULL_WIDTH = 3; // %w
+export const PDF_PADDING_TOP = 0.2; // %w
 
 enum PdfPageStatus {
   LOADED,
@@ -61,8 +63,8 @@ export class PdfBackground {
     this.yMax = yMax;
     this.pages = [];
 
-    MutableView.maxWidth = 3;
-    MutableView.documentTop = -0.2;
+    MutableView.maxWidth = PDF_FULL_WIDTH;
+    MutableView.documentTop = -PDF_PADDING_TOP;
 
     RenderLoop.scheduleRender();
     this.init();
@@ -102,10 +104,6 @@ export class PdfBackground {
     document.getElementById("pdf-spinner").style.display = "none";
 
     RenderLoop.scheduleRender();
-  }
-
-  getURL() {
-    return this.url;
   }
 
   render(): void {

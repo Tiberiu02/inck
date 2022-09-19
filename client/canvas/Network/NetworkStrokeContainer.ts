@@ -14,17 +14,26 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
     this.baseCanvas = baseCanvas;
     this.network = network;
 
-    const pathname = window.location.pathname;
-    const wloc = pathname.match(/\/note\/([\w\d_]+)/);
-
-    const docId = (wloc && wloc[1]) || "";
-
     document.getElementById("note-spinner").style.display = "flex";
-
-    network.emit("request document", docId);
 
     network.on("userId", (userId: string) => {
       window.userId = userId;
+    });
+
+    network.on("load note", (data: any) => {
+      console.log("loaded note", data);
+
+      for (let s of data.strokes) {
+        if (!s) continue;
+
+        const stroke = DeserializeGraphic(s);
+        if (stroke) {
+          this.baseCanvas.add(stroke);
+        }
+      }
+
+      document.getElementById("note-spinner").style.display = "none";
+      RenderLoop.scheduleRender();
     });
 
     network.on("load strokes", (data: SerializedGraphic[]) => {
@@ -39,7 +48,6 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
         }
       }
 
-      document.getElementById("note-spinner").style.display = "none";
       RenderLoop.scheduleRender();
     });
 
