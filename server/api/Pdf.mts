@@ -62,5 +62,5 @@ export async function receivePDF(req, res) {
 
 export async function getPDF(req, res) {
   const pdfName = req.params.pdfName;
-  res.sendFile(join(__dirname, `../user-data/pdfs/${pdfName}.pdf`));
+  res.sendFile(join(__dirname, `../../user-data/pdfs/${pdfName}.pdf`));
 }
