@@ -2,6 +2,7 @@ import { FileModel, NoteModel, UserModel } from "../db/Models.mjs";
 import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { exploreTree } from "./FsTreeExplorer.mjs";
+import { Request, Response } from "express";
 
 export const PRIVATE = "private";
 export const READ_WRITE = "read_write";
@@ -10,7 +11,7 @@ export const READ_ONLY = "read_only";
 const VALID_VISIBILITIES = [PRIVATE, READ_ONLY, READ_WRITE];
 export const NEW_FILES_NAME_LENGTH = 6;
 
-export async function getAccountDetailsFromToken(req, res) {
+export async function getAccountDetailsFromToken(req: Request, res: Response) {
   try {
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
     const userEntry = await UserModel.findOne({ _id: token.userId });
@@ -29,11 +30,8 @@ export async function getAccountDetailsFromToken(req, res) {
  * Potential errors w/ status:
  * 400: missing fields, invalid email
  * 409: user already exists
- * @param {*} req
- * @param {*} res
- * @returns
  */
-export async function getFilesFn(req, res) {
+export async function getFilesFn(req: Request, res: Response) {
   try {
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
     const files = await FileModel.find({ owner: token.userId });
@@ -45,7 +43,7 @@ export async function getFilesFn(req, res) {
   }
 }
 
-export async function getThrashedFilesFn(req, res) {
+export async function getThrashedFilesFn(req: Request, res: Response) {
   try {
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
     // TODO: on first access, try to get notes without thrash time and set it to null for consistency
@@ -122,7 +120,7 @@ export async function insertNewNoteInDB({
   await notePromise;
 }
 
-export async function createFileFn(req, res) {
+export async function createFileFn(req: Request, res: Response) {
   /**
    * Create authenticated note
    */
@@ -157,7 +155,7 @@ export async function createFileFn(req, res) {
   }
 }
 
-export async function removeFilesFn(req, res) {
+export async function removeFilesFn(req: Request, res: Response) {
   try {
     const { notesToRemove } = req.body;
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
@@ -191,7 +189,7 @@ export async function removeFilesFn(req, res) {
   }
 }
 
-export async function moveFilesFn(req, res) {
+export async function moveFilesFn(req: Request, res: Response) {
   try {
     const { notesToMove, target } = req.body;
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
@@ -227,7 +225,7 @@ export async function moveFilesFn(req, res) {
   }
 }
 
-export async function importFreeNote(req, res) {
+export async function importFreeNote(req: Request, res: Response) {
   try {
     const { name, parentDir, visibility, freeNoteURL } = req.body;
     console.log(freeNoteURL);
@@ -288,7 +286,7 @@ function validVisibility(visibility) {
   return VALID_VISIBILITIES.includes(visibility);
 }
 
-export async function editFileFn(req, res) {
+export async function editFileFn(req: Request, res: Response) {
   try {
     const { id, newName, newVisibility } = req.body;
     if (!validVisibility(newVisibility)) {
