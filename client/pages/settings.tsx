@@ -128,7 +128,7 @@ export default function Settings() {
                 </a>
               </Link>
               <button
-                onClick={disconnect}
+                onClick={() => disconnect()}
                 className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full"
               >
                 <span className="material-symbols-outlined text-2xl">logout</span>

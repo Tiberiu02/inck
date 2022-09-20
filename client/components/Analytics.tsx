@@ -45,7 +45,7 @@ export function TrackNoteCreation(type) {
   });
 }
 
-export function TrackFolderCreation(type) {
+export function TrackFolderCreation() {
   gtag("event", "folder_creation", {
     event_label: "Folder Creation",
   });
