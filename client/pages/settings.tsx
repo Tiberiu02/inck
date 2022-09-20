@@ -1,28 +1,9 @@
 import Head from "next/head";
-import {
-  FaAngleDown,
-  FaAngleRight,
-  FaPencilAlt,
-  FaSearch,
-  FaRegQuestionCircle,
-  FaRegUserCircle,
-  FaRegUser,
-  FaRegSun,
-  FaRegClock,
-  FaUsers,
-  FaBookmark,
-  FaTrash,
-  FaBook,
-  FaFolder,
-  FaFolderOpen,
-  FaRegWindowClose,
-  FaExchangeAlt,
-  FaBars,
-} from "react-icons/fa";
+import { FaPencilAlt, FaRegUserCircle } from "react-icons/fa";
 
-import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken";
-import React, { useState, useEffect, useRef } from "react";
-import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
+import { getAuthToken, disconnect } from "../components/AuthToken";
+import React, { useState, useEffect } from "react";
+import { postFetchAPI } from "../components/GetApiPath";
 import Link from "next/link";
 
 function UserDetails({}) {
