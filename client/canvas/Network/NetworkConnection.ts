@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 import { SerializedTool, MyTool } from "../Tooling/Tool";
 import { View } from "../View/View";
-import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../../components/AuthToken.js";
+import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../../components/AuthToken";
 import { Vector2D } from "../Math/V2";
 import { Socket } from "socket.io-client";
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import Main from "../canvas/Main.ts";
+import Main from "../canvas/Main";
 
 export default function Canvas(props) {
   useEffect(() => {

@@ -9,7 +9,7 @@ function OpenNoteBtn() {
   const [noteId, setNoteId] = useState("");
   return (
     <form
-      onSubmit={e => {
+      onSubmit={(e) => {
         e.preventDefault();
         if (noteId) window.location = "/note/" + noteId;
       }}
@@ -20,7 +20,7 @@ function OpenNoteBtn() {
         name="code"
         className="placeholder-gray-400 text-gray-700 mx-3 w-full"
         placeholder="Code"
-        onChange={e => setNoteId(e.target.value)}
+        onChange={(e) => setNoteId(e.target.value)}
       />
       <button className="flex flex-row items-center bg-primary hover:bg-primary-dark duration-200 px-5 h-full py-[0.55rem] border-0 w-full justify-center -mr-1 -my-[2px] rounded-r-xl">
         Open&nbsp;note
@@ -34,7 +34,7 @@ function CreateNoteBtn({ className }) {
   const len = 6;
   const id = Array(6)
     .fill(0)
-    .map(x => chars[Math.floor(Math.random() * chars.length)])
+    .map((x) => chars[Math.floor(Math.random() * chars.length)])
     .join("");
   return (
     <button

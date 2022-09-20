@@ -23,14 +23,14 @@ import {
   FaBars,
 } from "react-icons/fa";
 import Cookies from "universal-cookie";
-import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
+import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken";
 import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
 import Link from "next/link";
-import { TrackFolderCreation, TrackNoteCreation } from "../components/Analytics.js";
+import { TrackFolderCreation, TrackNoteCreation } from "../components/Analytics";
 import { NoteToPdf } from "../canvas/PDF/PdfExport";
 import download from "downloadjs";
 import JSZip from "jszip";
-import { Spinner } from "../components/Spinner.js";
+import { Spinner } from "../components/Spinner";
 
 function DirListing({
   Symbol,
@@ -203,7 +203,7 @@ function FileTree({ className, files, path, setPath }) {
         onClick={() => setPath(dirPath)}
         openByDefault={openByDefault}
       >
-        {dir.children.filter(f => f.type == "folder").map(f => buildDirListing(f, dirPath.concat(f._id)))}
+        {dir.children.filter((f) => f.type == "folder").map((f) => buildDirListing(f, dirPath.concat(f._id)))}
       </DirListing>
     );
   };
@@ -302,14 +302,14 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
     return <></>;
   }
 
-  const forbidden = new Set(Object.values(selectedFiles).map(x => x._id));
+  const forbidden = new Set(Object.values(selectedFiles).map((x) => x._id));
 
   const TreeRepr = (folder, setSelected, prefixLength = 0) => {
-    const folders = folder.children.filter(x => x.type == "folder");
+    const folders = folder.children.filter((x) => x.type == "folder");
     const [isOpen, setOpen] = useState(folder.name == "My Notes");
 
     const Folder = isOpen ? FaFolderOpen : FaFolder;
-    const children = folders.map(folder => TreeRepr(folder, setSelected, prefixLength + 1));
+    const children = folders.map((folder) => TreeRepr(folder, setSelected, prefixLength + 1));
     const prefix = "\u00a0".repeat(prefixLength);
 
     let onDoubleClick = null;
@@ -511,7 +511,7 @@ function EditFileModal({ visible, setVisible, file, save }) {
             <input
               placeholder={file.name}
               value={newName}
-              onChange={e => setNewName(e.target.value)}
+              onChange={(e) => setNewName(e.target.value)}
               className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
             />
           </div>
@@ -519,7 +519,7 @@ function EditFileModal({ visible, setVisible, file, save }) {
             Public&nbsp;access
             <select
               value={newNoteAccess}
-              onChange={e => setNewNoteAccess(e.target.value)}
+              onChange={(e) => setNewNoteAccess(e.target.value)}
               className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
             >
               <option value="read_write">View &amp; edit</option>
@@ -546,7 +546,7 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
         Name
         <input
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         />
       </div>
@@ -554,7 +554,7 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
         Public&nbsp;access
         <select
           value={publicAccess}
-          onChange={e => setPublicAccess(e.target.value)}
+          onChange={(e) => setPublicAccess(e.target.value)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         >
           <option value="read_write">View &amp; edit</option>
@@ -573,7 +573,7 @@ function CreateFolderSubmodal({ name, setName, publicAccess, setPublicAccess }) 
         Name
         <input
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         />
       </div>
@@ -583,7 +583,7 @@ function CreateFolderSubmodal({ name, setName, publicAccess, setPublicAccess }) 
 
 function PDFDropZone({ setPdfContent, setFileSize }) {
   const onDrop = useCallback(
-    acceptedFiles => {
+    (acceptedFiles) => {
       if (acceptedFiles.length > 0) {
         const [file] = acceptedFiles;
         setFileSize(file.size);
@@ -641,7 +641,7 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
         Name
         <input
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         />
       </div>
@@ -650,7 +650,7 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
         Public&nbsp;access
         <select
           value={publicAccess}
-          onChange={e => setPublicAccess(e.target.value)}
+          onChange={(e) => setPublicAccess(e.target.value)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         >
           <option value="read_write">View &amp; edit</option>
@@ -678,7 +678,7 @@ function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, 
           Note&nbsp;name
           <input
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
           />
         </div>
@@ -687,7 +687,7 @@ function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, 
           Note&nbsp;URL
           <input
             value={importNoteURL}
-            onChange={e => setImportNoteURL(e.target.value)}
+            onChange={(e) => setImportNoteURL(e.target.value)}
             className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
           />
         </div>
@@ -696,7 +696,7 @@ function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, 
           Public&nbsp;access
           <select
             value={publicAccess}
-            onChange={e => setPublicAccess(e.target.value)}
+            onChange={(e) => setPublicAccess(e.target.value)}
             className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
           >
             <option value="read_write">View &amp; edit</option>
@@ -1044,7 +1044,7 @@ async function editFileAPICall(id, newName, setFiles, newVisibility = null, opti
 }
 
 async function removeFilesAPICall(notes, setFiles) {
-  const notesData = notes.map(x => {
+  const notesData = notes.map((x) => {
     return {
       type: x.type,
       _id: x._id,
@@ -1070,7 +1070,7 @@ async function removeFilesAPICall(notes, setFiles) {
 async function moveFilesAPICall(notes, _target, setFiles) {
   // Send only required stuff
   const target = _target == -1 ? "f/notes" : _target;
-  const notesData = Object.values(notes).map(x => {
+  const notesData = Object.values(notes).map((x) => {
     return {
       type: x.type,
       _id: x._id,
@@ -1108,7 +1108,7 @@ export default function Explorer() {
 
   const isSelecting = Object.keys(selectedFiles).length > 0;
 
-  const setFilesAfterChange = newFiles => {
+  const setFilesAfterChange = (newFiles) => {
     setFiles(newFiles);
     setSelectedFiles({});
   };
@@ -1202,7 +1202,7 @@ export default function Explorer() {
     const LONG_PRESS_DURAION = 500;
     let longPressTimeout;
 
-    const handlePointerDown = e => {
+    const handlePointerDown = (e) => {
       if (e.button != 0) {
         handleLongPress();
         e.preventDefault();
@@ -1213,14 +1213,14 @@ export default function Explorer() {
       }
       longPressTimeout = window.setTimeout(handleLongPress, LONG_PRESS_DURAION);
     };
-    const handlePointerUp = e => {
+    const handlePointerUp = (e) => {
       if (longPressTimeout) {
         window.clearTimeout(longPressTimeout);
         longPressTimeout = null;
         handleClick();
       }
     };
-    const handlePointerCancel = e => {
+    const handlePointerCancel = (e) => {
       if (longPressTimeout) {
         window.clearTimeout(longPressTimeout);
         longPressTimeout = null;
@@ -1232,7 +1232,7 @@ export default function Explorer() {
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        onContextMenu={e => e.preventDefault()}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {f.type == "folder" ? (
           <Book key={f.name} isSelected={isSelected} showSelect={isSelecting} title={f.name} />
@@ -1383,7 +1383,7 @@ export default function Explorer() {
             visible={moveFileModal}
             setVisible={setMoveFileModal}
             setFiles={setFilesAfterChange}
-            moveFiles={target => {
+            moveFiles={(target) => {
               moveFilesAPICall(selectedFiles, target, setFilesAfterChange);
               setSelectedFiles({});
             }}

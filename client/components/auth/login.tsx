@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import React, { useState } from "react";
-import { TrackLogin } from "../Analytics.js";
-import { setAuthToken } from "../AuthToken.js";
+import { TrackLogin } from "../Analytics";
+import { setAuthToken } from "../AuthToken";
 import GetApiPath from "../GetApiPath";
 
 export default function Login({ facebookCallback, googleCallback, toSignUpCallback, toPasswordResetCallback }) {
@@ -80,14 +80,14 @@ export default function Login({ facebookCallback, googleCallback, toSignUpCallba
           placeholder="Email address"
           className={textFieldStyle}
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <input
           placeholder="Password"
           type="password"
           className={textFieldStyle}
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
 
         <div

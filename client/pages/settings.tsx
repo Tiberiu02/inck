@@ -20,7 +20,7 @@ import {
   FaBars,
 } from "react-icons/fa";
 
-import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken.js";
+import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken";
 import React, { useState, useEffect, useRef } from "react";
 import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
 import Link from "next/link";
@@ -36,7 +36,7 @@ function UserDetails({}) {
 
   const MSG_DISPLAY_TIME = 10_000;
 
-  const setTempError = msg => {
+  const setTempError = (msg) => {
     setError(msg);
     setTimeout(() => setError(""), MSG_DISPLAY_TIME);
   };

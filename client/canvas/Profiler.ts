@@ -33,7 +33,8 @@ export default class Profiler {
   }
 
   performance(name: string) {
-    if (!Profiler.getProfiler().measures[name] || !Profiler.getProfiler().measures[name].cnt) throw new Error("No measurements ever made: " + name);
+    if (!Profiler.getProfiler().measures[name] || !Profiler.getProfiler().measures[name].cnt)
+      throw new Error("No measurements ever made: " + name);
 
     return Profiler.getProfiler().measures[name].sum / Profiler.getProfiler().measures[name].cnt;
   }

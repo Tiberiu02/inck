@@ -14,7 +14,7 @@ import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
 import { PdfBackground } from "./PDF/PdfBackground";
 import { Vector2D } from "./Math/V2";
-import GetApiPath from "../components/GetApiPath.js";
+import GetApiPath from "../components/GetApiPath";
 import { GL } from "./Rendering/GL";
 import { NoteToPdf } from "./PDF/PdfExport";
 
@@ -51,7 +51,7 @@ export default class App {
 
       overflow: "hidden",
     });
-    window.addEventListener("contextmenu", e => e.preventDefault());
+    window.addEventListener("contextmenu", (e) => e.preventDefault());
 
     // Init graphics
     GL.init();
@@ -76,11 +76,11 @@ export default class App {
 
     // Pointer tracker
     this.pointerTracker = new PointerTracker();
-    this.pointerTracker.onPenEvent.addListener(e => this.handlePenEvent(e));
+    this.pointerTracker.onPenEvent.addListener((e) => this.handlePenEvent(e));
 
     // Enable navigation
     this.pageNavigation = new PageNavigation();
-    this.pointerTracker.onFingerEvent.addListener(e => this.pageNavigation.handleFingerEvent(e));
+    this.pointerTracker.onFingerEvent.addListener((e) => this.pageNavigation.handleFingerEvent(e));
     View.onUpdate(() => RenderLoop.scheduleRender());
 
     // Enable tooling
@@ -106,7 +106,7 @@ export default class App {
       this.toolManager.render(1);
     });
 
-    window["PdfExport"] = id => NoteToPdf(id);
+    window["PdfExport"] = (id) => NoteToPdf(id);
   }
 
   async handlePenEvent(e: PenEvent) {

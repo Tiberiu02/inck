@@ -26,7 +26,7 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
   const router = useRouter();
   const [error, setError] = useState("");
 
-  const setTimedError = err => {
+  const setTimedError = (err) => {
     setError("Error: " + err);
     setTimeout(() => setError(""), 10_000);
   };
@@ -99,13 +99,13 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
             className={textFieldStyle}
             placeholder="First Name"
             value={firstName}
-            onChange={e => setFirstName(e.target.value)}
+            onChange={(e) => setFirstName(e.target.value)}
           ></input>
           <input
             className={textFieldStyle}
             placeholder="Last Name"
             value={lastName}
-            onChange={e => setLastName(e.target.value)}
+            onChange={(e) => setLastName(e.target.value)}
           ></input>
         </div>
 
@@ -115,7 +115,7 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
             className={textFieldStyle}
             placeholder="Email address"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
           ></input>
         </div>
         <div className="flex flex-col">
@@ -125,7 +125,7 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
             type="password"
             placeholder="Password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
@@ -134,7 +134,7 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
           type="password"
           placeholder="Repeat password"
           value={repeatedPass}
-          onChange={e => setRepeatedPass(e.target.value)}
+          onChange={(e) => setRepeatedPass(e.target.value)}
         />
 
         <div className="flex flex-col text-gray-600 text-sm gap-2">

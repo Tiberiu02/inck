@@ -1,6 +1,11 @@
 import Script from "next/script";
 import { useEffect } from "react";
 
+declare global {
+  var dataLayer: any[];
+  function gtag(...params: any[]);
+}
+
 export function AnalyticsScript() {
   /* Google tag (gtag.js) */
   useEffect(() => {

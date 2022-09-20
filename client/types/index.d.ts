@@ -9,6 +9,8 @@ declare global {
     profiler?: Profiler;
     app?: App;
     userId?: string;
+    dataLayer: any[];
+    gtag: Function;
   }
 }
 

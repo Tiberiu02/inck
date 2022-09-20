@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import Router from "next/router";
 import React, { useState } from "react";
-import { disconnect, getAuthToken, setAuthToken } from "../AuthToken.js";
+import { disconnect, getAuthToken, setAuthToken } from "../AuthToken";
 import GetApiPath, { postFetchAPI } from "../GetApiPath";
 
 export default function ResetPassword({ toLoginCallback, toRegisterCallback }) {
@@ -36,7 +36,7 @@ export default function ResetPassword({ toLoginCallback, toRegisterCallback }) {
             placeholder="Email address"
             className={textFieldStyle}
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
           />
           <div
             className={`${
