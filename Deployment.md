@@ -2,6 +2,16 @@
 
 The app is deployed using [PM2](https://pm2.keymetrics.io/docs/usage/startup/). There are two processes: "frontend" and "backend". Both processes are set to start after a reboot.
 
+## Cheatsheet
+
+Restart processes using
+- `pm2 restart frontend`
+- `pm2 restart backend`
+- `pm2 restart all`
+
+Reset restart counters using
+- `pm2 reset all`
+
 ## Ports
 
 The frontend is running on port 3080, not 80. (permission issues)
