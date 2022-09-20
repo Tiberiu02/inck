@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { setuid } from "process";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, PointerEvent } from "react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import {
@@ -87,7 +87,7 @@ function DirListing({
   );
 }
 
-function Note({ title, onClick, showSelect = false, isSelected = false }) {
+function Note({ title, showSelect = false, isSelected = false }) {
   return (
     <button className="relative select-none flex flex-col items-center justify-center w-24 h-32 sm:w-32 sm:h-40 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100 overflow-hidden">
       <p className="relative py-2 px-2 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
@@ -107,7 +107,7 @@ function Note({ title, onClick, showSelect = false, isSelected = false }) {
   );
 }
 
-function Book({ title, onClick, showSelect = false, isSelected = false }) {
+function Book({ title, showSelect = false, isSelected = false }) {
   return (
     <button className="relative select-none w-24 h-32 sm:w-32 sm:h-40 text-white duration-100 flex flex-col">
       <div className="bg-slate-800 h-5 w-12 rounded-t-xl -mb-2"></div>
@@ -134,7 +134,7 @@ function AddButton({ onClick }) {
     <>
       <button
         onClick={onClick}
-        className="relative w-24 h-32 sm:w-32 sm:h-40 text-gray-200 border-4 rounded-xl text-9xl hover:scale-110 duration-100"
+        className="relative w-24 h-32 sm:w-32 sm:h-40 text-gray-200 border-4 rounded-xl text-9xl select-none"
       >
         +
       </button>
@@ -709,87 +709,21 @@ function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, 
   );
 }
 
-function CreateModalHeaderElement({ modalState, setModalState, buttonText, activeState }) {
-  return (
-    <button
-      onClick={() => setModalState(activeState)}
-      className={
-        "p-4 gap-2 rounded-md border-2 border-gray-300 text-slate-800  bg-gray-100 hover:bg-slate-800 hover:border-slate-800 hover:text-white"
-      }
-    >
-      {buttonText}
-    </button>
-  );
-}
-
-function CreateModalHeader({ modalState, setModalState }) {
-  return (
-    <div className="flex items-center">
-      <div className="text-3xl text-center">
-        Create
-        <br />
-        new
-      </div>
-      <div className="w-1 h-60 bg-gray-200  rounded-full mx-8"></div>
-      <div className="grid grid-cols-1 gap-3 w-fit">
-        {/* New folder */}
-        <CreateModalHeaderElement
-          modalState={modalState}
-          setModalState={setModalState}
-          buttonText={
-            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span className="material-symbols-outlined">folder</span> Folder
-            </div>
-          }
-          activeState={"folder"}
-        />
-        {/* New note */}
-        <CreateModalHeaderElement
-          modalState={modalState}
-          setModalState={setModalState}
-          buttonText={
-            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span className="material-symbols-outlined">description</span> Note
-            </div>
-          }
-          activeState={"note"}
-        />
-        {/* Import PDF */}
-        <CreateModalHeaderElement
-          modalState={modalState}
-          setModalState={setModalState}
-          buttonText={
-            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <span className="material-symbols-outlined">picture_as_pdf</span> PDF Note
-            </div>
-          }
-          activeState={"import-pdf"}
-        />
-        {/* Import note 
-      <CreateModalHeaderElement
-        modalState={modalState}
-        setModalState={setModalState}
-        buttonText={"Import note"}
-        activeState={"import-note"}
-      />*/}
-      </div>
-    </div>
-  );
-}
-
-async function newNoteSubmit(name, parentDir, publicAccess, setFiles) {
+async function CreateNote(name, parentDir, publicAccess) {
   TrackNoteCreation("simple");
-  addFile(name, "note", parentDir, setFiles, {
-    publicAccess: publicAccess,
+  const files = addFile(name, "note", parentDir, {
+    publicAccess,
   });
+  return files;
 }
 
-async function newFolderSubmit(name, parentDir, setFiles) {
+async function newFolderSubmit(name, parentDir) {
   TrackFolderCreation();
-  addFile(name, "folder", parentDir, setFiles);
+  const files = addFile(name, "folder", parentDir);
+  return files;
 }
 
-async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, setFiles) {
+async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent) {
   if (!pdfFileContent) {
     return;
   }
@@ -807,64 +741,104 @@ async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, se
 
   if (jsonReply.status == "success") {
     TrackNoteCreation("pdf");
-    const filesDict = processFilesData(jsonReply.files);
-    await setFiles(filesDict);
+    return processFilesData(jsonReply.files);
+  } else {
+    throw Error("Failed to import PDF");
   }
 }
 
-async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles) {
+async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL) {
   TrackNoteCreation("public-import");
-  await importFreeNote(name, parentDir, setFiles, publicAccess, publicNoteURL);
+  return await importFreeNote(name, parentDir, publicAccess, publicNoteURL);
 }
 
-async function createModalSubmit(state, name, parentDir, publicAccess, publicNoteURL, pdfFileContent, setFiles) {
-  if (state == "note") return newNoteSubmit(name, parentDir, publicAccess, setFiles);
-  else if (state == "folder") return newFolderSubmit(name, parentDir, setFiles);
-  else if (state == "import-pdf") return importPDFSubmit(name, parentDir, publicAccess, pdfFileContent, setFiles);
-  else if (state == "import-note") return importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL, setFiles);
-  else alert("Invalid state");
-}
+function CreateFileModal({ close, path, setFiles, reloadFiles }) {
+  enum States {
+    SELECT_ACTION,
+    CREATE_NOTE,
+    CREATE_FOLDER,
+    IMPORT_PDF,
+    IMPORT_NOTE,
+  }
 
-function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
-  /**
-   * valid states:
-   * select-type - shows the user all cfile creation options
-   * note - will create a new file
-   * folder - will create a new directory
-   * import-pdf - will create a new note with a pdf
-   * import-note - import a free note
-   */
-  const [modalState, setModalState] = useState("select-type");
+  const [state, setState] = useState(States.SELECT_ACTION);
+
   const [name, setName] = useState("");
   const [publicAccess, setPublicAccess] = useState("private");
   const [pdfContent, setPdfContent] = useState(null);
   const [importNoteURL, setImportNoteURL] = useState("");
 
+  function ModalHeader() {
+    function Element({ children, state }) {
+      return (
+        <button
+          onClick={() => setState(state)}
+          className={
+            "p-4 gap-2 rounded-md border-2 border-gray-300 text-slate-800  bg-gray-100 hover:bg-slate-800 hover:border-slate-800 hover:text-white"
+          }
+        >
+          {children}
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex items-center">
+        <div className="text-3xl text-center">
+          Create
+          <br />
+          new
+        </div>
+        <div className="w-1 h-60 bg-gray-200  rounded-full mx-8"></div>
+        <div className="grid grid-cols-1 gap-3 w-fit">
+          {/* New folder */}
+          <Element state={States.CREATE_FOLDER}>
+            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+              <span className="material-symbols-outlined">folder</span> Folder
+            </div>
+          </Element>
+
+          {/* New note */}
+          <Element state={States.CREATE_NOTE}>
+            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+              <span className="material-symbols-outlined">description</span> Note
+            </div>
+          </Element>
+
+          {/* Import PDF */}
+          <Element state={States.IMPORT_PDF}>
+            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+              <span className="material-symbols-outlined">picture_as_pdf</span> PDF Note
+            </div>
+          </Element>
+        </div>
+      </div>
+    );
+  }
+
   const submit = async () => {
     const parentDir = path.at(-1);
-    const status = await createModalSubmit(
-      modalState,
-      name,
-      parentDir,
-      publicAccess,
-      importNoteURL,
-      pdfContent,
-      setFiles
-    );
 
-    // TODO: check result and if failure, display error messages
-    setVisible(false);
+    let newFiles;
+    if (state == States.CREATE_NOTE) {
+      newFiles = await CreateNote(name, parentDir, publicAccess);
+    } else if (state == States.CREATE_FOLDER) {
+      newFiles = await newFolderSubmit(name, parentDir);
+    } else if (state == States.IMPORT_PDF) {
+      newFiles = await importPDFSubmit(name, parentDir, publicAccess, pdfContent);
+    } else if (state == States.IMPORT_NOTE) {
+      newFiles = await importFreeNoteSubmit(name, parentDir, publicAccess, importNoteURL);
+    }
+    reloadFiles(newFiles);
+
+    close();
   };
 
-  let modalBody;
-
-  switch (modalState) {
-    case "select-type":
-      modalBody = <CreateModalHeader setModalState={setModalState} modalState={modalState} />;
-      break;
-
-    case "note":
-      modalBody = (
+  function ModalBody() {
+    if (state == States.SELECT_ACTION) {
+      return <ModalHeader />;
+    } else if (state == States.CREATE_NOTE) {
+      return (
         <CreateNoteSubmodal
           name={name}
           setName={setName}
@@ -872,10 +846,8 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
           setPublicAccess={setPublicAccess}
         />
       );
-      break;
-
-    case "folder":
-      modalBody = (
+    } else if (state == States.CREATE_FOLDER) {
+      return (
         <CreateFolderSubmodal
           name={name}
           setName={setName}
@@ -883,10 +855,8 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
           setPublicAccess={setPublicAccess}
         />
       );
-      break;
-
-    case "import-pdf":
-      modalBody = (
+    } else if (state == States.IMPORT_PDF) {
+      return (
         <ImportPDFSubmodal
           name={name}
           setName={setName}
@@ -895,10 +865,8 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
           setPdfContent={setPdfContent}
         />
       );
-      break;
-
-    case "import-note":
-      modalBody = (
+    } else if (state == States.IMPORT_NOTE) {
+      return (
         <ImportFreeNoteSubmodal
           name={name}
           setName={setName}
@@ -908,31 +876,27 @@ function CreateFileModal({ visible, setVisible, path, setFiles, reloadFiles }) {
           setImportNoteURL={setImportNoteURL}
         />
       );
-      break;
+    }
   }
 
   return (
-    <div
-      className={`absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center ${
-        !visible ? "hidden" : ""
-      }`}
-    >
-      <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
+    <div className={`absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center`}>
+      <div onClick={() => close(false)} className="absolute inset-0"></div>
       <div className="relative w-96 h-96 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg">
         <div className="flex flex-row-reverse justify-between">
-          <button className="self-end hover:text-red-500" onClick={() => setVisible(false)}>
+          <button className="self-end hover:text-red-500" onClick={close}>
             <span className="material-symbols-outlined">close</span>
           </button>
-          {modalState != "select-type" && (
-            <button className="self-end hover:text-blue-500" onClick={() => setModalState("select-type")}>
+          {state != States.SELECT_ACTION && (
+            <button className="self-end hover:text-blue-500" onClick={() => setState(States.SELECT_ACTION)}>
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
           )}
         </div>
 
-        <div className="flex flex-col basis-full justify-center items-center">{modalBody}</div>
+        <div className="flex flex-col basis-full justify-center items-center">{ModalBody()}</div>
 
-        {modalState != "select-type" && (
+        {state != States.SELECT_ACTION && (
           <button
             onClick={submit}
             className="w-full bg-slate-800 hover:bg-black text-white px-4 py-1 rounded-md self-center"
@@ -972,7 +936,7 @@ function processFilesData(fileList) {
   return fileDict;
 }
 
-async function LoadFiles(callback) {
+async function LoadFiles() {
   const response = await fetch(GetApiPath("/api/explorer/getfiles"), {
     method: "post",
     body: JSON.stringify({ token: getAuthToken() }),
@@ -983,11 +947,10 @@ async function LoadFiles(callback) {
   const json = await response.json();
 
   const fileList = json.files;
-  const fileDict = processFilesData(fileList);
-  callback(fileDict);
+  return processFilesData(fileList);
 }
 
-async function addFile(name, type, parentDir, setFiles, options = {}) {
+async function addFile(name, type, parentDir, options = {}) {
   const response = await fetch(GetApiPath("/api/explorer/addfile"), {
     method: "post",
     body: JSON.stringify({ token: getAuthToken(), name, type, parentDir, options }),
@@ -998,10 +961,10 @@ async function addFile(name, type, parentDir, setFiles, options = {}) {
 
   const jsonReply = await response.json();
   const filesDict = processFilesData(jsonReply.files);
-  await setFiles(filesDict);
+  return filesDict;
 }
 
-async function importFreeNote(name, parentDir, setFiles, visibility, freeNoteURL) {
+async function importFreeNote(name, parentDir, visibility, freeNoteURL) {
   const response = await fetch(GetApiPath("/api/explorer/import-free-note"), {
     method: "post",
     body: JSON.stringify({
@@ -1018,12 +981,13 @@ async function importFreeNote(name, parentDir, setFiles, visibility, freeNoteURL
 
   const jsonReply = await response.json();
   if (jsonReply.files != undefined) {
-    const filesDict = processFilesData(jsonReply.files);
-    setFiles(filesDict);
+    return processFilesData(jsonReply.files);
+  } else {
+    throw Error("API failed to return new files");
   }
 }
 
-async function editFileAPICall(id, newName, setFiles, newVisibility = null, options = {}) {
+async function editFileAPICall(id, newName, newVisibility = null, options = {}) {
   const response = await fetch(GetApiPath("/api/explorer/editfile"), {
     method: "post",
     body: JSON.stringify({
@@ -1039,17 +1003,14 @@ async function editFileAPICall(id, newName, setFiles, newVisibility = null, opti
   });
 
   const jsonReply = await response.json();
-  const filesDict = processFilesData(jsonReply.files);
-  setFiles(filesDict);
+  return processFilesData(jsonReply.files);
 }
 
-async function removeFilesAPICall(notes, setFiles) {
-  const notesData = notes.map((x) => {
-    return {
-      type: x.type,
-      _id: x._id,
-    };
-  });
+async function removeFilesAPICall(notes) {
+  const notesData = notes.map((x) => ({
+    type: x.type,
+    _id: x._id,
+  }));
 
   const response = await fetch(GetApiPath("/api/explorer/removefiles"), {
     method: "post",
@@ -1063,11 +1024,10 @@ async function removeFilesAPICall(notes, setFiles) {
   });
 
   const jsonReply = await response.json();
-  const filesDict = processFilesData(jsonReply.files);
-  setFiles(filesDict);
+  return processFilesData(jsonReply.files);
 }
 
-async function moveFilesAPICall(notes, _target, setFiles) {
+async function moveFilesAPICall(notes, _target) {
   // Send only required stuff
   const target = _target == -1 ? "f/notes" : _target;
   const notesData = Object.values(notes).map((x) => {
@@ -1091,24 +1051,30 @@ async function moveFilesAPICall(notes, _target, setFiles) {
 
   const jsonReply = await response.json();
   const filesDict = processFilesData(jsonReply.files);
-  setFiles(filesDict);
+  return filesDict;
+}
+
+enum Modals {
+  NONE,
+  CREATE_FILE,
+  EDIT_FILE,
+  REMOVE_FILES,
+  MOVE_FILES,
+  EXPORT_FILES,
 }
 
 export default function Explorer() {
   const [files, setFiles] = useState(null);
   const [path, setPath] = useState(["f/notes"]);
-  const [createFileModal, setCreateFileModal] = useState(false);
-  const [editFileModal, setEditFileModal] = useState(false);
-  const [removeFileModal, setRemoveFileModal] = useState(false);
-  const [moveFileModal, setMoveFileModal] = useState(false);
-  const [exportFileModal, setExportFileModal] = useState(false);
+  const [modal, setModal] = useState(Modals.NONE);
+  const closeModal = () => setModal(Modals.NONE);
 
   const [selectedFiles, setSelectedFiles] = useState({});
   const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]];
 
   const isSelecting = Object.keys(selectedFiles).length > 0;
 
-  const setFilesAfterChange = (newFiles) => {
+  const updateFiles = (newFiles) => {
     setFiles(newFiles);
     setSelectedFiles({});
   };
@@ -1117,7 +1083,6 @@ export default function Explorer() {
 
   // Toggle file selection
   if (isSelecting) {
-    const noSelection = Object.keys(selectedFiles).length == 0;
     const oneSelected = Object.keys(selectedFiles).length == 1;
 
     selectionWidget = (
@@ -1129,29 +1094,26 @@ export default function Explorer() {
           <span className="material-symbols-outlined text-xl">close</span>
         </button>
         <button
-          onClick={() => setRemoveFileModal(true)}
-          disabled={noSelection}
+          onClick={() => setModal(Modals.REMOVE_FILES)}
           className="hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3"
         >
           <FaTrash />
         </button>
         <button
-          onClick={() => setEditFileModal(true)}
+          onClick={() => setModal(Modals.EDIT_FILE)}
           disabled={!oneSelected}
           className="hover:bg-gray-300 disabled:opacity-20 disabled:hover:bg-inherit px-4 py-3"
         >
           <FaRegSun />
         </button>
         <button
-          onClick={() => setMoveFileModal(true)}
-          disabled={noSelection}
+          onClick={() => setModal(Modals.MOVE_FILES)}
           className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4"
         >
           <span className="material-symbols-outlined text-xl">drive_file_move</span>
         </button>
         <button
-          onClick={() => setExportFileModal(true)}
-          disabled={noSelection}
+          onClick={() => setModal(Modals.EXPORT_FILES)}
           className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4"
         >
           <span className="material-symbols-outlined text-xl">download</span>
@@ -1162,91 +1124,87 @@ export default function Explorer() {
     selectionWidget = <></>;
   }
 
-  let fileClickActionFactory;
-  let bookClickActionFactory;
-  // Set click action for explorer elements
-  if (isSelecting) {
-    function explorerItemClickActionFactory(f, idx) {
-      const onClick = () => {
-        const newState = { ...selectedFiles };
-        if (f._id in newState) {
-          delete newState[f._id];
-        } else {
-          newState[f._id] = f;
-        }
-        setSelectedFiles(newState);
-      };
-      return onClick;
+  const fileClickAction = (f) => {
+    if (isSelecting) {
+      const newState = { ...selectedFiles };
+      if (f._id in newState) {
+        delete newState[f._id];
+      } else {
+        newState[f._id] = f;
+      }
+      setSelectedFiles(newState);
+    } else {
+      if (f.type == "folder") {
+        setPath(path.concat([f._id]));
+      } else {
+        window.open("/note/" + f.fileId, "_blank");
+      }
     }
-
-    bookClickActionFactory = explorerItemClickActionFactory;
-    fileClickActionFactory = explorerItemClickActionFactory;
-  } else {
-    bookClickActionFactory = (f, idx) => () => setPath(path.concat([f._id]));
-    fileClickActionFactory = (f, idx) => () => window.open("/note/" + f.fileId, "_blank");
-  }
+  };
 
   const drawExplorerItem = (f, idx, _) => {
     const isSelected = isSelecting && f._id in selectedFiles;
 
-    const handleClick = f.type == "folder" ? bookClickActionFactory(f, idx) : fileClickActionFactory(f, idx);
-    const handleLongPress = () => {
-      longPressTimeout = null;
-      if (!isSelecting) {
-        setSelectedFiles({ [f._id]: f });
-      } else {
-        handleClick();
-      }
-    };
-
     const LONG_PRESS_DURAION = 500;
-    let longPressTimeout;
+    let longPressTimeout: number;
 
-    const handlePointerDown = (e) => {
-      if (e.button != 0) {
+    const startPress = (e: PointerEvent) => {
+      if (isSelecting) {
+        fileClickAction(f);
+      } else if (e.button == 0) {
+        if (longPressTimeout) {
+          window.clearTimeout(longPressTimeout);
+          longPressTimeout = null;
+        }
+        longPressTimeout = window.setTimeout(handleLongPress, LONG_PRESS_DURAION);
+      } else {
         handleLongPress();
         e.preventDefault();
       }
-      if (longPressTimeout) {
-        window.clearTimeout(longPressTimeout);
-        longPressTimeout = null;
-      }
-      longPressTimeout = window.setTimeout(handleLongPress, LONG_PRESS_DURAION);
     };
-    const handlePointerUp = (e) => {
-      if (longPressTimeout) {
-        window.clearTimeout(longPressTimeout);
-        longPressTimeout = null;
-        handleClick();
-      }
-    };
-    const handlePointerCancel = (e) => {
+    const cancelPress = () => {
       if (longPressTimeout) {
         window.clearTimeout(longPressTimeout);
         longPressTimeout = null;
       }
     };
 
+    const handleClick = () => {
+      if (longPressTimeout) {
+        cancelPress();
+        fileClickAction(f);
+      }
+    };
+    const handleLongPress = () => {
+      if (!isSelecting) {
+        longPressTimeout = null;
+        setSelectedFiles({ [f._id]: f });
+      }
+    };
+
+    const Component = f.type == "folder" ? Book : Note;
+
     return (
       <div
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
+        onPointerDown={startPress}
+        onPointerLeave={cancelPress}
+        onPointerCancel={cancelPress}
         onContextMenu={(e) => e.preventDefault()}
+        onClick={handleClick}
+        key={f.fileId}
       >
-        {f.type == "folder" ? (
-          <Book key={f.name} isSelected={isSelected} showSelect={isSelecting} title={f.name} />
-        ) : (
-          <Note key={f.fileId} isSelected={isSelected} showSelect={isSelecting} title={f.name} />
-        )}
+        <Component isSelected={isSelected} showSelect={isSelecting} title={f.name} />
       </div>
     );
   };
 
-  const reloadFiles = () => LoadFiles(setFiles);
+  const reload = async () => {
+    setSelectedFiles({});
+    setFiles(await LoadFiles());
+  };
 
   useEffect(() => {
-    reloadFiles();
+    reload();
   }, []);
 
   return (
@@ -1306,7 +1264,7 @@ export default function Explorer() {
               </Link>
 
               <button
-                onClick={disconnect}
+                onClick={() => disconnect()}
                 className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full"
               >
                 <span className="material-symbols-outlined text-2xl">logout</span>
@@ -1331,8 +1289,8 @@ export default function Explorer() {
 
                 <AddButton
                   onClick={() => {
-                    setCreateFileModal(true);
-                    reloadFiles();
+                    setModal(Modals.CREATE_FILE);
+                    //reloadFiles();
                   }}
                 />
               </div>
@@ -1341,21 +1299,12 @@ export default function Explorer() {
         </div>
 
         {/* Create file modal */}
-        {createFileModal && (
-          <CreateFileModal
-            visible={createFileModal}
-            setVisible={setCreateFileModal}
-            setFiles={setFiles}
-            path={path}
-            reloadFiles={reloadFiles}
-          />
-        )}
+        {modal == Modals.CREATE_FILE && <CreateFileModal close={closeModal} reload={reload} path={path} />}
         {/* Edit file modal */}
-        {editFileModal && (
+        {modal == Modals.EDIT_FILE && (
           <EditFileModal
             file={firstSelectedElement}
-            visible={editFileModal}
-            setVisible={setEditFileModal}
+            close={closeModal}
             setFiles={setFilesAfterChange}
             save={(id, newName, newVisibility, options) => {
               editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options);
@@ -1364,10 +1313,9 @@ export default function Explorer() {
           />
         )}
         {/* Remove files modal */}
-        {removeFileModal && (
+        {modal == Modals.REMOVE_FILES && (
           <RemoveFilesModal
-            visible={removeFileModal}
-            setVisible={setRemoveFileModal}
+            close={closeModal}
             setFiles={setFilesAfterChange}
             removeFiles={() => {
               removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange);
@@ -1376,12 +1324,11 @@ export default function Explorer() {
           />
         )}
         {/* Move files modal */}
-        {moveFileModal && (
+        {modal == Modals.MOVE_FILES && (
           <MoveFilesModal
             files={files}
             selectedFiles={selectedFiles}
-            visible={moveFileModal}
-            setVisible={setMoveFileModal}
+            close={closeModal}
             setFiles={setFilesAfterChange}
             moveFiles={(target) => {
               moveFilesAPICall(selectedFiles, target, setFilesAfterChange);
@@ -1389,13 +1336,8 @@ export default function Explorer() {
             }}
           />
         )}
-        {exportFileModal && (
-          <ExportFilesModal
-            selectedFiles={selectedFiles}
-            setSelectedFiles={setSelectedFiles}
-            visible={moveFileModal}
-            setVisible={setExportFileModal}
-          />
+        {modal == Modals.EXPORT_FILES && (
+          <ExportFilesModal selectedFiles={selectedFiles} setSelectedFiles={setSelectedFiles} close={closeModal} />
         )}
       </main>
     </div>
