@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { FileModel, NoteModel } from "../db/Models.mjs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { Request, Response } from "express";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,7 +18,7 @@ function hashFile(buffer) {
   return hashSum.digest("hex");
 }
 
-export async function receivePDF(req, res) {
+export async function receivePDF(req: Request, res: Response) {
   try {
     const pdfData = req.files.file.data;
     const { name, parentDir, defaultAccess } = req.body;
@@ -60,7 +61,7 @@ export async function receivePDF(req, res) {
   }
 }
 
-export async function getPDF(req, res) {
+export async function getPDF(req: Request, res: Response) {
   const pdfName = req.params.pdfName;
   res.sendFile(join(__dirname, `../../user-data/pdfs/${pdfName}.pdf`));
 }

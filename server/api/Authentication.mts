@@ -3,8 +3,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendPasswordConfirmationEmail, sendPasswordRecoveryEmail, sendRegistrationEmail } from "../email/Mailer.mjs";
+import { Request, Response } from "express";
 
-function validateEmail(email) {
+function validateEmail(email: string) {
   return String(email)
     .trim()
     .toLowerCase()
@@ -13,7 +14,7 @@ function validateEmail(email) {
     );
 }
 
-function validatePhoneNumber(phone) {
+function validatePhoneNumber(phone: string) {
   return String(phone)
     .trim()
     .toLowerCase()
@@ -30,7 +31,7 @@ function validatePhoneNumber(phone) {
  * @param {*} res
  * @returns
  */
-export async function register(req, res) {
+export async function register(req: Request, res: Response) {
   try {
     let { firstName, lastName, email, password } = req.body;
     email = email.trim().toLowerCase();
@@ -40,9 +41,9 @@ export async function register(req, res) {
     if (!validateEmail(email)) return res.status(400).send({ error: "invalid email" });
 
     const emailDomain = email.split("@")[1];
-    // if (emailDomain !== "epfl.ch") {
-    //   return res.status(400).send({ error: "sorry, only EPFL students are currently allowed" });
-    // }
+    if (emailDomain !== "epfl.ch") {
+      return res.status(400).send({ error: "sorry, only EPFL students are currently allowed" });
+    }
 
     if (await UserModel.findOne({ email })) return res.status(409).send({ error: "user already exists" });
 
@@ -64,7 +65,7 @@ export async function register(req, res) {
         userId: user._id,
         email: user.email,
       },
-      process.env.JWT_TOKEN
+      process.env.JWT_TOKEN as string
     );
 
     user.token = token;
@@ -77,7 +78,7 @@ export async function register(req, res) {
   }
 }
 
-export async function login(req, res) {
+export async function login(req: Request, res: Response) {
   try {
     let { email, password } = req.body;
     email = email.trim().toLowerCase();
@@ -93,7 +94,7 @@ export async function login(req, res) {
           userId: user._id,
           email: user.email,
         },
-        process.env.JWT_TOKEN
+        process.env.JWT_TOKEN as string
       );
 
       return res.status(200).send({ email, token });
@@ -106,11 +107,11 @@ export async function login(req, res) {
   }
 }
 
-function createPasswordResetToken() {
+function createPasswordResetToken(): string {
   return crypto.randomBytes(64).toString("hex");
 }
 
-function resetLinkFromToken(token, email, resetId) {
+function resetLinkFromToken(token: string, email: string, resetId: number): string {
   return `https://inck.io/reset-password?token=${token}&email=${email}`;
 }
 
@@ -141,7 +142,7 @@ async function resetUserPassword(userEntry) {
   await sendPasswordRecoveryEmail(userEntry.email, userEntry.firstName, userEntry.lastName, passwordResetLink);
 }
 
-export async function initializeResetPasswordUsingEmail(req, res) {
+export async function initializeResetPasswordUsingEmail(req: Request, res: Response) {
   try {
     const { email } = req.body;
     const userEntry = await UserModel.findOne({ email: email });
@@ -154,11 +155,11 @@ export async function initializeResetPasswordUsingEmail(req, res) {
   }
 }
 
-export async function initializeResetPasswordUsingToken(req, res) {
+export async function initializeResetPasswordUsingToken(req: Request, res: Response) {
   try {
-    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN as string);
     const userEntry = await UserModel.findOne({ _id: token.userId });
-    const result = resetUserPassword(userEntry);
+    resetUserPassword(userEntry);
     return res.status(201).send({ status: "success" });
   } catch (err) {
     console.log("Error during password reset:");
@@ -167,7 +168,7 @@ export async function initializeResetPasswordUsingToken(req, res) {
   }
 }
 
-export async function changePasswordEndpoint(req, res) {
+export async function changePasswordEndpoint(req: Request, res: Response) {
   try {
     const { newPassword, resetToken, email } = req.body;
     const passHash = await bcrypt.hash(newPassword, Number(process.env.BCRYPT_SALT));
@@ -182,18 +183,9 @@ export async function changePasswordEndpoint(req, res) {
       return res.status(400).send({ error: "Unable to reset password (432)" });
     }
 
-    const userEntry = await UserModel.findOneAndUpdate(
-      {
-        _id: entry.userId,
-      },
-      {
-        password: passHash,
-      }
-    );
+    const userEntry = await UserModel.findOneAndUpdate({ _id: entry.userId }, { password: passHash });
 
-    await PasswordResetModel.deleteOne({
-      email: email,
-    });
+    await PasswordResetModel.deleteOne({ email: email });
 
     res.status(201).send({ status: "success" });
     await sendPasswordConfirmationEmail(userEntry.email, userEntry.firstName, userEntry.lastName);

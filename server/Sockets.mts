@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
-import { PRIVATE, READ_ONLY, READ_WRITE } from "./api/FileExplorer.mjs";
+import { NoteAccess } from "./api/FileExplorer.mjs";
 import { FileModel, NoteModel } from "./db/Models.mjs";
+import { Socket as WebSocket } from "socket.io";
+import { DrawingUser, DrawnDocument, JwtPayload, Stroke } from "./BackendInterfaces.mjs";
 
-function disconnectFn(user, docs, socket) {
+function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {
     return;
   }
@@ -12,7 +14,7 @@ function disconnectFn(user, docs, socket) {
       other.socket.emit(`collaborator remove ${user.id}`);
     }
   }
-  docs[user.docId].users = docs[user.docId].users.filter(u => u != user);
+  docs[user.docId].users = docs[user.docId].users.filter((u) => u != user);
   console.log(
     `[${new Date().toLocaleString()}] ${user.ip} stopped drawing on ${user.docId}, ${
       docs[user.docId].users.length
@@ -20,7 +22,7 @@ function disconnectFn(user, docs, socket) {
   );
 }
 
-async function removeStrokeFn(id, user, docs, socket) {
+async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId || !user.canWrite || typeof id != "string") {
     return;
   }
@@ -31,22 +33,19 @@ async function removeStrokeFn(id, user, docs, socket) {
     }
   }
 
-  await NoteModel.updateOne(
-    {
-      id: user.docId,
-    },
-    {
-      $pull: { strokes: { id: id } },
-    }
-  );
+  await NoteModel.updateOne({ id: user.docId }, { $pull: { strokes: { id: id } } });
 }
 
-async function newStrokeFn(stroke, user, docs, socket) {
+async function newStrokeFn(
+  stroke: Stroke,
+  user: DrawingUser,
+  docs: { [id: string]: DrawnDocument },
+  socket: WebSocket
+) {
   if (!user.docId || !user.canWrite) {
     return;
   }
   console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /note/${user.docId}`);
-
   const [uId, sId] = stroke.id.split("-");
 
   /*
@@ -62,21 +61,12 @@ async function newStrokeFn(stroke, user, docs, socket) {
     }
   }
 
-  await NoteModel.updateOne(
-    {
-      id: user.docId,
-    },
-    {
-      $push: { strokes: stroke },
-    }
-  );
+  await NoteModel.updateOne({ id: user.docId }, { $push: { strokes: stroke } });
 }
 
-async function docRights(docId, user) {
+async function docRights(docId: string, user: DrawingUser) {
   // return read acces; write access
-  const noteData = await NoteModel.findOne({
-    id: docId,
-  });
+  const noteData = await NoteModel.findOne({ id: docId });
 
   if (noteData.isFreeNote) {
     return [true, true];
@@ -92,12 +82,12 @@ async function docRights(docId, user) {
     return [false, false];
   }
 
-  let token = {
-    userId: null,
+  let token: JwtPayload = {
+    userId: undefined,
   };
   if (user.authToken !== undefined) {
     try {
-      token = jwt.verify(user.authToken, process.env.JWT_TOKEN);
+      token = jwt.verify(user.authToken, process.env.JWT_TOKEN as string) as JwtPayload;
     } catch (err) {
       console.log("Error: " + err);
     }
@@ -106,9 +96,9 @@ async function docRights(docId, user) {
   const access = fileData.defaultAccess;
   const isOwner = token.userId == fileData.owner;
 
-  const readAccess = access == READ_WRITE || access == READ_ONLY || isOwner;
+  const readAccess = access == NoteAccess.readWrite || access == NoteAccess.readOnly || isOwner;
 
-  const writeAccess = access == READ_WRITE || isOwner;
+  const writeAccess = access == NoteAccess.readWrite || isOwner;
 
   return [readAccess, writeAccess];
 }
@@ -127,9 +117,7 @@ async function requestDocumentFn(id, user, docs, socket) {
     return;
   }
 
-  const noteData = await NoteModel.findOne({
-    id: id,
-  });
+  const noteData = await NoteModel.findOne({ id: id });
 
   const noteExists = noteData !== null;
   let note;
@@ -230,13 +218,13 @@ export function disconnect(user, docs, socket) {
 }
 
 export function removeStroke(user, docs, socket) {
-  return id => removeStrokeFn(id, user, docs, socket);
+  return (id) => removeStrokeFn(id, user, docs, socket);
 }
 
 export function newStroke(user, docs, socket) {
-  return stroke => newStrokeFn(stroke, user, docs, socket);
+  return (stroke) => newStrokeFn(stroke, user, docs, socket);
 }
 
 export function requestDocument(user, docs, socket) {
-  return id => requestDocumentFn(id, user, docs, socket);
+  return (id) => requestDocumentFn(id, user, docs, socket);
 }

@@ -1,9 +1,9 @@
 import { ObjectId } from "mongodb";
-import mongoose from "mongoose";
+import mongoose, { Schema, Model } from "mongoose";
 
 const Mixed = mongoose.Schema.Types.Mixed;
 
-const userSchema = new mongoose.Schema({
+const userSchema: Schema = new mongoose.Schema({
   firstName: { type: String, default: null },
   lastName: { type: String, default: null },
   email: { type: String, unique: true },
@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   subscribedToNewsletter: { type: Boolean, default: true },
 });
 
-const noteSchema = new mongoose.Schema({
+const noteSchema: Schema = new mongoose.Schema({
   id: { type: String }, // URL identifier
   strokes: { type: Array, default: [] },
   creationDate: { type: Date, default: Date.now() },
@@ -29,7 +29,7 @@ const noteSchema = new mongoose.Schema({
    */
 });
 
-const fileSchema = new mongoose.Schema({
+const fileSchema: Schema = new mongoose.Schema({
   type: { type: String }, // 'file' | 'folder'
   name: { type: String },
   owner: { type: ObjectId },
@@ -46,7 +46,7 @@ const fileSchema = new mongoose.Schema({
   removalReqTime: { type: Date, default: null },
 });
 
-const passwordResetSchema = new mongoose.Schema({
+const passwordResetSchema: Schema = new mongoose.Schema({
   userId: { type: ObjectId, required: true },
   email: { type: String, required: true },
   createdAt: {
@@ -62,7 +62,7 @@ const passwordResetSchema = new mongoose.Schema({
  * TL;DR: allows easier creationg + validation of mongoDB objects => clearer code
  */
 
-export const UserModel = mongoose.model("user", userSchema);
-export const FileModel = mongoose.model("file", fileSchema);
-export const NoteModel = mongoose.model("note", noteSchema);
-export const PasswordResetModel = mongoose.model("password-reset", passwordResetSchema);
+export const UserModel: Model = mongoose.model("user", userSchema);
+export const FileModel: Model = mongoose.model("file", fileSchema);
+export const NoteModel: Model = mongoose.model("note", noteSchema);
+export const PasswordResetModel: Model = mongoose.model("password-reset", passwordResetSchema);
