@@ -1,11 +1,10 @@
-import express from "express";
-import { createServer } from "http";
+import express, { Express } from "express";
+import { createServer, Server as HTTPServer } from "http";
 import cors from "cors";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
-import { Server as SocketServer } from "socket.io";
+import { Server as SocketServer, Socket as WebSocket } from "socket.io";
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 import fileupload from "express-fileupload";
 
 import dotenv from "dotenv";
@@ -37,13 +36,20 @@ import {
 } from "./Sockets.mjs";
 import { NoteModel } from "./db/Models.mjs";
 import { getPDF, receivePDF } from "./api/Pdf.mjs";
+import { DrawingUser, DrawnDocument } from "./BackendInterfaces.mjs";
 
 const MILLIS_PER_WEEK = 604800000;
 const MILLIS_PER_DAY = 86400000;
 
 export class Server {
+  port: number;
+  app: Express;
+  server: HTTPServer;
+  io: SocketServer;
+  docs: { [id: string]: DrawnDocument };
+
   constructor(port = 8080) {
-    mongoose.connect(process.env.MONGO_URI);
+    mongoose.connect(process.env.MONGO_URI || "");
 
     this.port = port;
     this.app = express();
@@ -55,6 +61,7 @@ export class Server {
         methods: ["GET", "POST"],
       },
     });
+    this.docs = {};
 
     const corsOptions = {
       origin: "*",
@@ -113,19 +120,20 @@ export class Server {
 
   startSocketServer() {
     // Map docId: Int => {users: List[socket]}
-    this.docs = {};
 
-    this.io.on("connection", async socket => {
+    this.io.on("connection", async (socket) => {
       console.log("Connection incoming");
       const { authToken, docId } = socket.handshake.query;
+      const ip = socket.conn.remoteAddress.replace("::ffff:", "");
+      const id = Math.random().toString(36).slice(2);
 
-      const user = {
-        ip: socket.conn.remoteAddress.replace("::ffff:", ""),
-        id: Math.random().toString(36).slice(2),
-        docId: null,
+      const user: DrawingUser = {
+        ip,
+        id,
+        docId: undefined,
         canWrite: false,
-        authToken: authToken,
-        socket: socket,
+        authToken: authToken as string,
+        socket,
       };
 
       requestDocument(user, this.docs, socket)(docId);

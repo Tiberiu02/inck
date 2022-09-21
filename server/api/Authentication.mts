@@ -65,7 +65,7 @@ export async function register(req: Request, res: Response) {
         userId: user._id,
         email: user.email,
       },
-      process.env.JWT_TOKEN
+      process.env.JWT_TOKEN as string
     );
 
     user.token = token;
@@ -94,7 +94,7 @@ export async function login(req: Request, res: Response) {
           userId: user._id,
           email: user.email,
         },
-        process.env.JWT_TOKEN
+        process.env.JWT_TOKEN as string
       );
 
       return res.status(200).send({ email, token });
@@ -157,7 +157,7 @@ export async function initializeResetPasswordUsingEmail(req: Request, res: Respo
 
 export async function initializeResetPasswordUsingToken(req: Request, res: Response) {
   try {
-    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN as string);
     const userEntry = await UserModel.findOne({ _id: token.userId });
     resetUserPassword(userEntry);
     return res.status(201).send({ status: "success" });

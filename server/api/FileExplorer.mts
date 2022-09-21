@@ -4,11 +4,18 @@ import { ObjectId } from "mongodb";
 import { exploreTree } from "./FsTreeExplorer.mjs";
 import { Request, Response } from "express";
 
+export enum NoteAccess {
+  private = "private",
+  readOnly = "read_only",
+  readWrite = "readWrite",
+}
+
 export const PRIVATE = "private";
 export const READ_WRITE = "read_write";
 export const READ_ONLY = "read_only";
 
-const VALID_VISIBILITIES = [PRIVATE, READ_ONLY, READ_WRITE];
+// TODO: make cleaner once sure everything works
+const VALID_VISIBILITIES = [NoteAccess.private, NoteAccess.readOnly, NoteAccess.readWrite];
 export const NEW_FILES_NAME_LENGTH = 6;
 
 export async function getAccountDetailsFromToken(req: Request, res: Response) {
@@ -282,7 +289,7 @@ export async function importFreeNote(req: Request, res: Response) {
   }
 }
 
-function validVisibility(visibility) {
+function validVisibility(visibility: NoteAccess) {
   return VALID_VISIBILITIES.includes(visibility);
 }
 
