@@ -1,9 +1,10 @@
 import { PasswordResetModel, UserModel } from "../db/Models.mjs";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
 import { sendPasswordConfirmationEmail, sendPasswordRecoveryEmail, sendRegistrationEmail } from "../email/Mailer.mjs";
 import { Request, Response } from "express";
+import { DBUser } from "../BackendInterfaces.mjs";
 
 function validateEmail(email: string) {
   return String(email)
@@ -115,7 +116,7 @@ function resetLinkFromToken(token: string, email: string, resetId: number): stri
   return `https://inck.io/reset-password?token=${token}&email=${email}`;
 }
 
-async function resetUserPassword(userEntry) {
+async function resetUserPassword(userEntry?: DBUser) {
   if (userEntry == undefined) {
     console.log("Invalid reset request");
     return;
@@ -146,7 +147,7 @@ export async function initializeResetPasswordUsingEmail(req: Request, res: Respo
   try {
     const { email } = req.body;
     const userEntry = await UserModel.findOne({ email: email });
-    const result = resetUserPassword(userEntry);
+    resetUserPassword(userEntry);
     return res.status(201).send({ status: "success" });
   } catch (err) {
     console.log("Error during password reset:");
@@ -157,7 +158,7 @@ export async function initializeResetPasswordUsingEmail(req: Request, res: Respo
 
 export async function initializeResetPasswordUsingToken(req: Request, res: Response) {
   try {
-    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN as string);
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN as string) as JwtPayload;
     const userEntry = await UserModel.findOne({ _id: token.userId });
     resetUserPassword(userEntry);
     return res.status(201).send({ status: "success" });

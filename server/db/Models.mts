@@ -61,7 +61,7 @@ const passwordResetSchema: Schema = new mongoose.Schema({
  * See https://mongoosejs.com/docs/api/model.html#model_Model
  * TL;DR: allows easier creationg + validation of mongoDB objects => clearer code
  */
-
+// TODO: check how to type it better
 export const UserModel: Model = mongoose.model("user", userSchema);
 export const FileModel: Model = mongoose.model("file", fileSchema);
 export const NoteModel: Model = mongoose.model("note", noteSchema);

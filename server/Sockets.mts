@@ -2,7 +2,15 @@ import jwt from "jsonwebtoken";
 import { NoteAccess } from "./api/FileExplorer.mjs";
 import { FileModel, NoteModel } from "./db/Models.mjs";
 import { Socket as WebSocket } from "socket.io";
-import { DrawingUser, DrawnDocument, JwtPayload, Stroke } from "./BackendInterfaces.mjs";
+import {
+  BackgroundTypes,
+  DBNote,
+  DrawingUser,
+  DrawnDocument,
+  FrontEndNoteData,
+  JwtPayload,
+  Stroke,
+} from "./BackendInterfaces.mjs";
 
 function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {
@@ -97,13 +105,12 @@ async function docRights(docId: string, user: DrawingUser) {
   const isOwner = token.userId == fileData.owner;
 
   const readAccess = access == NoteAccess.readWrite || access == NoteAccess.readOnly || isOwner;
-
   const writeAccess = access == NoteAccess.readWrite || isOwner;
 
   return [readAccess, writeAccess];
 }
 
-function checkSpecialPriviledges(docId, user) {
+function checkSpecialPriviledges(user: DrawingUser) {
   if (user.docId == "demo") {
     user.canWrite = false;
   }
@@ -112,37 +119,36 @@ function checkSpecialPriviledges(docId, user) {
   }
 }
 
-async function requestDocumentFn(id, user, docs, socket) {
+async function requestDocumentFn(
+  id: string,
+  user: DrawingUser,
+  docs: { [id: string]: DrawnDocument },
+  socket: WebSocket
+) {
   if (user.docId) {
     return;
   }
 
-  const noteData = await NoteModel.findOne({ id: id });
+  const noteData: DBNote = await NoteModel.findOne({ id: id });
 
   const noteExists = noteData !== null;
-  let note;
+  let note: FrontEndNoteData = {
+    id: id,
+    strokes: [],
+    canWrite: false,
+  };
 
   // if note doesn't exist => create free note
   if (!noteExists) {
-    await NoteModel.create({
-      id: id,
-      isFreeNote: true,
-    });
-
-    note = {
-      id: id,
-      strokes: [],
-    };
+    await NoteModel.create({ id: id, isFreeNote: true });
   } else {
-    note = {
-      id: id,
-      strokes: noteData.strokes,
-    };
+    note.strokes = noteData.strokes;
+  }
 
-    if (noteData.backgroundType == "pdf") {
-      const url = `/api/pdf/get-pdf/${noteData.backgroundOptions.fileHash}.pdf`;
-      note.pdfUrl = url;
-    }
+  if (noteData.backgroundType == BackgroundTypes.pdf) {
+    const fileHash = noteData.backgroundOptions.fileHash as string;
+    const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
+    note.pdfUrl = url;
   }
 
   // Check authentication here
@@ -153,7 +159,7 @@ async function requestDocumentFn(id, user, docs, socket) {
   }
   user.docId = id;
   user.canWrite = canWrite;
-  checkSpecialPriviledges(id, user);
+  checkSpecialPriviledges(user);
   note.canWrite = user.canWrite;
 
   const docUserList = docs[id] || { users: [] };
@@ -165,6 +171,7 @@ async function requestDocumentFn(id, user, docs, socket) {
   // Inform existing collaborators about new collaborator, and vice versa
   for (let other of docs[user.docId].users) {
     if (other != user) {
+      // TODO: only communicate the new user if it can write
       user.socket.emit("new collaborator", other.id);
       other.socket.emit("new collaborator", user.id);
       continue;
@@ -181,7 +188,7 @@ async function requestDocumentFn(id, user, docs, socket) {
   socket.emit("load note", note);
 }
 
-function remoteControlFn(args, user, docs, socket) {
+function remoteControlFn(args: any, user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
     return;
   }
@@ -193,7 +200,13 @@ function remoteControlFn(args, user, docs, socket) {
   }
 }
 
-function directedRemoteControlFn(targetId, args, user, docs, socket) {
+function directedRemoteControlFn(
+  targetId: string,
+  args: any,
+  user: DrawingUser,
+  docs: { [id: string]: DrawnDocument },
+  socket: WebSocket
+) {
   if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
     return;
   }
@@ -205,26 +218,26 @@ function directedRemoteControlFn(targetId, args, user, docs, socket) {
   }
 }
 
-export function remoteControl(user, docs, socket) {
-  return (...args) => remoteControlFn(args, user, docs, socket);
+export function remoteControl(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
+  return (...args: any) => remoteControlFn(args, user, docs, socket);
 }
 
-export function directedRemoteControl(user, docs, socket) {
-  return (targetId, ...args) => directedRemoteControlFn(targetId, args, user, docs, socket);
+export function directedRemoteControl(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
+  return (targetId: string, ...args: any) => directedRemoteControlFn(targetId, args, user, docs, socket);
 }
 
-export function disconnect(user, docs, socket) {
+export function disconnect(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   return () => disconnectFn(user, docs, socket);
 }
 
-export function removeStroke(user, docs, socket) {
-  return (id) => removeStrokeFn(id, user, docs, socket);
+export function removeStroke(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
+  return (id: string) => removeStrokeFn(id, user, docs, socket);
 }
 
-export function newStroke(user, docs, socket) {
-  return (stroke) => newStrokeFn(stroke, user, docs, socket);
+export function newStroke(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
+  return (stroke: Stroke) => newStrokeFn(stroke, user, docs, socket);
 }
 
-export function requestDocument(user, docs, socket) {
-  return (id) => requestDocumentFn(id, user, docs, socket);
+export function requestDocument(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
+  return (id: string) => requestDocumentFn(id, user, docs, socket);
 }

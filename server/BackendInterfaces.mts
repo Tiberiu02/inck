@@ -1,4 +1,6 @@
+import { ObjectId } from "mongodb";
 import { Socket } from "socket.io";
+import { NoteAccess } from "./api/FileExplorer.mjs";
 
 export interface DrawingUser {
   ip: string;
@@ -30,15 +32,22 @@ export enum UserPremiumTier {
   free = "free",
 }
 
-export enum BakcgroundTypes {
+export enum BackgroundTypes {
   blank = "blank",
+  pdf = "pdf",
 }
 
-export interface backgroundOptions {
-  fileash?: string
+export interface BackgroundOptions {
+  fileHash?: string;
+}
+
+export enum FileType {
+  file = "file",
+  folder = "folder",
 }
 
 export interface DBUser {
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -56,10 +65,29 @@ export interface DBNote {
   strokes: Stroke[];
   creationDate: Date;
   isFreeNote: Boolean;
-  backgroundType: BakcgroundTypes;
-  backgroundOptions: 
+  backgroundType: BackgroundTypes;
+  backgroundOptions: BackgroundOptions;
 }
 
-export interface DBFile {}
+export interface DBFile {
+  type: FileType.file | FileType.folder;
+  name: string;
+  owner: ObjectId;
+  fileId?: String;
+  parentDir: "f/notes" | string;
+  defaultAccess: NoteAccess;
+}
 
-export interface DBPasswordReset {}
+export interface DBPasswordReset {
+  userId: ObjectId;
+  email: String;
+  createdAt: Date;
+  resetToken: String;
+}
+
+export interface FrontEndNoteData {
+  id: string;
+  strokes: Stroke[];
+  pdfUrl?: string;
+  canWrite: boolean;
+}

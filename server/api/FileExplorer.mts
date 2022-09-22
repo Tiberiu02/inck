@@ -1,8 +1,9 @@
 import { FileModel, NoteModel, UserModel } from "../db/Models.mjs";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { exploreTree } from "./FsTreeExplorer.mjs";
 import { Request, Response } from "express";
+import { DBUser } from "../BackendInterfaces.mjs";
 
 export enum NoteAccess {
   private = "private",
@@ -10,18 +11,14 @@ export enum NoteAccess {
   readWrite = "readWrite",
 }
 
-export const PRIVATE = "private";
-export const READ_WRITE = "read_write";
-export const READ_ONLY = "read_only";
-
 // TODO: make cleaner once sure everything works
 const VALID_VISIBILITIES = [NoteAccess.private, NoteAccess.readOnly, NoteAccess.readWrite];
 export const NEW_FILES_NAME_LENGTH = 6;
 
 export async function getAccountDetailsFromToken(req: Request, res: Response) {
   try {
-    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
-    const userEntry = await UserModel.findOne({ _id: token.userId });
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN as string) as JwtPayload;
+    const userEntry: DBUser = await UserModel.findOne({ _id: token.userId });
     res.status(201).send({
       firstName: userEntry.firstName,
       lastName: userEntry.lastName,
@@ -40,9 +37,10 @@ export async function getAccountDetailsFromToken(req: Request, res: Response) {
  */
 export async function getFilesFn(req: Request, res: Response) {
   try {
-    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
+    const jwtToken = process.env.JWT_TOKEN as string;
+    const token = jwt.verify(req.body.token, jwtToken) as JwtPayload;
     const files = await FileModel.find({ owner: token.userId });
-    //console.log(files)
+
     res.status(201).send({ files });
   } catch (err) {
     console.log(err);
