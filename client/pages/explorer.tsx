@@ -29,22 +29,10 @@ import Link from "next/link";
 import { TrackFolderCreation, TrackNoteCreation } from "../components/Analytics";
 import { NoteToPdf } from "../canvas/PDF/PdfExport";
 import download from "downloadjs";
-import JSZip from "jszip";
+import JSZip, { folder } from "jszip";
 import { Spinner } from "../components/Spinner";
 
-function DirListing({
-  Symbol,
-  symbolClassName,
-  name,
-  className,
-  userPath,
-  dirPath,
-  style,
-  onClick,
-  children,
-  link,
-  openByDefault = false,
-}) {
+function DirListing({ Symbol, dirName, dirPath, userPath, onClick, children, openByDefault = false }) {
   let [open, setOpen] = useState(openByDefault);
   const selected = userPath && dirPath && userPath.toString() == dirPath.toString();
   if (
@@ -58,7 +46,6 @@ function DirListing({
 
   const Caret = open ? FaAngleDown : FaAngleRight;
   if (!Symbol) Symbol = open ? FaFolderOpen : FaFolder;
-  if (link) open = false;
 
   const onClickCallback = () => {
     setOpen(!open || !selected);
@@ -69,20 +56,47 @@ function DirListing({
   return (
     <div className="min-w-full w-fit">
       <button
-        style={style}
+        style={{ paddingLeft: `${dirPath.length}rem` }}
         className={
           "flex flex-row items-center gap-2 px-4 py-2 outline-none min-w-full w-fit " +
           (selected ? "bg-gray-200 " : "hover:bg-gray-100 ") +
-          (selected || open ? "text-black " : "") +
-          className
+          (selected || open ? "text-black " : "")
         }
         onClick={onClickCallback}
       >
-        <Caret className={(open ? "text-black" : "text-gray-400") + (link ? " opacity-0" : "")} />
-        <Symbol className={symbolClassName + " text-2xl mr-1"} />
-        <p className={"whitespace-nowrap mt-[0.15rem] font-bold " + (open ? "" : "")}>{name}</p>
+        <Caret className={open ? "text-black" : "text-gray-400"} />
+        <Symbol className={" text-2xl mr-1"} />
+        <p className={"whitespace-nowrap mt-[0.15rem] font-bold " + (open ? "" : "")}>{dirName}</p>
       </button>
       <div className={open ? "" : "hidden"}>{children}</div>
+    </div>
+  );
+}
+
+function FileTree({ className, files, path, setPath }) {
+  const symbols = {
+    "f/notes": FaBook,
+  };
+
+  const buildDirListing = (dir, dirPath, openByDefault = false) => {
+    return (
+      <DirListing
+        key={dir._id}
+        Symbol={symbols[dir._id]}
+        dirName={dir.name}
+        userPath={path}
+        dirPath={dirPath}
+        onClick={() => setPath(dirPath)}
+        openByDefault={openByDefault}
+      >
+        {dir.children.filter((f) => f.type == "folder").map((f) => buildDirListing(f, dirPath.concat(f._id)))}
+      </DirListing>
+    );
+  };
+
+  return (
+    <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{ overflow: "overlay" }}>
+      <div className="min-w-full w-fit">{files && buildDirListing(files["f/notes"], ["f/notes"], true)}</div>
     </div>
   );
 }
@@ -142,89 +156,6 @@ function AddButton({ onClick }) {
   );
 }
 
-function MobileMenu() {
-  let [open, setOpen] = useState(false);
-
-  function toggleOpen() {
-    if (!open) {
-      // disable scrolling
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${window.scrollY}px`;
-    } else {
-      // enable scrolling
-      document.body.style.position = "";
-      document.body.style.top = "";
-
-      const scrollY = document.body.style.top;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      window.scrollTo(0, parseInt(scrollY || "0") * -1);
-    }
-
-    setOpen(!open);
-  }
-
-  return (
-    <>
-      <button className="sm:hidden flex items-center justify-center w-10 h-10 rounded-full" onClick={toggleOpen}>
-        <FaBars className="text-3xl text-gray-500" />
-      </button>
-      <div
-        className={`fixed h-screen w-screen bg-black z-10 ${
-          open ? "opacity-50" : "opacity-0 pointer-events-none"
-        } transition-all duration-200 top-0 left-0`}
-        onClick={toggleOpen}
-      ></div>
-      <div
-        className={`fixed h-screen p-0 w-[70vw] bg-white z-20 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        } transition-all duration-200 top-0 left-0 overflow-scroll`}
-      >
-        <FileTree className="pt-10 pb-52 w-full" />
-      </div>
-    </>
-  );
-}
-
-function FileTree({ className, files, path, setPath }) {
-  const symbols = {
-    "f/notes": FaBook,
-  };
-
-  const buildDirListing = (dir, dirPath, openByDefault = false) => {
-    return (
-      <DirListing
-        key={dir._id}
-        Symbol={symbols[dir._id]}
-        name={dir.name}
-        userPath={path}
-        dirPath={dirPath}
-        style={{ paddingLeft: `${dirPath.length}rem` }}
-        onClick={() => setPath(dirPath)}
-        openByDefault={openByDefault}
-      >
-        {dir.children.filter((f) => f.type == "folder").map((f) => buildDirListing(f, dirPath.concat(f._id)))}
-      </DirListing>
-    );
-  };
-
-  return (
-    <div className={`${className} h-full text-gray-500 sm:flex flex-col`} style={{ overflow: "overlay" }}>
-      <div className="min-w-full w-fit">
-        {/*
-        <DirListing Symbol={FaRegClock} symbolClassName="mt-[0.1rem]" name="Recent" link></DirListing>
-        <DirListing Symbol={FaUsers} symbolClassName="mt-[0.1rem]" name="Shared with me" link></DirListing>
-        <DirListing Symbol={FaBookmark} name="Homework" link></DirListing>
-        <DirListing Symbol={FaTrash} name="Trash" link></DirListing>
-        <div className="mt-5"></div>
-        */}
-
-        {files && buildDirListing(files["f/notes"], ["f/notes"], true)}
-      </div>
-    </div>
-  );
-}
-
 function PathNavigator({ files, path, setPath }) {
   let p = [];
 
@@ -257,19 +188,15 @@ function PathNavigator({ files, path, setPath }) {
   );
 }
 
-function RemoveFilesModal({ visible, setVisible, removeFiles }) {
-  const onRemoveClick = () => {
-    removeFiles();
-    setVisible(false);
+function RemoveFilesModal({ onCancel, onSuccess, selectedFiles }) {
+  const onRemoveClick = async () => {
+    await PostFileRemoval(Object.values(selectedFiles));
+    onSuccess();
   };
+
   return (
-    <div
-      className={
-        (!visible ? "hidden" : "") +
-        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
-      }
-    >
-      <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
+    <div className={"absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"}>
+      <div onClick={onCancel} className="absolute inset-0"></div>
       <div className={`relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
         <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">Remove notes</div>
 
@@ -281,7 +208,7 @@ function RemoveFilesModal({ visible, setVisible, removeFiles }) {
         <div className="flex justify-between">
           <button
             className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
-            onClick={() => setVisible(false)}
+            onClick={onCancel}
           >
             Cancel
           </button>
@@ -297,7 +224,7 @@ function RemoveFilesModal({ visible, setVisible, removeFiles }) {
   );
 }
 
-function MoveModalListing({ files, setSelected, selectedFiles, target }) {
+function MoveModalListing({ files, selectedFiles, target, setTarget }) {
   if (files == null) {
     return <></>;
   }
@@ -338,38 +265,29 @@ function MoveModalListing({ files, setSelected, selectedFiles, target }) {
     );
   };
 
-  const tree = files ? TreeRepr(files["f/notes"], setSelected) : <></>;
+  const tree = files ? TreeRepr(files["f/notes"], setTarget) : <></>;
 
   return <div className="overflow-scroll border-4 rounded-lg h-44 cursor-pointer select-none">{tree}</div>;
 }
 
-function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, moveFiles }) {
+function MoveFilesModal({ files = [], selectedFiles = {}, onCancel, onSuccess }) {
   const [target, setTarget] = useState(null);
-  const onMoveClick = () => {
-    moveFiles(target);
-    setVisible(false);
-  };
 
-  const closeModal = () => {
-    setTarget(null);
-    setVisible(false);
+  const onMoveClick = async () => {
+    await PostFileMove(selectedFiles, target);
+    onSuccess();
   };
 
   const canMove = target != null;
 
   return (
-    <div
-      className={
-        (!visible ? "hidden" : "") +
-        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
-      }
-    >
-      <div onClick={closeModal} className="absolute inset-0"></div>
+    <div className={"absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"}>
+      <div onClick={onCancel} className="absolute inset-0"></div>
       <div className={`relative w-96 h-84 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
         <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center mb-8">Move notes</div>
 
         <div>
-          <MoveModalListing files={files} setSelected={setTarget} target={target} selectedFiles={selectedFiles} />
+          <MoveModalListing files={files} setTarget={setTarget} target={target} selectedFiles={selectedFiles} />
         </div>
 
         <div className="italic text-sm text-center">
@@ -379,7 +297,7 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
         <div className="flex justify-between mt-8">
           <button
             className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
-            onClick={closeModal}
+            onClick={onCancel}
           >
             Cancel
           </button>
@@ -398,7 +316,7 @@ function MoveFilesModal({ visible, setVisible, files = [], selectedFiles = {}, m
   );
 }
 
-function ExportFilesModal({ setVisible, selectedFiles = {}, setSelectedFiles }) {
+function ExportFilesModal({ selectedFiles = {}, close }) {
   const [exporting, setExporting] = useState(false);
 
   const downloadNotes = async () => {
@@ -430,13 +348,12 @@ function ExportFilesModal({ setVisible, selectedFiles = {}, setSelectedFiles }) 
     }
 
     setExporting(false);
-    setVisible(false);
-    setSelectedFiles({});
+    close();
   };
 
   return (
     <div className={"absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"}>
-      <div onClick={() => setVisible(false)} className="absolute inset-0"></div>
+      <div onClick={close} className="absolute inset-0"></div>
       <div className={`relative w-96 h-84 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
         <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center mb-8">Export to PDF</div>
 
@@ -449,7 +366,7 @@ function ExportFilesModal({ setVisible, selectedFiles = {}, setSelectedFiles }) 
             <>
               <button
                 className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
-                onClick={() => setVisible(false)}
+                onClick={close}
               >
                 Cancel
               </button>
@@ -467,40 +384,22 @@ function ExportFilesModal({ setVisible, selectedFiles = {}, setSelectedFiles }) 
   );
 }
 
-function EditFileModal({ visible, setVisible, file, save }) {
-  // menuType is either 'note' or 'folder'
+function EditFileModal({ file, onCancel, onSuccess }) {
   const [newName, setNewName] = useState("");
   const [newNoteAccess, setNewNoteAccess] = useState(file.defaultAccess || "private");
 
   const fileType = file !== undefined ? file.type : "";
   const isAccessVisible = fileType == "note";
 
-  const hideModal = () => {
-    setNewName("");
-    setNewNoteAccess("");
-    setVisible(false);
-  };
+  const saveEdits = async () => {
+    await PostFileEdit(file._id, newName.trim(), newNoteAccess, {});
 
-  const saveEdits = () => {
-    const trimmedNewName = newName.trim();
-    let name = "";
-    if (trimmedNewName == "") {
-      name = file.name;
-    } else {
-      name = trimmedNewName;
-    }
-    save(file._id, name, newNoteAccess);
-    hideModal();
+    onSuccess();
   };
 
   return (
-    <div
-      className={
-        (!visible ? "hidden" : "") +
-        " absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"
-      }
-    >
-      <div onClick={hideModal} className="absolute inset-0"></div>
+    <div className={" absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"}>
+      <div onClick={onCancel} className="absolute inset-0"></div>
       <div className={`relative w-96 h-72 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg justify-between`}>
         <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">
           Edit {file !== undefined && file.type}
@@ -669,58 +568,16 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
   );
 }
 
-function ImportFreeNoteSubmodal({ name, setName, publicAccess, setPublicAccess, importNoteURL, setImportNoteURL }) {
-  return <div className="flex flex-col italic">Soon</div>;
-  return (
-    <div>
-      <div className="flex flex-col gap-6">
-        <div className="flex gap-4">
-          Note&nbsp;name
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-          />
-        </div>
-
-        <div className="flex gap-4">
-          Note&nbsp;URL
-          <input
-            value={importNoteURL}
-            onChange={(e) => setImportNoteURL(e.target.value)}
-            className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-          />
-        </div>
-
-        <div className="flex gap-4">
-          Public&nbsp;access
-          <select
-            value={publicAccess}
-            onChange={(e) => setPublicAccess(e.target.value)}
-            className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
-          >
-            <option value="read_write">View &amp; edit</option>
-            <option value="read_only">View only</option>
-            <option value="private">No public access</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-async function CreateNote(name, parentDir, publicAccess) {
+async function CreateNote(name: string, parentDir, publicAccess) {
   TrackNoteCreation("simple");
-  const files = addFile(name, "note", parentDir, {
+  await PostFileCreation(name, "note", parentDir, {
     publicAccess,
   });
-  return files;
 }
 
-async function newFolderSubmit(name, parentDir) {
+async function CreateFolder(name, parentDir) {
   TrackFolderCreation();
-  const files = addFile(name, "folder", parentDir);
-  return files;
+  await PostFileCreation(name, "folder", parentDir);
 }
 
 async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent) {
@@ -741,24 +598,18 @@ async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent) {
 
   if (jsonReply.status == "success") {
     TrackNoteCreation("pdf");
-    return processFilesData(jsonReply.files);
+    return ProcessFilesData(jsonReply.files);
   } else {
     throw Error("Failed to import PDF");
   }
 }
 
-async function importFreeNoteSubmit(name, parentDir, publicAccess, publicNoteURL) {
-  TrackNoteCreation("public-import");
-  return await importFreeNote(name, parentDir, publicAccess, publicNoteURL);
-}
-
-function CreateFileModal({ close, path, setFiles, reloadFiles }) {
+function CreateFileModal({ path, onCancel, onSuccess }) {
   enum States {
     SELECT_ACTION,
     CREATE_NOTE,
     CREATE_FOLDER,
     IMPORT_PDF,
-    IMPORT_NOTE,
   }
 
   const [state, setState] = useState(States.SELECT_ACTION);
@@ -766,30 +617,31 @@ function CreateFileModal({ close, path, setFiles, reloadFiles }) {
   const [name, setName] = useState("");
   const [publicAccess, setPublicAccess] = useState("private");
   const [pdfContent, setPdfContent] = useState(null);
-  const [importNoteURL, setImportNoteURL] = useState("");
 
-  function ModalHeader() {
-    function Element({ children, state }) {
+  const ModalHeader = () => {
+    const Element = ({ children, state }) => {
       return (
         <button
           onClick={() => setState(state)}
-          className={
-            "p-4 gap-2 rounded-md border-2 border-gray-300 text-slate-800  bg-gray-100 hover:bg-slate-800 hover:border-slate-800 hover:text-white"
-          }
+          className="p-4 gap-2 rounded-md border-2 border-gray-300 text-slate-800  bg-gray-100 hover:bg-slate-800 hover:border-slate-800 hover:text-white"
         >
           {children}
         </button>
       );
-    }
+    };
 
     return (
       <div className="flex items-center">
+        {/** Heading */}
         <div className="text-3xl text-center">
           Create
           <br />
           new
         </div>
-        <div className="w-1 h-60 bg-gray-200  rounded-full mx-8"></div>
+
+        {/** Vertical separator */}
+        <div className="w-1 h-60 bg-gray-200 rounded-full mx-8"></div>
+
         <div className="grid grid-cols-1 gap-3 w-fit">
           {/* New folder */}
           <Element state={States.CREATE_FOLDER}>
@@ -814,27 +666,23 @@ function CreateFileModal({ close, path, setFiles, reloadFiles }) {
         </div>
       </div>
     );
-  }
+  };
 
   const submit = async () => {
     const parentDir = path.at(-1);
 
-    let newFiles;
     if (state == States.CREATE_NOTE) {
-      newFiles = await CreateNote(name, parentDir, publicAccess);
+      await CreateNote(name, parentDir, publicAccess);
     } else if (state == States.CREATE_FOLDER) {
-      newFiles = await newFolderSubmit(name, parentDir);
+      await CreateFolder(name, parentDir);
     } else if (state == States.IMPORT_PDF) {
-      newFiles = await importPDFSubmit(name, parentDir, publicAccess, pdfContent);
-    } else if (state == States.IMPORT_NOTE) {
-      newFiles = await importFreeNoteSubmit(name, parentDir, publicAccess, importNoteURL);
+      await importPDFSubmit(name, parentDir, publicAccess, pdfContent);
     }
-    reloadFiles(newFiles);
 
-    close();
+    onSuccess();
   };
 
-  function ModalBody() {
+  const modalBody = () => {
     if (state == States.SELECT_ACTION) {
       return <ModalHeader />;
     } else if (state == States.CREATE_NOTE) {
@@ -865,26 +713,15 @@ function CreateFileModal({ close, path, setFiles, reloadFiles }) {
           setPdfContent={setPdfContent}
         />
       );
-    } else if (state == States.IMPORT_NOTE) {
-      return (
-        <ImportFreeNoteSubmodal
-          name={name}
-          setName={setName}
-          publicAccess={publicAccess}
-          setPublicAccess={setPublicAccess}
-          importNoteURL={importNoteURL}
-          setImportNoteURL={setImportNoteURL}
-        />
-      );
     }
-  }
+  };
 
   return (
     <div className={`absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center`}>
-      <div onClick={() => close(false)} className="absolute inset-0"></div>
+      <div onClick={onCancel} className="absolute inset-0"></div>
       <div className="relative w-96 h-96 bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg">
         <div className="flex flex-row-reverse justify-between">
-          <button className="self-end hover:text-red-500" onClick={close}>
+          <button className="self-end hover:text-red-500" onClick={onCancel}>
             <span className="material-symbols-outlined">close</span>
           </button>
           {state != States.SELECT_ACTION && (
@@ -894,7 +731,7 @@ function CreateFileModal({ close, path, setFiles, reloadFiles }) {
           )}
         </div>
 
-        <div className="flex flex-col basis-full justify-center items-center">{ModalBody()}</div>
+        <div className="flex flex-col basis-full justify-center items-center">{modalBody()}</div>
 
         {state != States.SELECT_ACTION && (
           <button
@@ -909,25 +746,74 @@ function CreateFileModal({ close, path, setFiles, reloadFiles }) {
   );
 }
 
-function processFilesData(fileList) {
+// Backend functions
+
+enum FileTypes {
+  NOTE = "note",
+  FOLDER = "folder",
+}
+
+type FileInfo = {
+  _id: string;
+  name: string;
+  type: FileTypes;
+};
+
+type FolderInfo = FileInfo & {
+  type: FileTypes.FOLDER;
+  children: FileInfo[];
+};
+
+type NoteInfo = FileInfo & {
+  type: FileTypes.NOTE;
+  fileId: string;
+};
+
+type FileTree = { [id: string]: FolderInfo | NoteInfo };
+
+type RawFile = {
+  _id: string;
+  type: FileTypes;
+  name: string;
+  owner: string;
+  parentDir: string;
+  fileId: string;
+};
+
+function ProcessFilesData(rawFileList: RawFile[]): FileTree {
   // Process data for UI
-  const fileDict = {};
+  const fileDict: FileTree = {};
 
-  for (const f of fileList) {
-    fileDict[f._id] = f;
-    if (f.type == "folder") fileDict[f._id].children = [];
+  for (const f of rawFileList) {
+    if (f.type == FileTypes.FOLDER) {
+      const folder: FolderInfo = {
+        _id: f._id,
+        name: f.name,
+        type: FileTypes.FOLDER,
+        children: [],
+      };
+      fileDict[f._id] = folder;
+    } else if (f.type == FileTypes.NOTE) {
+      const note: NoteInfo = {
+        _id: f._id,
+        name: f.name,
+        fileId: f.fileId,
+        type: FileTypes.NOTE,
+      };
+      fileDict[f._id] = note;
+    }
   }
-  fileDict["f/notes"] = { name: "My Notes", children: [], type: "folder", _id: -1 };
-  fileDict["f/trash"] = { name: "Trash", children: [] };
+  fileDict["f/notes"] = { name: "My Notes", children: [], type: FileTypes.FOLDER, _id: null };
+  fileDict["f/trash"] = { name: "Trash", children: [], type: FileTypes.FOLDER, _id: null };
 
-  for (const f of fileList) {
-    fileDict[f.parentDir].children.push(fileDict[f._id]);
+  for (const f of rawFileList) {
+    (fileDict[f.parentDir] as FolderInfo).children.push(fileDict[f._id]);
   }
 
   for (const f of Object.values(fileDict))
-    if (f.children) {
-      f.children.sort((a, b) => {
-        if (a.type != b.type) return a.type == "folder" ? -1 : 1;
+    if (f.type == FileTypes.FOLDER) {
+      (f as FolderInfo).children.sort((a, b) => {
+        if (a.type != b.type) return a.type == FileTypes.FOLDER ? -1 : 1;
         if (a.name != b.name) return a.name < b.name ? -1 : 1;
         return 0;
       });
@@ -936,7 +822,7 @@ function processFilesData(fileList) {
   return fileDict;
 }
 
-async function LoadFiles() {
+async function GetFiles() {
   const response = await fetch(GetApiPath("/api/explorer/getfiles"), {
     method: "post",
     body: JSON.stringify({ token: getAuthToken() }),
@@ -946,11 +832,12 @@ async function LoadFiles() {
   });
   const json = await response.json();
 
-  const fileList = json.files;
-  return processFilesData(fileList);
+  console.log(json);
+
+  return ProcessFilesData(json.files);
 }
 
-async function addFile(name, type, parentDir, options = {}) {
+async function PostFileCreation(name, type, parentDir, options = {}) {
   const response = await fetch(GetApiPath("/api/explorer/addfile"), {
     method: "post",
     body: JSON.stringify({ token: getAuthToken(), name, type, parentDir, options }),
@@ -959,35 +846,10 @@ async function addFile(name, type, parentDir, options = {}) {
     },
   });
 
-  const jsonReply = await response.json();
-  const filesDict = processFilesData(jsonReply.files);
-  return filesDict;
+  return response.status == 200;
 }
 
-async function importFreeNote(name, parentDir, visibility, freeNoteURL) {
-  const response = await fetch(GetApiPath("/api/explorer/import-free-note"), {
-    method: "post",
-    body: JSON.stringify({
-      token: getAuthToken(),
-      name,
-      parentDir,
-      visibility,
-      freeNoteURL,
-    }),
-    headers: {
-      "Content-type": "application/json;charset=UTF-8",
-    },
-  });
-
-  const jsonReply = await response.json();
-  if (jsonReply.files != undefined) {
-    return processFilesData(jsonReply.files);
-  } else {
-    throw Error("API failed to return new files");
-  }
-}
-
-async function editFileAPICall(id, newName, newVisibility = null, options = {}) {
+async function PostFileEdit(id, newName, newVisibility = null, options = {}) {
   const response = await fetch(GetApiPath("/api/explorer/editfile"), {
     method: "post",
     body: JSON.stringify({
@@ -1002,11 +864,10 @@ async function editFileAPICall(id, newName, newVisibility = null, options = {}) 
     },
   });
 
-  const jsonReply = await response.json();
-  return processFilesData(jsonReply.files);
+  return response.status == 200;
 }
 
-async function removeFilesAPICall(notes) {
+async function PostFileRemoval(notes) {
   const notesData = notes.map((x) => ({
     type: x.type,
     _id: x._id,
@@ -1023,11 +884,10 @@ async function removeFilesAPICall(notes) {
     },
   });
 
-  const jsonReply = await response.json();
-  return processFilesData(jsonReply.files);
+  return response.status == 200;
 }
 
-async function moveFilesAPICall(notes, _target) {
+async function PostFileMove(notes, _target) {
   // Send only required stuff
   const target = _target == -1 ? "f/notes" : _target;
   const notesData = Object.values(notes).map((x) => {
@@ -1049,9 +909,7 @@ async function moveFilesAPICall(notes, _target) {
     },
   });
 
-  const jsonReply = await response.json();
-  const filesDict = processFilesData(jsonReply.files);
-  return filesDict;
+  return response.status == 200;
 }
 
 enum Modals {
@@ -1198,13 +1056,18 @@ export default function Explorer() {
     );
   };
 
-  const reload = async () => {
+  const reloadFiles = async () => {
     setSelectedFiles({});
-    setFiles(await LoadFiles());
+    setFiles(await GetFiles());
+  };
+
+  const closeModalAndReload = async () => {
+    closeModal();
+    await reloadFiles();
   };
 
   useEffect(() => {
-    reload();
+    closeModalAndReload();
   }, []);
 
   return (
@@ -1258,9 +1121,9 @@ export default function Explorer() {
           */}
 
               <Link href="/settings">
-                <a className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
+                <div className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
                   <FaRegSun className="text-2xl" />
-                </a>
+                </div>
               </Link>
 
               <button
@@ -1299,46 +1162,27 @@ export default function Explorer() {
         </div>
 
         {/* Create file modal */}
-        {modal == Modals.CREATE_FILE && <CreateFileModal close={closeModal} reload={reload} path={path} />}
+        {modal == Modals.CREATE_FILE && (
+          <CreateFileModal onCancel={closeModal} onSuccess={closeModalAndReload} path={path} />
+        )}
         {/* Edit file modal */}
         {modal == Modals.EDIT_FILE && (
-          <EditFileModal
-            file={firstSelectedElement}
-            close={closeModal}
-            setFiles={setFilesAfterChange}
-            save={(id, newName, newVisibility, options) => {
-              editFileAPICall(id, newName, setFilesAfterChange, newVisibility, options);
-              setSelectedFiles({});
-            }}
-          />
+          <EditFileModal file={firstSelectedElement} onCancel={closeModal} onSuccess={closeModalAndReload} />
         )}
         {/* Remove files modal */}
         {modal == Modals.REMOVE_FILES && (
-          <RemoveFilesModal
-            close={closeModal}
-            setFiles={setFilesAfterChange}
-            removeFiles={() => {
-              removeFilesAPICall(Object.values(selectedFiles), setFilesAfterChange);
-              setSelectedFiles({});
-            }}
-          />
+          <RemoveFilesModal onCancel={closeModal} onSuccess={closeModalAndReload} selectedFiles={selectedFiles} />
         )}
         {/* Move files modal */}
         {modal == Modals.MOVE_FILES && (
           <MoveFilesModal
+            onCancel={closeModal}
+            onSuccess={closeModalAndReload}
             files={files}
             selectedFiles={selectedFiles}
-            close={closeModal}
-            setFiles={setFilesAfterChange}
-            moveFiles={(target) => {
-              moveFilesAPICall(selectedFiles, target, setFilesAfterChange);
-              setSelectedFiles({});
-            }}
           />
         )}
-        {modal == Modals.EXPORT_FILES && (
-          <ExportFilesModal selectedFiles={selectedFiles} setSelectedFiles={setSelectedFiles} close={closeModal} />
-        )}
+        {modal == Modals.EXPORT_FILES && <ExportFilesModal selectedFiles={selectedFiles} close={closeModal} />}
       </main>
     </div>
   );
