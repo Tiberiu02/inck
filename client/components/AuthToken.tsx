@@ -13,7 +13,6 @@ export function setAuthToken(token) {
     token,
     {
       path: "/",
-      withCredentials: true,
     } // Allows the cookie to be accessible on all pages of the domain
   );
 }
@@ -21,6 +20,6 @@ export function setAuthToken(token) {
 export function disconnect(reload = true) {
   cookies.remove(authCookieName);
   if (reload) {
-    window.location.reload(false);
+    window.location.reload();
   }
 }
