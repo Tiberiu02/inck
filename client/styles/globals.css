@@ -20,6 +20,12 @@
   background-size: 22.00px 22.00px;
 }
 
+
+.no-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
 /** Material Symbols Library */
 
 .material-symbols-outlined {

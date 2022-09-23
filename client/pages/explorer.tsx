@@ -138,8 +138,8 @@ function FileTree({ className, files, path, setPath }) {
 function Note({ title, isSelected = false }) {
   return (
     <div className="relative rounded-xl overflow-hidden">
-      <button className="relative select-none flex flex-col items-center justify-center w-32 h-24 sm:w-40 sm:h-32 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100 overflow-hidden">
-        <p className="relative py-1 px-2 border-slate-800 bg-slate-800 w-full shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
+      <button className="no-tap-highlight flex flex-col items-center justify-center w-32 h-24 sm:w-40 sm:h-32 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100">
+        <p className="relative py-1 px-3 w-[calc(100%+0.5rem)] bg-slate-800 shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
           {title}
         </p>
       </button>
@@ -150,7 +150,7 @@ function Note({ title, isSelected = false }) {
 
 function Book({ title, isSelected = false }) {
   return (
-    <button className="relative select-none w-32 h-24 sm:w-40 sm:h-32 text-white duration-100 flex flex-col">
+    <button className="relative no-tap-highlight w-32 h-24 sm:w-40 sm:h-32 text-white duration-100 flex flex-col">
       <div className="relative bg-slate-800 h-7 w-14 rounded-t-xl -mb-2 overflow-hidden">
         {isSelected && <div className="absolute inset-0 bg-select opacity-select"></div>}
       </div>
@@ -164,55 +164,61 @@ function Book({ title, isSelected = false }) {
 
 function AddButton({ onClick }) {
   return (
-    <>
-      <button
-        onClick={onClick}
-        className="relative w-32 h-24 sm:w-40 sm:h-32 text-gray-200 border-4 rounded-xl text-9xl select-none overflow-hidden"
-      >
-        +
-      </button>
-    </>
+    <button
+      onClick={onClick}
+      className="relative w-32 h-24 sm:w-40 sm:h-32 text-gray-200 border-4 rounded-xl text-8xl sm:text-9xl overflow-hidden"
+    >
+      +
+    </button>
   );
 }
 
 function PathNavigator({ files, path, setPath }) {
   let p = [];
 
-  p.push(
-    <div
-      key={p.length}
-      onClick={() => setPath(path.slice(0, 1))}
-      className="flex flex-row items-center gap-3 -ml-4 px-4 py-1 rounded-full cursor-pointer"
-    >
-      <FaBook />
-      {files && files[path[0]].name}
-    </div>
-  );
-
-  for (let i = 1; i < path.length; i++) {
-    p.push(<FaAngleRight key={p.length} className="sm:mx-4" />);
+  let ix = 0;
+  function pushPathItem(children: ReactNode) {
+    const currPath = path.slice(0, (ix += 1));
     p.push(
-      <p
+      <div
         key={p.length}
-        onClick={() => setPath(path.slice(0, i + 1))}
-        className="px-2 sm:px-4 py-1 rounded-full cursor-pointer max-w-[18rem] line-clamp-1"
+        onClick={() => setPath(currPath)}
+        className="px-4 -mx-4 py-1 rounded-full cursor-pointer hover:bg-slate-200"
       >
-        {files[path[i]].name}
-      </p>
+        {children}
+      </div>
     );
   }
 
+  for (const folder of path) {
+    if (folder == "f/notes") {
+      pushPathItem(
+        <div className="flex flex-row items-center gap-3">
+          <FaBook />
+          {"My Notes"}
+        </div>
+      );
+    } else {
+      p.push(<FaAngleRight key={p.length} />);
+      pushPathItem(files[folder].name);
+    }
+  }
+
   return (
-    <div className="text-md sm:text-xl text-gray-700 font-bold flex flex-row items-center -ml-3 flex-wrap">{p}</div>
+    <div className="text-md sm:text-xl text-gray-700 font-bold flex flex-row items-center -ml-3 flex-wrap gap-4">
+      {p}
+    </div>
   );
 }
 
 function Modal({ children, onCancel, className = "", onBack = null }) {
   return (
-    <div className={"absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"}>
+    <div
+      className={"absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex flex-col justify-center items-center"}
+    >
       <div onClick={onCancel} className="absolute inset-0"></div>
 
-      <div className="relative bg-white rounded-3xl shadow-lg p-5 flex flex-col text-lg">
+      <div className="relative bg-white rounded-3xl shadow-lg p-5 flex flex-col text-lg mx-10">
         <div className="flex flex-row-reverse justify-between mb-2">
           <button className="self-end hover:text-red-500" onClick={onCancel}>
             <span className="material-symbols-outlined">close</span>
@@ -223,7 +229,9 @@ function Modal({ children, onCancel, className = "", onBack = null }) {
             </button>
           )}
         </div>
-        <div className={className}>{children}</div>
+        <div className="mx-2">
+          <div className={className}>{children}</div>
+        </div>
       </div>
     </div>
   );
@@ -260,10 +268,10 @@ function RemoveFilesModal({ onCancel, onSuccess, selectedFiles }) {
   };
 
   return (
-    <Modal onCancel={onCancel} className="relative w-96 h-52 flex flex-col text-lg justify-between">
+    <Modal onCancel={onCancel} className="relative flex flex-col text-lg justify-between">
       <ModalTitle>Remove notes</ModalTitle>
 
-      <div>
+      <div className="my-12">
         <div>Are you sure you want to delete these notes?</div>
         <div className="text-red-500 font-bold mt-2">This connot be undone!</div>
       </div>
@@ -286,10 +294,6 @@ type MoveModalListingProps = {
 };
 
 function MoveModalListing({ files, selectedFiles, target, setTarget }: MoveModalListingProps) {
-  if (files == null) {
-    return <></>;
-  }
-
   const forbidden = new Set(Object.values(selectedFiles).map((x) => x._id));
 
   const TreeRepr = (folder: FolderInfo, prefixLength = 0) => {
@@ -300,19 +304,22 @@ function MoveModalListing({ files, selectedFiles, target, setTarget }: MoveModal
     const children = folders.map((folder) => TreeRepr(folder, prefixLength + 1));
     const prefix = "\u00a0".repeat(prefixLength * 4);
 
-    let onDoubleClick = null;
-    let onClick = null;
-    let renderChildren = !forbidden.has(folder._id);
+    const allowed = !forbidden.has(folder._id);
 
-    if (renderChildren) {
-      onDoubleClick = () => setOpen(!isOpen);
-      onClick = () => setTarget(folder._id);
-    }
+    const onClick = () => {
+      if (allowed) {
+        if (target != folder._id) {
+          setTarget(folder._id);
+          setOpen(true);
+        } else {
+          setOpen(!isOpen);
+        }
+      }
+    };
 
     return (
       <div key={folder._id}>
         <div
-          onDoubleClick={onDoubleClick}
           onClick={onClick}
           className={`pl-2 flex items-center text-md select-none ${
             target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
@@ -320,7 +327,7 @@ function MoveModalListing({ files, selectedFiles, target, setTarget }: MoveModal
         >
           {prefix} <Folder className="h-4 w-4 shrink-0" /> &nbsp; <div className="line-clamp-1">{folder.name}</div>
         </div>
-        {renderChildren && isOpen && children}
+        {allowed && isOpen && children}
       </div>
     );
   };
@@ -348,12 +355,12 @@ function MoveFilesModal({ files, selectedFiles, onCancel, onSuccess }: MoveFiles
   const canMove = target != null;
 
   return (
-    <Modal onCancel={onCancel} className="relative w-96 flex flex-col text-lg justify-between">
+    <Modal onCancel={onCancel} className="flex flex-col">
       <ModalTitle>Move notes</ModalTitle>
 
-      <div className="my-8">
+      <div className="my-8 w-72">
+        <div className="text-left mb-1">Select new destination:</div>
         <MoveModalListing files={files} setTarget={setTarget} target={target} selectedFiles={selectedFiles} />
-        <div className="italic text-sm text-right mt-1">Click to select, double-click to open.</div>
       </div>
 
       <ModalButtons
@@ -444,7 +451,7 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
   };
 
   return (
-    <Modal onCancel={onCancel} className="w-96 flex flex-col items-center text-lg justify-between">
+    <Modal onCancel={onCancel} className="flex flex-col items-center">
       <ModalTitle>Edit {file.type == FileTypes.FOLDER ? "folder" : "note"}</ModalTitle>
       <div className="flex flex-col my-12 w-full px-6">
         <div className="flex">
@@ -465,7 +472,7 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
             >
               <option value={AccessTypes.WRITE}>View &amp; edit</option>
               <option value={AccessTypes.READ}>View only</option>
-              <option value={AccessTypes.NONE}>No public access</option>
+              <option value={AccessTypes.NONE}>None</option>
             </select>
           </div>
         )}
@@ -477,7 +484,7 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
 
 function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col my-12 gap-6">
       <div className="flex gap-4">
         Name
         <input
@@ -495,7 +502,7 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
         >
           <option value="read_write">View &amp; edit</option>
           <option value="read_only">View only</option>
-          <option value="private">No public access</option>
+          <option value="private">None</option>
         </select>
       </div>
     </div>
@@ -504,7 +511,7 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
 
 function CreateFolderSubmodal({ name, setName }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col my-12 gap-6">
       <div className="flex gap-4">
         Name
         <input
@@ -572,7 +579,7 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
   const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col my-12 gap-6">
       <div className="flex gap-4">
         Name
         <input
@@ -660,7 +667,7 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
       return (
         <button
           onClick={() => setState(state)}
-          className="p-4 gap-2 rounded-md border-2 border-gray-300 text-slate-800  bg-gray-100 hover:bg-slate-800 hover:border-slate-800 hover:text-white"
+          className="p-4 text-xs sm:text-lg gap-2 rounded-md border-2 border-gray-300 text-slate-800  bg-gray-100 hover:bg-slate-800 hover:border-slate-800 hover:text-white"
         >
           {children}
         </button>
@@ -668,38 +675,36 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
     };
 
     return (
-      <div className="flex items-center">
+      <div className="flex flex-col items-center p-2">
         {/** Heading */}
-        <div className="text-3xl text-center">
-          Create
-          <br />
-          new
-        </div>
+        <div className="text-2xl sm:text-3xl text-center">Create new</div>
 
         {/** Vertical separator */}
-        <div className="w-1 h-60 bg-gray-200 rounded-full mx-8"></div>
+        <div className="h-1 w-60 bg-gray-200 rounded-full my-8"></div>
 
-        <div className="grid grid-cols-1 gap-3 w-fit">
+        <div className="grid grid-cols-2 gap-3 w-fit">
           {/* New folder */}
           <Element state={States.CREATE_FOLDER}>
-            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+            <div className="flex gap-3 items-center">
               <MaterialSymbol name="folder" /> Folder
             </div>
           </Element>
 
           {/* New note */}
           <Element state={States.CREATE_NOTE}>
-            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
+            <div className="flex gap-3 items-center">
               <MaterialSymbol name="description" /> Note
             </div>
           </Element>
 
           {/* Import PDF */}
-          <Element state={States.IMPORT_PDF}>
-            <div className="grid grid-cols-[auto_auto] w-fit gap-3">
-              <MaterialSymbol name="picture_as_pdf" /> PDF Note
-            </div>
-          </Element>
+          <div className="flex justify-center col-span-2">
+            <Element state={States.IMPORT_PDF}>
+              <div className="flex gap-3 items-center">
+                <MaterialSymbol name="picture_as_pdf" /> PDF Note
+              </div>
+            </Element>
+          </div>
         </div>
       </div>
     );
@@ -749,7 +754,7 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
   return (
     <Modal
       onCancel={onCancel}
-      className="w-96 h-72 flex flex-col text-lg"
+      className="flex flex-col text-lg"
       onBack={state != States.SELECT_ACTION && (() => setState(States.SELECT_ACTION))}
     >
       <div className="flex flex-col basis-full justify-center items-center">{modalBody()}</div>
@@ -915,17 +920,18 @@ function MaterialSymbol({ name, className = "" }: { name: string; className?: st
 function NavBar({ children }) {
   return (
     <div className="flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300">
-      {/** Logo */}
-      <div className="hidden sm:flex flex-row gap-3 items-center text-gray-800">
-        <FaPencilAlt className="text-2xl" />
-        <p className="font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]">Inck</p>
+      <div className="flex gap-16">
+        {/** Logo */}
+        <Link href="/">
+          <div className="hidden sm:flex flex-row gap-3 items-center text-gray-800 cursor-pointer">
+            <FaPencilAlt className="text-2xl" />
+            <p className="font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]">Inck</p>
+          </div>
+        </Link>
+
+        {/** Selection options */}
+        <div className="justify-center align-middle">{children}</div>
       </div>
-
-      {/** Selection options */}
-      <div className="justify-center align-middle">{children}</div>
-
-      {/* Spacer invisible div */}
-      <div className="w-full" />
 
       {/** User Options */}
       <div className="flex flex-row gap-2">
@@ -1025,8 +1031,7 @@ function FileExplorer({ files, path, selectedFiles, setPath, setSelectedFiles, s
         e.preventDefault();
       }
     };
-    const cancelPress = (e) => {
-      console.log("canceling...", e);
+    const cancelPress = () => {
       if (longPressTimeout) {
         window.clearTimeout(longPressTimeout);
         longPressTimeout = null;
@@ -1063,7 +1068,7 @@ function FileExplorer({ files, path, selectedFiles, setPath, setSelectedFiles, s
   };
 
   return (
-    <div className="h-full w-full flex flex-row pt-4 overflow-hidden">
+    <div className="h-full w-full flex flex-row pt-4 overflow-hidden select-none">
       <FileTree
         files={files}
         path={path}
