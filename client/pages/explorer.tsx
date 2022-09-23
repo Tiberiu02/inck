@@ -1,37 +1,18 @@
 import Head from "next/head";
-import { setuid } from "process";
-import React, { useState, useEffect, useRef, PointerEvent, ReactNode, ReactComponentElement } from "react";
+import React, { useState, useEffect, PointerEvent, ReactNode } from "react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import {
-  FaAngleDown,
-  FaAngleRight,
-  FaPencilAlt,
-  FaSearch,
-  FaRegQuestionCircle,
-  FaRegUserCircle,
-  FaRegSun,
-  FaRegClock,
-  FaUsers,
-  FaBookmark,
-  FaTrash,
-  FaBook,
-  FaFolder,
-  FaFolderOpen,
-  FaRegWindowClose,
-  FaExchangeAlt,
-  FaBars,
-} from "react-icons/fa";
-import Cookies from "universal-cookie";
-import { authCookieName, getAuthToken, setAuthToken, disconnect } from "../components/AuthToken";
-import GetApiPath, { postFetchAPI } from "../components/GetApiPath";
+import { FaAngleDown, FaAngleRight, FaPencilAlt, FaBook, FaFolder, FaFolderOpen } from "react-icons/fa";
+import { getAuthToken, disconnect } from "../components/AuthToken";
+import GetApiPath from "../components/GetApiPath";
 import Link from "next/link";
 import { TrackFolderCreation, TrackNoteCreation } from "../components/Analytics";
 import { NoteToPdf } from "../canvas/PDF/PdfExport";
 import download from "downloadjs";
-import JSZip, { folder } from "jszip";
+import JSZip from "jszip";
 import { Spinner } from "../components/Spinner";
 import { IconType } from "react-icons/lib";
+import { twMerge } from "tailwind-merge";
 
 enum FileTypes {
   NOTE = "note",
@@ -154,42 +135,28 @@ function FileTree({ className, files, path, setPath }) {
   );
 }
 
-function Note({ title, showSelect = false, isSelected = false }) {
+function Note({ title, isSelected = false }) {
   return (
-    <button className="relative select-none flex flex-col items-center justify-center w-32 h-24 sm:w-40 sm:h-32 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100 overflow-hidden">
-      <p className="relative py-1 px-2 border-slate-800 bg-slate-800 w-[calc(100%+4px)] shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
-        {title}
-      </p>
-
-      {showSelect && (
-        <div
-          className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 text-center ${
-            isSelected ? "text-slate-800" : "text-white"
-          }`}
-        >
-          x
-        </div>
-      )}
-    </button>
+    <div className="relative rounded-xl overflow-hidden">
+      <button className="relative select-none flex flex-col items-center justify-center w-32 h-24 sm:w-40 sm:h-32 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100 overflow-hidden">
+        <p className="relative py-1 px-2 border-slate-800 bg-slate-800 w-full shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
+          {title}
+        </p>
+      </button>
+      {isSelected && <div className="absolute inset-0 bg-select opacity-select"></div>}
+    </div>
   );
 }
 
-function Book({ title, showSelect = false, isSelected = false }) {
+function Book({ title, isSelected = false }) {
   return (
     <button className="relative select-none w-32 h-24 sm:w-40 sm:h-32 text-white duration-100 flex flex-col">
-      <div className="bg-slate-800 h-7 w-14 rounded-t-xl -mb-2"></div>
-      <div className="realtive bottom-0 h-full w-full flex flex-col justify-center p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
-        {showSelect && (
-          <div
-            className={`rounded-lg border-slate-800 border-4 bg-white px-2 font-bold absolute top-3 left-3 ${
-              isSelected ? "text-slate-800" : "text-white"
-            } text-center`}
-          >
-            x
-          </div>
-        )}
-
+      <div className="relative bg-slate-800 h-7 w-14 rounded-t-xl -mb-2 overflow-hidden">
+        {isSelected && <div className="absolute inset-0 bg-select opacity-select"></div>}
+      </div>
+      <div className="relative bottom-0 h-full w-full flex flex-col justify-center p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
         <p className="text-sm sm:text-lg text-center line-clamp-3"> {title} </p>
+        {isSelected && <div className="absolute inset-0 bg-select opacity-select"></div>}
       </div>
     </button>
   );
@@ -200,7 +167,7 @@ function AddButton({ onClick }) {
     <>
       <button
         onClick={onClick}
-        className="relative w-32 h-24 sm:w-40 sm:h-32 text-gray-200 border-4 rounded-xl text-9xl select-none"
+        className="relative w-32 h-24 sm:w-40 sm:h-32 text-gray-200 border-4 rounded-xl text-9xl select-none overflow-hidden"
       >
         +
       </button>
@@ -245,7 +212,7 @@ function Modal({ children, onCancel, className = "", onBack = null }) {
     <div className={"absolute inset-0 w-screen h-screen bg-opacity-50 bg-black flex justify-center items-center"}>
       <div onClick={onCancel} className="absolute inset-0"></div>
 
-      <div className="relative bg-white rounded-lg shadow-lg p-5 flex flex-col text-lg">
+      <div className="relative bg-white rounded-3xl shadow-lg p-5 flex flex-col text-lg">
         <div className="flex flex-row-reverse justify-between mb-2">
           <button className="self-end hover:text-red-500" onClick={onCancel}>
             <span className="material-symbols-outlined">close</span>
@@ -262,6 +229,30 @@ function Modal({ children, onCancel, className = "", onBack = null }) {
   );
 }
 
+function ModalTitle({ children }) {
+  return <div className="text-2xl font-semibold w-full text-center">{children}</div>;
+}
+
+function ModalButtons({ submitText, onSubmit, onCancel, submitEnabled = true, submitButtonClassName = "" }) {
+  return (
+    <div className="flex w-full justify-between items-center">
+      <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={onCancel}>
+        Cancel
+      </button>
+      <button
+        onClick={onSubmit}
+        disabled={!submitEnabled}
+        className={twMerge(
+          "hover:bg-slate-800 bg-slate-600 text-white w-fit px-4 py-1 rounded-full self-center ",
+          submitButtonClassName
+        )}
+      >
+        {submitText}
+      </button>
+    </div>
+  );
+}
+
 function RemoveFilesModal({ onCancel, onSuccess, selectedFiles }) {
   const onRemoveClick = async () => {
     await PostFileRemoval(Object.values(selectedFiles));
@@ -270,24 +261,19 @@ function RemoveFilesModal({ onCancel, onSuccess, selectedFiles }) {
 
   return (
     <Modal onCancel={onCancel} className="relative w-96 h-52 flex flex-col text-lg justify-between">
-      <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">Remove notes</div>
+      <ModalTitle>Remove notes</ModalTitle>
 
       <div>
         <div>Are you sure you want to delete these notes?</div>
-        <div className="text-red-500 font-bold mt-2">This connot be undone</div>
+        <div className="text-red-500 font-bold mt-2">This connot be undone!</div>
       </div>
 
-      <div className="flex justify-between">
-        <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          onClick={onRemoveClick}
-          className="bg-red-600 hover:bg-red-700 text-white w-fit px-4 py-1 rounded-full self-center"
-        >
-          Remove
-        </button>
-      </div>
+      <ModalButtons
+        onCancel={onCancel}
+        onSubmit={onRemoveClick}
+        submitText="Delete"
+        submitButtonClassName="bg-red-600 hover:bg-red-700"
+      />
     </Modal>
   );
 }
@@ -363,26 +349,20 @@ function MoveFilesModal({ files, selectedFiles, onCancel, onSuccess }: MoveFiles
 
   return (
     <Modal onCancel={onCancel} className="relative w-96 flex flex-col text-lg justify-between">
-      <div className="flex grid-cols-2 w-full gap-4 font-semibold text-xl justify-center mb-8">Move notes</div>
+      <ModalTitle>Move notes</ModalTitle>
 
-      <MoveModalListing files={files} setTarget={setTarget} target={target} selectedFiles={selectedFiles} />
-
-      <div className="italic text-sm text-right mt-1">Click to select, double-click to open.</div>
-
-      <div className="flex justify-between mt-8">
-        <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          disabled={!canMove}
-          onClick={onMoveClick}
-          className={` ${
-            canMove ? "hover:bg-slate-700 bg-slate-600" : "bg-slate-300"
-          } text-white w-fit px-4 py-1 rounded-full self-center`}
-        >
-          Move files
-        </button>
+      <div className="my-8">
+        <MoveModalListing files={files} setTarget={setTarget} target={target} selectedFiles={selectedFiles} />
+        <div className="italic text-sm text-right mt-1">Click to select, double-click to open.</div>
       </div>
+
+      <ModalButtons
+        onCancel={onCancel}
+        onSubmit={onMoveClick}
+        submitText="Move"
+        submitEnabled={canMove}
+        submitButtonClassName={!canMove && "bg-slate-300 hover:bg-slate-300"}
+      />
     </Modal>
   );
 }
@@ -401,10 +381,10 @@ function ExportFilesModal({ selectedFiles = {}, onCancel, onSuccess }: ExportFil
 
     const exportFiles = async (root, files) => {
       for (const file of files) {
-        if (file.type == "note") {
+        if (file.type == FileTypes.NOTE) {
           const bytes = await NoteToPdf(file.fileId);
           root.file(file.name + ".pdf", bytes);
-        } else if (file.type == "folder") {
+        } else if (file.type == FileTypes.FOLDER) {
           const newFolder = root.folder(file.name);
           await exportFiles(newFolder, file.children);
         }
@@ -413,7 +393,7 @@ function ExportFilesModal({ selectedFiles = {}, onCancel, onSuccess }: ExportFil
 
     setExporting(true);
 
-    if (files.length == 1 && files[0].type == "note") {
+    if (files.length == 1 && files[0].type == FileTypes.NOTE) {
       const bytes = await NoteToPdf(files[0].fileId);
       download(bytes, files[0].name + ".pdf", "application/pdf");
     } else {
@@ -430,28 +410,15 @@ function ExportFilesModal({ selectedFiles = {}, onCancel, onSuccess }: ExportFil
 
   return (
     <Modal onCancel={onCancel}>
-      <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center mb-10">Export to PDF</div>
+      <ModalTitle>Export to PDF</ModalTitle>
 
-      <div className="text-sm text-center mb-8">Would you like to download selected notes as PDF?</div>
+      <div className="text-center my-8">Would you like to download selected notes as PDF?</div>
 
-      <div className="flex justify-between items-center h-12">
+      <div className="h-12 flex flex-col justify-end w-full">
         {exporting ? (
-          <Spinner className="h-12 mx-auto" />
+          <Spinner className="h-12" />
         ) : (
-          <>
-            <button
-              className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={downloadNotes}
-              className="hover:bg-slate-700 bg-slate-600 text-white w-fit px-4 py-1 rounded-full self-center"
-            >
-              Download
-            </button>
-          </>
+          <ModalButtons onCancel={onCancel} onSubmit={downloadNotes} submitText="Download" />
         )}
       </div>
     </Modal>
@@ -477,26 +444,24 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
   };
 
   return (
-    <Modal onCancel={onCancel} className="w-96 h-60 flex flex-col text-lg justify-between">
-      <div className="flex grid-cols-2 w-full gap-4 font-semibold justify-center">
-        Edit {file !== undefined && file.type}
-      </div>
-      <div className={"flex" + " flex-col gap-6"}>
-        <div className="flex gap-4">
+    <Modal onCancel={onCancel} className="w-96 flex flex-col items-center text-lg justify-between">
+      <ModalTitle>Edit {file.type == FileTypes.FOLDER ? "folder" : "note"}</ModalTitle>
+      <div className="flex flex-col my-12 w-full px-6">
+        <div className="flex">
           Name
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+            className="bg-gray-100 ml-4 w-full border-[1px] px-2 border-gray-400 rounded-md"
           />
         </div>
         {isNote && (
-          <div className={`flex gap-4`}>
+          <div className="flex mt-4">
             Public&nbsp;access
             <select
               value={newNoteAccess}
               onChange={(e) => setNewNoteAccess(e.target.value as AccessTypes)}
-              className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
+              className="bg-gray-100 ml-4 w-full border-[1px] px-2 border-gray-400 rounded-md"
             >
               <option value={AccessTypes.WRITE}>View &amp; edit</option>
               <option value={AccessTypes.READ}>View only</option>
@@ -505,12 +470,7 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
           </div>
         )}
       </div>
-      <button
-        onClick={saveEdits}
-        className="bg-slate-800 hover:bg-black text-white w-fit px-4 py-1 rounded-full self-center"
-      >
-        Save modifications
-      </button>
+      <ModalButtons onCancel={onCancel} onSubmit={saveEdits} submitText="Save" />
     </Modal>
   );
 }
@@ -542,9 +502,9 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
   );
 }
 
-function CreateFolderSubmodal({ name, setName, publicAccess, setPublicAccess }) {
+function CreateFolderSubmodal({ name, setName }) {
   return (
-    <div className="folder flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <div className="flex gap-4">
         Name
         <input
@@ -645,16 +605,16 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
   );
 }
 
-async function CreateNote(name: string, parentDir, publicAccess) {
+async function CreateNote(name: string, parentFolderId: string, publicAccess: AccessTypes) {
   TrackNoteCreation("simple");
-  await PostFileCreation(name, "note", parentDir, {
+  await PostFileCreation(name, FileTypes.NOTE, parentFolderId, {
     publicAccess,
   });
 }
 
 async function CreateFolder(name, parentDir) {
   TrackFolderCreation();
-  await PostFileCreation(name, "folder", parentDir);
+  await PostFileCreation(name, FileTypes.FOLDER, parentDir);
 }
 
 async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent) {
@@ -692,7 +652,7 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
   const [state, setState] = useState(States.SELECT_ACTION);
 
   const [name, setName] = useState("");
-  const [publicAccess, setPublicAccess] = useState("private");
+  const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
   const [pdfContent, setPdfContent] = useState(null);
 
   const ModalHeader = () => {
@@ -772,14 +732,7 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
         />
       );
     } else if (state == States.CREATE_FOLDER) {
-      return (
-        <CreateFolderSubmodal
-          name={name}
-          setName={setName}
-          publicAccess={publicAccess}
-          setPublicAccess={setPublicAccess}
-        />
-      );
+      return <CreateFolderSubmodal name={name} setName={setName} />;
     } else if (state == States.IMPORT_PDF) {
       return (
         <ImportPDFSubmodal
@@ -959,39 +912,51 @@ function MaterialSymbol({ name, className = "" }: { name: string; className?: st
   return <span className={"material-symbols-outlined " + className}>{name}</span>;
 }
 
-function Explorer({ files, setFiles }) {
-  const [path, setPath] = useState(["f/notes"]);
-  const [modal, setModal] = useState(Modals.NONE);
-  const closeModal = () => setModal(Modals.NONE);
+function NavBar({ children }) {
+  return (
+    <div className="flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300">
+      {/** Logo */}
+      <div className="hidden sm:flex flex-row gap-3 items-center text-gray-800">
+        <FaPencilAlt className="text-2xl" />
+        <p className="font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]">Inck</p>
+      </div>
 
-  const [selectedFiles, setSelectedFiles] = useState({});
-  const firstSelectedElement = selectedFiles[Object.keys(selectedFiles)[0]];
+      {/** Selection options */}
+      <div className="justify-center align-middle">{children}</div>
 
-  const isSelecting = Object.keys(selectedFiles).length > 0;
+      {/* Spacer invisible div */}
+      <div className="w-full" />
 
-  let selectionWidget;
+      {/** User Options */}
+      <div className="flex flex-row gap-2">
+        {/** Settings */}
+        <Link href="/settings">
+          <div className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
+            <MaterialSymbol name="settings" className="text-2xl" />
+          </div>
+        </Link>
 
-  // Toggle file selection
-  if (isSelecting) {
-    const oneSelected = Object.keys(selectedFiles).length == 1;
+        {/** Log out */}
+        <button
+          onClick={() => disconnect()}
+          className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full"
+        >
+          <MaterialSymbol name="logout" className="text-2xl" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
-    selectionWidget = (
+function SelectionOptionsWidget({ selectedFiles, setSelectedFiles, setModal }) {
+  const numSelectedFiles = Object.values(selectedFiles).length;
+
+  return (
+    numSelectedFiles > 0 && (
       <div className="flex w-full justify-between rounded-xl border-2 overflow-clip">
         <button
-          className="hover:bg-gray-300 px-3 flex items-center justify-center"
-          onClick={() => setSelectedFiles({})}
-        >
-          <MaterialSymbol name="close" className="text-xl" />
-        </button>
-        <button
-          onClick={() => setModal(Modals.REMOVE_FILES)}
-          className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4 py-1"
-        >
-          <MaterialSymbol name="delete" className="text-xl" />
-        </button>
-        <button
           onClick={() => setModal(Modals.EDIT_FILE)}
-          disabled={!oneSelected}
+          disabled={numSelectedFiles != 1}
           className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4 py-1"
         >
           <MaterialSymbol name="settings" className="text-xl" />
@@ -1008,13 +973,22 @@ function Explorer({ files, setFiles }) {
         >
           <MaterialSymbol name="download" className="text-xl" />
         </button>
+        <button
+          onClick={() => setModal(Modals.REMOVE_FILES)}
+          className="hover:bg-gray-300 flex items-center justify-center disabled:opacity-20 disabled:hover:bg-inherit px-4 py-1"
+        >
+          <MaterialSymbol name="delete" className="text-xl" />
+        </button>
       </div>
-    );
-  } else {
-    selectionWidget = <></>;
-  }
+    )
+  );
+}
 
-  const fileClickAction = (f) => {
+function FileExplorer({ files, path, selectedFiles, setPath, setSelectedFiles, setModal }) {
+  const isSelecting = Object.keys(selectedFiles).length > 0;
+  const currentFolder = files[path.at(-1)];
+
+  const fileClickAction = (f: FileInfo) => {
     if (isSelecting) {
       const newState = { ...selectedFiles };
       if (f._id in newState) {
@@ -1024,24 +998,23 @@ function Explorer({ files, setFiles }) {
       }
       setSelectedFiles(newState);
     } else {
-      if (f.type == "folder") {
+      if (f.type == FileTypes.FOLDER) {
         setPath(path.concat([f._id]));
-      } else {
-        window.open("/note/" + f.fileId, "_blank");
+      } else if (f.type == FileTypes.NOTE) {
+        const noteId = (f as NoteInfo).fileId;
+        window.open(`/note/${noteId}`, "_blank");
       }
     }
   };
 
-  const drawExplorerItem = (f: FileInfo, idx, _) => {
+  const drawExplorerItem = (f: FileInfo) => {
     const isSelected = f._id in selectedFiles;
 
     const LONG_PRESS_DURAION = 500;
     let longPressTimeout: number;
 
     const startPress = (e: PointerEvent) => {
-      if (isSelecting) {
-        fileClickAction(f);
-      } else if (e.button == 0) {
+      if (e.button == 0) {
         if (longPressTimeout) {
           window.clearTimeout(longPressTimeout);
           longPressTimeout = null;
@@ -1052,7 +1025,8 @@ function Explorer({ files, setFiles }) {
         e.preventDefault();
       }
     };
-    const cancelPress = () => {
+    const cancelPress = (e) => {
+      console.log("canceling...", e);
       if (longPressTimeout) {
         window.clearTimeout(longPressTimeout);
         longPressTimeout = null;
@@ -1060,6 +1034,7 @@ function Explorer({ files, setFiles }) {
     };
 
     const handleClick = () => {
+      console.log(longPressTimeout);
       if (longPressTimeout) {
         cancelPress();
         fileClickAction(f);
@@ -1077,25 +1052,79 @@ function Explorer({ files, setFiles }) {
     return (
       <div
         onPointerDown={startPress}
-        onPointerLeave={cancelPress}
         onPointerCancel={cancelPress}
         onContextMenu={(e) => e.preventDefault()}
         onClick={handleClick}
         key={f._id}
       >
-        <Component isSelected={isSelected} showSelect={isSelecting} title={f.name} />
+        <Component isSelected={isSelected} title={f.name} />
       </div>
     );
   };
 
-  const reloadFiles = async () => {
-    setSelectedFiles({});
-    setFiles(await GetFiles());
-  };
+  return (
+    <div className="h-full w-full flex flex-row pt-4 overflow-hidden">
+      <FileTree
+        files={files}
+        path={path}
+        setPath={(path) => {
+          setSelectedFiles({});
+          setPath(path);
+        }}
+        className="hidden sm:flex pb-10 w-96 border-r-[1px] border-gray-300"
+      />
 
+      <div className="relative flex flex-col w-full h-full px-10 py-3 overflow-scroll">
+        <PathNavigator files={files} path={path} setPath={setPath} />
+
+        {/** Notes */}
+        <div className="flex flex-row flex-wrap gap-4 sm:gap-8 pt-8 sm:pt-16 pb-40 justify-around sm:justify-start">
+          {currentFolder.children.map(drawExplorerItem)}
+
+          <AddButton key="#add-button" onClick={() => setModal(Modals.CREATE_FILE)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DisplayModal({ modal, path, files, selectedFiles, closeModal, reloadFiles }) {
   const closeModalAndReload = async () => {
     closeModal();
     await reloadFiles();
+  };
+
+  const firstSelectedFile = selectedFiles[Object.keys(selectedFiles)[0]];
+
+  switch (modal) {
+    case Modals.CREATE_FILE:
+      return <CreateFileModal onCancel={closeModal} onSuccess={closeModalAndReload} path={path} />;
+    case Modals.EDIT_FILE:
+      return <EditFileModal file={firstSelectedFile} onCancel={closeModal} onSuccess={closeModalAndReload} />;
+    case Modals.REMOVE_FILES:
+      return <RemoveFilesModal onCancel={closeModal} onSuccess={closeModalAndReload} selectedFiles={selectedFiles} />;
+    case Modals.MOVE_FILES:
+      return (
+        <MoveFilesModal
+          onCancel={closeModal}
+          onSuccess={closeModalAndReload}
+          files={files}
+          selectedFiles={selectedFiles}
+        />
+      );
+    case Modals.EXPORT_FILES:
+      return <ExportFilesModal selectedFiles={selectedFiles} onCancel={closeModal} onSuccess={closeModalAndReload} />;
+  }
+}
+
+function Explorer({ files, refreshFiles }) {
+  const [modal, setModal] = useState(Modals.NONE);
+  const [path, setPath] = useState(["f/notes"]);
+  const [selectedFiles, setSelectedFiles] = useState({});
+
+  const reload = async () => {
+    await refreshFiles();
+    setSelectedFiles({});
   };
 
   return (
@@ -1109,104 +1138,32 @@ function Explorer({ files, setFiles }) {
       <main className="font-round">
         <div className="relative flex flex-col w-[100vw] h-[100vh]">
           {/** Top bar */}
-          <div className="flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300">
-            {/** Logo */}
-            <div className="hidden sm:flex flex-row gap-3 items-center text-gray-800">
-              <FaPencilAlt className="text-2xl" />
-              <p className="font-extrabold tracking-wider text-2xl text-gr mt-[0.1rem]">Inck</p>
-            </div>
-
-            {/** Selection options */}
-            <div className="justify-center align-middle">{selectionWidget}</div>
-
-            {/* Spacer invisible div */}
-            <div className="w-full" />
-
-            {/*
-              // SEARCH BAR
-              <div className="flex bg-gray-100 border-[1px] border-gray-300 text-gray-500 flex-row items-center h-10 overflow-hidden w-full max-w-xl rounded-lg">
-                <button className="group pl-2 h-10 flex items-center justify-center">
-                  <div className="group-hover:bg-gray-300 flex items-center justify-center w-8 h-8 rounded-full">
-                    <FaSearch />
-                  </div>
-                </button>
-                <input
-                  className="pl-2 bg-transparent focus:outline-none text-gray-900 placeholder-gray-400"
-                  placeholder="Search notes"
-                />
-              </div>
-            */}
-
-            {/** User Options */}
-            <div className="flex flex-row gap-2">
-              {/** Settings */}
-              <Link href="/settings">
-                <div className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
-                  <MaterialSymbol name="settings" className="text-2xl" />
-                </div>
-              </Link>
-
-              {/** Log out */}
-              <button
-                onClick={() => disconnect()}
-                className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full"
-              >
-                <MaterialSymbol name="logout" className="text-2xl" />
-              </button>
-            </div>
-          </div>
-
-          <div className="h-full w-full flex flex-row pt-4 overflow-hidden">
-            <FileTree
-              files={files}
-              path={path}
-              setPath={setPath}
-              className="hidden sm:flex pb-10 w-96 border-r-[1px] border-gray-300"
+          <NavBar>
+            <SelectionOptionsWidget
+              selectedFiles={selectedFiles}
+              setSelectedFiles={setSelectedFiles}
+              setModal={setModal}
             />
+          </NavBar>
 
-            <div className="relative flex flex-col w-full h-full px-10 py-3 overflow-scroll">
-              <PathNavigator files={files} path={path} setPath={setPath} />
-
-              {/** Notes */}
-              <div className="flex flex-row flex-wrap gap-4 sm:gap-8 pt-8 sm:pt-16 pb-40 justify-around sm:justify-start">
-                {files && files[path.at(-1)].children.map(drawExplorerItem)}
-
-                <AddButton
-                  key="#add-button"
-                  onClick={() => {
-                    setModal(Modals.CREATE_FILE);
-                    //reloadFiles();
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+          <FileExplorer
+            files={files}
+            path={path}
+            selectedFiles={selectedFiles}
+            setPath={setPath}
+            setSelectedFiles={setSelectedFiles}
+            setModal={setModal}
+          />
         </div>
 
-        {/* Create file modal */}
-        {modal == Modals.CREATE_FILE && (
-          <CreateFileModal onCancel={closeModal} onSuccess={closeModalAndReload} path={path} />
-        )}
-        {/* Edit file modal */}
-        {modal == Modals.EDIT_FILE && (
-          <EditFileModal file={firstSelectedElement} onCancel={closeModal} onSuccess={closeModalAndReload} />
-        )}
-        {/* Remove files modal */}
-        {modal == Modals.REMOVE_FILES && (
-          <RemoveFilesModal onCancel={closeModal} onSuccess={closeModalAndReload} selectedFiles={selectedFiles} />
-        )}
-        {/* Move files modal */}
-        {modal == Modals.MOVE_FILES && (
-          <MoveFilesModal
-            onCancel={closeModal}
-            onSuccess={closeModalAndReload}
-            files={files}
-            selectedFiles={selectedFiles}
-          />
-        )}
-        {modal == Modals.EXPORT_FILES && (
-          <ExportFilesModal selectedFiles={selectedFiles} onCancel={closeModal} onSuccess={closeModalAndReload} />
-        )}
+        <DisplayModal
+          modal={modal}
+          path={path}
+          files={files}
+          selectedFiles={selectedFiles}
+          closeModal={() => setModal(Modals.NONE)}
+          reloadFiles={reload}
+        />
       </main>
     </div>
   );
@@ -1215,12 +1172,17 @@ function Explorer({ files, setFiles }) {
 export default function ExplorerLoader() {
   const [files, setFiles] = useState(null);
 
+  const refreshFiles = async () => {
+    const newFiles = await GetFiles();
+    setFiles(newFiles);
+  };
+
   useEffect(() => {
-    GetFiles().then(setFiles);
+    refreshFiles();
   }, []);
 
   if (files) {
-    return <Explorer files={files} setFiles={setFiles} />;
+    return <Explorer files={files} refreshFiles={refreshFiles} />;
   } else {
     return <Spinner className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10" />;
   }
