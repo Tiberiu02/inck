@@ -11,7 +11,7 @@ function OpenNoteBtn() {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (noteId) window.location = "/note/" + noteId;
+        if (noteId) window.location.href = "/note/" + noteId;
       }}
       className="flex flex-row gap-4 items-center justify-between border-2 border-primary bg-white rounded-xl w-full"
     >
@@ -38,7 +38,7 @@ function CreateNoteBtn({ className }) {
     .join("");
   return (
     <button
-      onClick={() => (window.location = "/note/" + id)}
+      onClick={() => (window.location.href = "/note/" + id)}
       className={`${className} max-w-lg flex flex-row items-center justify-center bg-primary hover:bg-primary-dark duration-200 py-3 px-6 rounded-xl w-full`}
     >
       Create new note
@@ -47,22 +47,27 @@ function CreateNoteBtn({ className }) {
   );
 }
 
+function WelcomeMessage() {
+  return (
+    <div className="flex flex-col pointer-events-none items-end absolute top-[50%] right-0 text-inck-red font-cursive font-bold w-40">
+      <div className="realtive mr-5 z-20">
+        <span className="material-symbols-outlined scale-x-[-2] scale-y-[2] -rotate-12 drop-shadow-md">
+          switch_access_shortcut
+        </span>
+      </div>
+      <div className="relative text-right text-4xl z-0">
+        <div className="absolute -inset-4 bg-white blur-lg"></div>
+        <div className="relative drop-shadow-md">Ready to start the semester?</div>
+      </div>
+    </div>
+  );
+}
+
 function SignInBtn({ className }) {
   return (
     <Link href="/auth">
       <div className={`relative lg:w-104 w-full max-w-lg ${className}`}>
-        {/** Welcome message */}
-        <div className="flex flex-col pointer-events-none items-end absolute top-[50%] right-0 text-inck-red font-cursive font-bold w-40">
-          <div className="realtive mr-5 z-20">
-            <span className="material-symbols-outlined scale-x-[-2] scale-y-[2] -rotate-12 drop-shadow-md">
-              switch_access_shortcut
-            </span>
-          </div>
-          <div className="relative text-right text-4xl z-0">
-            <div className="absolute -inset-4 bg-white blur-lg"></div>
-            <div className="relative drop-shadow-md">Ready to start the semester?</div>
-          </div>
-        </div>
+        {/* <WelcomeMessage /> */}
         <button className="flex flex-row w-full py-3 px-6 items-center justify-center relative z-10 bg-primary hover:bg-primary-dark duration-200 rounded-xl">
           Sign in <MdOutlineAccountCircle className="mr-1 ml-3" />
         </button>

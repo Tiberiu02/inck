@@ -143,12 +143,12 @@ async function requestDocumentFn(
     await NoteModel.create({ id: id, isFreeNote: true });
   } else {
     note.strokes = noteData.strokes;
-  }
 
-  if (noteData.backgroundType == BackgroundTypes.pdf) {
-    const fileHash = noteData.backgroundOptions.fileHash as string;
-    const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
-    note.pdfUrl = url;
+    if (noteData.backgroundType == BackgroundTypes.pdf) {
+      const fileHash = noteData.backgroundOptions.fileHash as string;
+      const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
+      note.pdfUrl = url;
+    }
   }
 
   // Check authentication here

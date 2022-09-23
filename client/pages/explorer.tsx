@@ -137,14 +137,14 @@ function FileTree({ className, files, path, setPath }) {
 
 function Note({ title, isSelected = false }) {
   return (
-    <div className="relative rounded-xl overflow-hidden">
-      <button className="no-tap-highlight flex flex-col items-center justify-center w-32 h-24 sm:w-40 sm:h-32 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100">
+    <button className="no-tap-highlight relative rounded-xl overflow-hidden">
+      <div className="flex flex-col items-center justify-center w-32 h-24 sm:w-40 sm:h-32 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100">
         <p className="relative py-1 px-3 w-[calc(100%+0.5rem)] bg-slate-800 shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
           {title}
         </p>
-      </button>
+      </div>
       {isSelected && <div className="absolute inset-0 bg-select opacity-select"></div>}
-    </div>
+    </button>
   );
 }
 
