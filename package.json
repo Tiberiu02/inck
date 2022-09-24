@@ -7,7 +7,8 @@
     "dev": "concurrently \"cd client && next dev -- -p 3080\" \"ts-node --esm --project server/tsconfig.json server/index.mts\"",
     "build": "cd client && next build",
     "frontend": "cd client && next start -- -p 3080",
-    "backend": "sudo ts-node --esm --project server/tsconfig.json server/index.mts || ts-node --esm --project server/tsconfig.json server/index.mts",
+    "frontend-dev": "cd client && next dev -- -p 3080",
+    "backend": "ts-node --esm --project server/tsconfig.json server/index.mts",
     "lint": "cd client && next lint"
   },
   "dependencies": {

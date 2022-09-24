@@ -3,6 +3,7 @@ import { Display } from "../../DeviceProps";
 import {
   DeserializeGraphic,
   PersistentGraphic,
+  RemovedGraphic,
   SerializedGraphic,
   SerializeGraphic,
   Serializers,
@@ -73,7 +74,7 @@ export class MySelection extends SelectionBase implements MyTool {
       if (this.selecting) {
         super.releaseLasso();
         this.remoteController.releaseLasso();
-        this.selected.forEach(d => this.strokeContainer.remove(d.id));
+        this.selected.forEach((d) => this.strokeContainer.add(RemovedGraphic(d.id)));
       }
     }
   }
@@ -85,7 +86,7 @@ export class MySelection extends SelectionBase implements MyTool {
 
   private registerAction(initialSelection: PersistentGraphic[]) {
     const equal = (a: PersistentGraphic[], b: PersistentGraphic[]) =>
-      a.map(e => e.id).join(" ") == b.map(e => e.id).join(" ");
+      a.map((e) => e.id).join(" ") == b.map((e) => e.id).join(" ");
 
     const newSelection = this.selected;
     this.actionStack.push({
@@ -96,10 +97,9 @@ export class MySelection extends SelectionBase implements MyTool {
         } else {
           let success = false;
           for (const e of initialSelection) {
-            if (this.strokeContainer.remove(e.id)) {
-              this.strokeContainer.add(e);
-              success = true;
-            }
+            //this.strokeContainer.add(RemovedGraphic(e.id));
+            this.strokeContainer.add(e);
+            success = true;
           }
           return success;
         }
@@ -109,9 +109,9 @@ export class MySelection extends SelectionBase implements MyTool {
           this.updateSelection(newSelection);
         } else {
           for (const e of newSelection) {
-            if (this.strokeContainer.remove(e.id)) {
-              this.strokeContainer.add(e);
-            }
+            //if (this.strokeContainer.remove(e.id)) {
+            this.strokeContainer.add(e);
+            //}
           }
         }
       },
@@ -166,7 +166,7 @@ export class MySelection extends SelectionBase implements MyTool {
 
     if (layerRendered == 0) {
       if (this.selected.length) {
-        const box = this.selected.map(d => d.geometry.boundingBox).reduce(UniteRectangles);
+        const box = this.selected.map((d) => d.geometry.boundingBox).reduce(UniteRectangles);
         const [sw, sh] = [(box.xMax - box.xMin) / 2, (box.yMax - box.yMin) / 2];
         const [cx, cy] = [box.xMin + sw, box.yMin + sh];
         const { x, y } = this.toTranslateBy;
@@ -200,7 +200,7 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   deselect(): void {
-    this.selected.forEach(d => this.strokeContainer.add(d));
+    this.selected.forEach((d) => this.strokeContainer.add(d));
     this.clearSelection();
     this.remoteController.clearSelection();
   }
@@ -209,11 +209,11 @@ export class MySelection extends SelectionBase implements MyTool {
     const selection = this.selected;
     this.actionStack.push({
       undo: () => {
-        selection.forEach(e => this.strokeContainer.add(e));
+        selection.forEach((e) => this.strokeContainer.add({ ...e, timestamp: Date.now() }));
         return true;
       },
       redo: () => {
-        selection.forEach(e => this.strokeContainer.remove(e.id));
+        selection.forEach((e) => this.strokeContainer.add(RemovedGraphic(e.id)));
       },
     });
 
@@ -246,7 +246,7 @@ export class MySelection extends SelectionBase implements MyTool {
     this.computeSelectionCenter();
 
     const d = V2.sub(View.center, this.selectionCenter);
-    selection = selection.map(s => TranslatePersistentGraphic(s, d.x, d.y));
+    selection = selection.map((s) => TranslatePersistentGraphic(s, d.x, d.y));
 
     this.updateSelection(selection);
 
@@ -256,11 +256,13 @@ export class MySelection extends SelectionBase implements MyTool {
           this.deleteSelection();
           return true;
         } else {
-          return selection.map(e => this.strokeContainer.remove(e.id)).every(s => s);
+          selection.forEach((e) => this.strokeContainer.add(RemovedGraphic(e.id)));
+          //return selection.map((e) => this.strokeContainer.remove(e.id)).every((s) => s);
+          return true;
         }
       },
       redo: () => {
-        selection.forEach(e => this.strokeContainer.add(e));
+        selection.forEach((e) => this.strokeContainer.add(e));
       },
     });
   }
@@ -302,18 +304,18 @@ export class MySelection extends SelectionBase implements MyTool {
     // Moving selection
     let pointer: Vector2D;
     let pointerId: number;
-    container.addEventListener("pointerdown", e => {
+    container.addEventListener("pointerdown", (e) => {
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
       PointerTracker.pause();
     });
-    window.addEventListener("pointermove", e => {
+    window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
         const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
         this.setTranslation(V2.sub(newPointer, pointer));
       }
     });
-    window.addEventListener("pointerup", e => {
+    window.addEventListener("pointerup", (e) => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyTranslation();
@@ -347,16 +349,16 @@ export class MySelection extends SelectionBase implements MyTool {
       menu.appendChild(btn);
 
       let pressed = false;
-      btn.addEventListener("pointerdown", e => {
+      btn.addEventListener("pointerdown", (e) => {
         e.stopPropagation();
         btn.style.backgroundColor = "rgba(240, 240, 240, 1)";
         pressed = true;
       });
-      btn.addEventListener("pointerout", e => {
+      btn.addEventListener("pointerout", (e) => {
         btn.style.backgroundColor = "";
         pressed = false;
       });
-      btn.addEventListener("pointerup", e => {
+      btn.addEventListener("pointerup", (e) => {
         btn.style.backgroundColor = "";
         if (pressed) {
           cb();
@@ -401,21 +403,21 @@ export class MySelection extends SelectionBase implements MyTool {
     let pointer: Vector2D;
     let pointerId: number;
 
-    btn.addEventListener("pointerdown", e => {
+    btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
       this.menu.style.visibility = "hidden";
       PointerTracker.pause();
     });
-    window.addEventListener("pointermove", e => {
+    window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
         const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
         const angle = V2.angle(V2.sub(newPointer, this.selectionCenter), V2.sub(pointer, this.selectionCenter));
         this.setRotation(angle);
       }
     });
-    window.addEventListener("pointerup", e => {
+    window.addEventListener("pointerup", (e) => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyRotation();
@@ -447,20 +449,20 @@ export class MySelection extends SelectionBase implements MyTool {
     let pointer: Vector2D;
     let pointerId: number;
 
-    btn.addEventListener("pointerdown", e => {
+    btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
       PointerTracker.pause();
     });
-    window.addEventListener("pointermove", e => {
+    window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
         const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
         const factor = V2.dist(newPointer, this.selectionCenter) / V2.dist(pointer, this.selectionCenter);
         this.setScaling(factor);
       }
     });
-    window.addEventListener("pointerup", e => {
+    window.addEventListener("pointerup", (e) => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyScaling();

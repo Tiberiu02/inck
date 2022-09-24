@@ -1,4 +1,4 @@
-import { Geometry } from "../Math/Geometry";
+import { Geometry, VoidGeometry } from "../Math/Geometry";
 import { Vector2D } from "../Math/V2";
 import {
   DeserializeStroke,
@@ -15,12 +15,14 @@ import { RotateVectorGraphic, ScaleVectorGraphic, TranslateVectorGraphic, Vector
 export enum GraphicTypes {
   VECTOR,
   IMAGE,
+  REMOVED,
 }
 
-export const Serializers = {
-  STROKE: "stroke",
-  SELECTION: "selection",
-};
+export enum Serializers {
+  REMOVED = "removed",
+  STROKE = "stroke",
+  SELECTION = "selection",
+}
 
 export interface Graphic {
   readonly type: GraphicTypes;
@@ -29,28 +31,55 @@ export interface Graphic {
 
 export interface PersistentGraphic {
   readonly id: string;
-  readonly serializer: string;
+  readonly serializer: Serializers;
   readonly geometry: Geometry;
   readonly graphic: Graphic;
+  readonly timestamp: number;
 }
 
 export interface SerializedGraphic {
   readonly id: string;
-  readonly deserializer: string;
+  readonly timestamp: number;
+  readonly deserializer: Serializers;
+}
+
+export function RemovedGraphic(id: string, timestamp?: number): PersistentGraphic {
+  return {
+    id,
+    timestamp: timestamp || Date.now(),
+    serializer: Serializers.REMOVED,
+    geometry: new VoidGeometry(),
+    graphic: {
+      type: GraphicTypes.REMOVED,
+      zIndex: 0,
+    },
+  };
+}
+
+function SerializeRemoved(g: PersistentGraphic): SerializedGraphic {
+  return {
+    id: g.id,
+    timestamp: g.timestamp,
+    deserializer: g.serializer,
+  };
 }
 
 export function SerializeGraphic(graphic: PersistentGraphic): SerializedGraphic {
   if (graphic.serializer == Serializers.STROKE) {
     return SerializeStroke(graphic as Stroke);
+  } else if (graphic.serializer == Serializers.REMOVED) {
+    return SerializeRemoved(graphic);
   }
   return null;
 }
 
-export function DeserializeGraphic(data: SerializedGraphic) {
+export function DeserializeGraphic(data: SerializedGraphic): PersistentGraphic {
   let graphic = null;
   try {
     if (data.deserializer == Serializers.STROKE) {
       graphic = DeserializeStroke(data as SerializedStroke);
+    } else if (data.deserializer == Serializers.REMOVED) {
+      graphic = RemovedGraphic(data.id, data.timestamp);
     } else if (!data.deserializer) {
       graphic = DeserializeStrokeLegacy(data);
     }

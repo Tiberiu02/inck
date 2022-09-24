@@ -58,9 +58,9 @@ export default class ToolWheel {
     ToolWheel.addStyleSheets(() => document.body.appendChild(this.wheel));
 
     this.widthsWheels = {
-      pen: this.buildWidthsWheel(this.R, "pen", w => (this.width.pen = w)),
-      highlighter: this.buildWidthsWheel(this.R, "highlighter", w => (this.width.highlighter = w)),
-      shapes: this.buildWidthsWheel(this.R, "shapes", w => (this.width.shapes = w)),
+      pen: this.buildWidthsWheel(this.R, "pen", (w) => (this.width.pen = w)),
+      highlighter: this.buildWidthsWheel(this.R, "highlighter", (w) => (this.width.highlighter = w)),
+      shapes: this.buildWidthsWheel(this.R, "shapes", (w) => (this.width.shapes = w)),
     };
     this.widthsContainer = document.createElement("div");
     Object.assign(this.widthsContainer.style, {
@@ -93,7 +93,7 @@ export default class ToolWheel {
     const color = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i
       .exec(this.color)
       .slice(1)
-      .map(v => parseInt(v, 16) / 255) as RGB;
+      .map((v) => parseInt(v, 16) / 255) as RGB;
 
     if (this.tool == "pen") {
       this.toolManager.selectPen(color, WIDTHS[this.width.pen], 1);
@@ -215,7 +215,7 @@ export default class ToolWheel {
       const a = (a1 + a2) / 2;
 
       let pen = createElement("g", { class: hoverDisabled ? "" : "pen" });
-      pen.addEventListener("pointerdown", e => {
+      pen.addEventListener("pointerdown", (e) => {
         this.setColor(COLORS_PEN_HEX[i]);
         this.setTool("pen");
         this.hide();
@@ -253,7 +253,7 @@ export default class ToolWheel {
       );
 
       let highlighter = createElement("g", { class: "button_group" });
-      highlighter.addEventListener("pointerdown", e => {
+      highlighter.addEventListener("pointerdown", (e) => {
         this.setColor(COLORS_HIGHLIGHTER_HEX[i]);
         this.setTool("highlighter");
         this.hide();
@@ -291,7 +291,7 @@ export default class ToolWheel {
         const ang = a1 + (SLICE_ANGLE / N_SHAPES) * (j + 0.5);
 
         let g = createElement("g", { class: "button_group" });
-        g.addEventListener("pointerdown", e => {
+        g.addEventListener("pointerdown", (e) => {
           this.setColor(COLORS_PEN_HEX[i]);
           this.setTool("shapes");
           this.setShape(SHAPES[j].toLowerCase());
@@ -560,14 +560,14 @@ export default class ToolWheel {
       this.NewTool();
       this.registerClose();
     });
-    menu.addEventListener("pointerup", e => {
+    menu.addEventListener("pointerup", (e) => {
       const w = getHoverW(e.x, e.y);
       if (w >= 0 && w < N_WIDTHS) setW(w);
       menu.style.display = "none";
       this.NewTool();
       this.registerClose();
     });
-    menu.addEventListener("pointermove", e => {
+    menu.addEventListener("pointermove", (e) => {
       const w = getHoverW(e.x, e.y);
       for (let i = 0; i < menu.children.length; i++)
         menu.children[i].children[0].style.fill = i == w ? "rgba(220, 220, 220, 1)" : "rgba(240, 240, 240, 1)";

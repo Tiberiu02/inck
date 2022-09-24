@@ -1,8 +1,15 @@
 import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "../Rendering/RenderLoop";
 import { NetworkConnection } from "./NetworkConnection";
-import { PersistentGraphic, SerializedGraphic, SerializeGraphic, DeserializeGraphic } from "../Drawing/Graphic";
+import {
+  PersistentGraphic,
+  SerializedGraphic,
+  SerializeGraphic,
+  DeserializeGraphic,
+  RemovedGraphic,
+} from "../Drawing/Graphic";
 import { Collaborator } from "./Collaborator";
+import { NoteData } from "../../types/canvas";
 
 export class NetworkStrokeContainer implements LayeredStrokeContainer {
   private baseCanvas: LayeredStrokeContainer;
@@ -10,25 +17,40 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
   private collabs: { [id: number]: Collaborator };
   private collabsContainer: HTMLDivElement;
 
+  private localStorage: { [id: string]: SerializedGraphic };
+
   constructor(baseCanvas: LayeredStrokeContainer, network: NetworkConnection) {
     this.baseCanvas = baseCanvas;
     this.network = network;
+    this.localStorage = {};
 
     document.getElementById("note-spinner").style.display = "flex";
 
-    network.on("userId", (userId: string) => {
-      window.userId = userId;
-    });
-
-    network.on("load note", (data: any) => {
+    network.on("load note", (data: NoteData) => {
       console.log("loaded note", data);
 
-      for (let s of data.strokes) {
-        if (!s) continue;
+      // TO DO: initialize strokesDict with data.strokes after DB redesign
+      const strokesDict: { [id: string]: SerializedGraphic } = {};
+      const strokes = data.strokes.filter((s) => s.timestamp).sort((a, b) => a.timestamp - b.timestamp);
+      for (let stroke of strokes) {
+        if (stroke && stroke.id) {
+          strokesDict[stroke.id] = stroke;
+        }
+      }
 
-        const stroke = DeserializeGraphic(s);
-        if (stroke) {
-          this.baseCanvas.add(stroke);
+      for (let stroke of Object.values(strokesDict)) {
+        if (!this.localStorage[stroke.id] || this.localStorage[stroke.id].timestamp < stroke.timestamp) {
+          this.localStorage[stroke.id] = stroke;
+          const deserializedGraphic = DeserializeGraphic(stroke);
+          if (deserializedGraphic) {
+            this.baseCanvas.add(deserializedGraphic);
+          }
+        }
+      }
+
+      for (const stroke of Object.values(this.localStorage)) {
+        if (!strokesDict[stroke.id] || strokesDict[stroke.id].timestamp < this.localStorage[stroke.id].timestamp) {
+          network.emit("new stroke", stroke);
         }
       }
 
@@ -39,20 +61,17 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
     network.on("load strokes", (data: SerializedGraphic[]) => {
       console.log("loaded strokes", data);
 
-      for (let s of data) {
-        if (!s) continue;
+      for (let stroke of data) {
+        if (!stroke) continue;
 
-        const stroke = DeserializeGraphic(s);
-        if (stroke) {
-          this.baseCanvas.add(stroke);
+        const deserializedStroke = DeserializeGraphic(stroke);
+        if (deserializedStroke) {
+          this.baseCanvas.add(deserializedStroke);
         }
+
+        this.localStorage[stroke.id] = stroke;
       }
 
-      RenderLoop.scheduleRender();
-    });
-
-    network.on("unload strokes", (ids: string[]) => {
-      ids.forEach(id => this.baseCanvas.remove(id));
       RenderLoop.scheduleRender();
     });
 
@@ -86,13 +105,14 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
   }
 
   add(graphic: PersistentGraphic): void {
-    this.baseCanvas.add(graphic);
-    this.network.emit("new stroke", SerializeGraphic(graphic));
-  }
+    // Timestamp all strokes added by the user
+    graphic = { ...graphic, timestamp: Date.now() };
 
-  remove(id: string): boolean {
-    this.network.emit("remove stroke", id);
-    return this.baseCanvas.remove(id);
+    const serializedGraphic = SerializeGraphic(graphic);
+    this.localStorage[graphic.id] = serializedGraphic;
+    this.baseCanvas.add(graphic);
+
+    this.network.emit("new stroke", serializedGraphic);
   }
 
   getAll(): PersistentGraphic[] {

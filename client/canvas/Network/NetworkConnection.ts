@@ -9,9 +9,9 @@ export const SERVER_PORT = 8080;
 
 export class NetworkConnection {
   private socket: Socket;
-  private onConnect: () => void;
   private connected: boolean;
   private canWrite: boolean;
+  private strokes = null;
 
   constructor() {
     this.canWrite = false;
@@ -28,7 +28,7 @@ export class NetworkConnection {
       },
     });
 
-    this.socket.on("connect_error", err => {
+    this.socket.on("connect_error", (err) => {
       console.log(err.message);
       window.location.href = "/";
     });
@@ -42,27 +42,26 @@ export class NetworkConnection {
       window.location.href = "/";
     });
 
-    this.onConnect = () => {};
     this.connected = false;
 
     this.socket.on("connect", () => {
       this.connected = true;
       console.log("Connected");
-      this.onConnect();
+      document.getElementById("offline-warning").style.visibility = "hidden";
     });
 
-    window.addEventListener("pointermove", e => this.updatePointer(new Vector2D(...View.getCanvasCoords(e.x, e.y))));
+    this.socket.on("disconnect", () => {
+      this.connected = false;
+      console.log("Disconneccted");
+      document.getElementById("offline-warning").style.visibility = "visible";
+    });
+
+    window.addEventListener("pointermove", (e) => this.updatePointer(new Vector2D(...View.getCanvasCoords(e.x, e.y))));
   }
 
   emit(name: string, ...args: any[]) {
     if (this.connected) {
       this.socket.emit(name, ...args);
-    } else {
-      const onConnect = this.onConnect;
-      this.onConnect = () => {
-        onConnect();
-        this.socket.emit(name, ...args);
-      };
     }
   }
 
@@ -91,9 +90,9 @@ export class NetworkConnection {
     this.updateCollab("updateTool", method, ...args);
   }
 
-  setTool(tool: SerializedTool, directedAtUserId?: string) {
-    if (directedAtUserId) {
-      this.updateCollabDirected(directedAtUserId, "setTool", tool);
+  setTool(tool: SerializedTool, targetCollabId?: string) {
+    if (targetCollabId) {
+      this.updateCollabDirected(targetCollabId, "setTool", tool);
     } else {
       this.updateCollab("setTool", tool);
     }

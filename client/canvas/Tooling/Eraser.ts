@@ -2,6 +2,8 @@ import { ActionStack } from "./ActionsStack";
 import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { MyTool } from "./Tool";
 import { NetworkConnection } from "../Network/NetworkConnection";
+import { GenerateRandomString } from "../Math/RandomString";
+import { RemovedGraphic } from "../Drawing/Graphic";
 
 export class StrokeEraser implements MyTool {
   private x: number;
@@ -27,16 +29,16 @@ export class StrokeEraser implements MyTool {
       const line = { x1: x, y1: y, x2, y2 };
       this.strokeContainer
         .getAll()
-        .filter(s => s && s.geometry.intersectsLine(line))
-        .forEach(s => {
-          this.strokeContainer.remove(s.id);
+        .filter((s) => s && s.geometry.intersectsLine(line))
+        .forEach((s) => {
+          this.strokeContainer.add(RemovedGraphic(s.id));
           this.actionStack.push({
             undo: () => {
               // TODO: Add stroke at the same index as before
-              this.strokeContainer.add((s = { ...s, id: window.userId + "-" + Date.now() }));
+              this.strokeContainer.add((s = { ...s, id: GenerateRandomString() }));
               return true;
             },
-            redo: () => this.strokeContainer.remove(s.id),
+            redo: () => this.strokeContainer.add(RemovedGraphic(s.id)),
           });
         });
     } else {

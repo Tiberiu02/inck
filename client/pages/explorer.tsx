@@ -13,6 +13,7 @@ import JSZip from "jszip";
 import { Spinner } from "../components/Spinner";
 import { IconType } from "react-icons/lib";
 import { twMerge } from "tailwind-merge";
+import { MaterialSymbol } from "../components/MaterialSymbol";
 
 enum FileTypes {
   NOTE = "note",
@@ -911,10 +912,6 @@ enum Modals {
   REMOVE_FILES,
   MOVE_FILES,
   EXPORT_FILES,
-}
-
-function MaterialSymbol({ name, className = "" }: { name: string; className?: string }) {
-  return <span className={"material-symbols-outlined " + className}>{name}</span>;
 }
 
 function NavBar({ children }) {

@@ -69,7 +69,7 @@ export default class App {
 
     this.network.on("load note", (data: any) => {
       // PDF import
-      if (data.pdfUrl) {
+      if (data.pdfUrl && !this.pdfBackground) {
         this.pdfBackground = new PdfBackground(GetApiPath(data.pdfUrl), yMax);
       }
     });

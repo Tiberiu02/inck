@@ -101,7 +101,7 @@ class StrokeCluster {
 
     const status = buffer.remove(id);
     if (buffer.isEmpty()) {
-      this.buffers = this.buffers.filter(b => b != buffer);
+      this.buffers = this.buffers.filter((b) => b != buffer);
     }
     return status;
   }
@@ -118,20 +118,23 @@ export class BaseStrokeContainer implements LayeredStrokeContainer {
   private strokes: { [id: string]: PersistentVectorGraphic };
 
   constructor(numLayers: number) {
-    this.layers = [...Array(numLayers)].map(_ => new StrokeCluster());
+    this.layers = [...Array(numLayers)].map((_) => new StrokeCluster());
     this.strokes = {};
   }
 
   add(graphic: PersistentGraphic): void {
+    if (this.strokes[graphic.id]) {
+      this.remove(graphic.id);
+    }
     if (graphic.graphic.type == GraphicTypes.VECTOR) {
       const vectorGraphic = graphic.graphic as VectorGraphic;
       this.strokes[graphic.id] = graphic as PersistentVectorGraphic;
       this.layers[vectorGraphic.zIndex].addStroke(graphic.id, vectorGraphic.vector);
-      RenderLoop.scheduleRender();
     }
+    RenderLoop.scheduleRender();
   }
 
-  remove(id: string): boolean {
+  private remove(id: string): boolean {
     if (this.strokes[id] == undefined) {
       return false;
     }

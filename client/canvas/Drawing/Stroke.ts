@@ -18,7 +18,6 @@ export interface Stroke extends PersistentGraphic {
   readonly color: RGB;
   readonly width: number;
   readonly points: StrokePoint[];
-  readonly timestamp: number;
   readonly zIndex: number;
   readonly graphic: VectorGraphic;
 }
@@ -27,12 +26,11 @@ export interface SerializedStroke extends SerializedGraphic {
   readonly color: [number, number, number];
   readonly width: number;
   readonly data: number[];
-  readonly timestamp: number;
   readonly zIndex: number;
 }
 
 export function SerializeStroke(stroke: Stroke): SerializedStroke {
-  const data = [].concat(...stroke.points.map(p => [p.x, p.y, p.pressure, p.timestamp]));
+  const data = [].concat(...stroke.points.map((p) => [p.x, p.y, p.pressure, p.timestamp]));
   return {
     id: stroke.id,
     deserializer: Serializers.STROKE,
@@ -80,26 +78,28 @@ export function TranslateStroke(stroke: Stroke, dx: number, dy: number): Stroke 
     ...stroke,
     geometry: stroke.geometry.translate(dx, dy),
     graphic: TranslateVectorGraphic(stroke.graphic, dx, dy),
-    points: stroke.points.map(p => ({ ...p, x: p.x + dx, y: p.y + dy })),
+    points: stroke.points.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })),
   };
 }
 
 export function RotateStroke(stroke: Stroke, angle: number, center: Vector2D): Stroke {
-  const points = stroke.points.map(p => ({ ...p, ...V2.rot(p, angle, center) }));
+  const points = stroke.points.map((p) => ({ ...p, ...V2.rot(p, angle, center) }));
   return {
     ...stroke,
-    geometry: new PolyLine(points.map(p => new Vector3D(p.x, p.y, GetPointRadius(stroke.width, p.pressure)))),
+    geometry: new PolyLine(points.map((p) => new Vector3D(p.x, p.y, GetPointRadius(stroke.width, p.pressure)))),
     graphic: RotateVectorGraphic(stroke.graphic, angle, center),
     points: points,
   };
 }
 
 export function ScaleStroke(stroke: Stroke, factor: number, center: Vector2D): Stroke {
-  const points = stroke.points.map(p => ({ ...p, ...V2.scale(p, factor, center) }));
+  const points = stroke.points.map((p) => ({ ...p, ...V2.scale(p, factor, center) }));
   return {
     ...stroke,
     width: stroke.width * factor,
-    geometry: new PolyLine(points.map(p => new Vector3D(p.x, p.y, GetPointRadius(stroke.width * factor, p.pressure)))),
+    geometry: new PolyLine(
+      points.map((p) => new Vector3D(p.x, p.y, GetPointRadius(stroke.width * factor, p.pressure)))
+    ),
     graphic: ScaleVectorGraphic(stroke.graphic, factor, center),
     points: points,
   };

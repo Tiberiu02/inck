@@ -3,6 +3,7 @@ import { FullScreenButton } from "../../components/FullScreenButton";
 import { useRouter } from "next/router";
 import Canvas from "../../components/Canvas";
 import { LoadingNoteAnimation } from "../../components/LoadingNoteAnimation";
+import { OfflineWarning } from "../../components/OfflineWarning";
 
 export default function Note() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function Note() {
       <Canvas />
       <FullScreenButton />
       <LoadingNoteAnimation />
+      <OfflineWarning />
     </div>
   );
 }

@@ -16,9 +16,6 @@ export class PageSizeTracker implements LayeredStrokeContainer {
     this.canvas.add(graphic);
   }
 
-  remove(id: string): boolean {
-    return this.canvas.remove(id);
-  }
   getAll(): PersistentGraphic[] {
     return this.canvas.getAll();
   }

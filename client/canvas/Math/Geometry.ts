@@ -76,7 +76,7 @@ export class PolyLine implements Geometry {
   }
 
   translate(dx: number, dy: number): PolyLine {
-    return new PolyLine(this.points.map(p => new Vector3D(p.x + dx, p.y + dy, p.z)));
+    return new PolyLine(this.points.map((p) => new Vector3D(p.x + dx, p.y + dy, p.z)));
   }
 
   intersectsLine(line: LineSegment): boolean {
@@ -148,6 +148,35 @@ export class PolyLine implements Geometry {
       }
     }
 
+    return false;
+  }
+}
+
+export class VoidGeometry implements Geometry {
+  readonly boundingBox: Rectangle;
+
+  constructor() {
+    this.boundingBox = {
+      xMin: Infinity,
+      xMax: -Infinity,
+      yMin: Infinity,
+      yMax: -Infinity,
+    };
+  }
+
+  translate(dx: number, dy: number): VoidGeometry {
+    return this;
+  }
+
+  intersectsLine(line: LineSegment): boolean {
+    return false;
+  }
+
+  contains(p: Vector2D): boolean {
+    return false;
+  }
+
+  overlapsPoly(poly: PolyLine): boolean {
     return false;
   }
 }

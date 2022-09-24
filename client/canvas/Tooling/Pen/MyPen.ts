@@ -11,6 +11,8 @@ import { RenderLoop } from "../../Rendering/RenderLoop";
 import { EmitterPen, PenController, SerializedPen } from "./TheirPen";
 import { DetectShape } from "../../ShapeRecognition/ShapeRecognition";
 import { GL } from "../../Rendering/GL";
+import { GenerateRandomString } from "../../Math/RandomString";
+import { RemovedGraphic } from "../../Drawing/Graphic";
 
 const LONG_PRESS_TIME = 500; // (ms)
 const INTERVAL_TIME = 100; //   (ms)
@@ -126,7 +128,7 @@ export class MyPen implements MyTool {
     this.remoteController.setWidth(width);
     this.strokeBuilder = new StrokeBuilder(this.timestamp, this.zIndex, this.color, width);
 
-    newPoints.forEach(p => this.strokeBuilder.push(p));
+    newPoints.forEach((p) => this.strokeBuilder.push(p));
 
     RenderLoop.scheduleRender();
   }
@@ -144,11 +146,16 @@ export class MyPen implements MyTool {
   release() {
     if (this.drawing) {
       // Add stroke
-      const id = window.userId + "-" + Date.now();
+      const id = GenerateRandomString();
       const stroke = this.strokeBuilder.getStroke(id);
+
       this.strokeContainer.add(stroke);
+
       this.actionStack.push({
-        undo: (): boolean => this.strokeContainer.remove(stroke.id),
+        undo: (): boolean => {
+          this.strokeContainer.add(RemovedGraphic(stroke.id));
+          return true;
+        },
         redo: () => this.strokeContainer.add(stroke),
       });
 
