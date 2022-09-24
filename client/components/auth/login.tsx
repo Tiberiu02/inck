@@ -4,7 +4,7 @@ import { TrackLogin } from "../Analytics";
 import { setAuthToken } from "../AuthToken";
 import GetApiPath from "../GetApiPath";
 
-export default function Login({ facebookCallback, googleCallback, toSignUpCallback, toPasswordResetCallback }) {
+export default function Login({ toSignUpCallback, toPasswordResetCallback }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -96,7 +96,7 @@ export default function Login({ facebookCallback, googleCallback, toSignUpCallba
           {error}
         </div>
 
-        <button className={buttonStyle} onClick={() => login(email, password)}>
+        <button className={buttonStyle} onClick={() => login()}>
           Sign in
         </button>
       </div>

@@ -1,6 +1,6 @@
 import { Spinner } from "./Spinner";
 
-function LoadingMessage({ children, id, className }) {
+function LoadingMessage({ children, id, className = "" }) {
   return (
     <div
       id={id}

@@ -123,9 +123,9 @@ export default function Settings() {
               </a>
                 */}
               <Link href="/explorer">
-                <a className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
+                <div className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
                   <span className="material-symbols-outlined text-2xl">folder</span>
-                </a>
+                </div>
               </Link>
               <button
                 onClick={() => disconnect()}
