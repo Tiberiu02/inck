@@ -11,7 +11,8 @@ export class NetworkConnection {
   private socket: Socket;
   private connected: boolean;
   private canWrite: boolean;
-  private strokes = null;
+
+  public docId: string;
 
   constructor() {
     this.canWrite = false;
@@ -19,12 +20,12 @@ export class NetworkConnection {
     const pathname = window.location.pathname;
     const wloc = pathname.match(/\/note\/([\w\d_]+)/);
 
-    const docId = (wloc && wloc[1]) || "";
+    this.docId = (wloc && wloc[1]) || "";
 
     this.socket = io(`${window.location.host.split(":")[0]}:${SERVER_PORT}`, {
       query: {
         authToken: getAuthToken(),
-        docId: docId,
+        docId: this.docId,
       },
     });
 

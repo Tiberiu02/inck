@@ -11,18 +11,38 @@ import {
 import { Collaborator } from "./Collaborator";
 import { NoteData } from "../../types/canvas";
 
+const CACHING_INTERVAL = 5000;
+
+function LoadCachedNote(noteId: string) {
+  const cache = window.localStorage && window.localStorage.getItem(`note-cache-${noteId}`);
+  return cache ? JSON.parse(cache) : {};
+}
+
+function UpdateCachedNote(noteId: string, data: any) {
+  if (window.localStorage) {
+    window.localStorage.setItem(`note-cache-${noteId}`, JSON.stringify(data));
+  }
+}
+
 export class NetworkStrokeContainer implements LayeredStrokeContainer {
   private baseCanvas: LayeredStrokeContainer;
   private network: NetworkConnection;
   private collabs: { [id: number]: Collaborator };
   private collabsContainer: HTMLDivElement;
 
-  private localStorage: { [id: string]: SerializedGraphic };
+  private strokes: { [id: string]: SerializedGraphic };
+  private cacheIsUpToDate: boolean;
 
   constructor(baseCanvas: LayeredStrokeContainer, network: NetworkConnection) {
     this.baseCanvas = baseCanvas;
     this.network = network;
-    this.localStorage = {};
+
+    this.strokes = LoadCachedNote(network.docId);
+    console.log("storage", this.strokes);
+    for (const stroke of Object.values(this.strokes)) {
+      baseCanvas.add(DeserializeGraphic(stroke));
+    }
+    this.cacheIsUpToDate = true;
 
     document.getElementById("note-spinner").style.display = "flex";
 
@@ -39,8 +59,8 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
       }
 
       for (let stroke of Object.values(strokesDict)) {
-        if (!this.localStorage[stroke.id] || this.localStorage[stroke.id].timestamp < stroke.timestamp) {
-          this.localStorage[stroke.id] = stroke;
+        if (!this.strokes[stroke.id] || this.strokes[stroke.id].timestamp < stroke.timestamp) {
+          this.strokes[stroke.id] = stroke;
           const deserializedGraphic = DeserializeGraphic(stroke);
           if (deserializedGraphic) {
             this.baseCanvas.add(deserializedGraphic);
@@ -48,13 +68,14 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
         }
       }
 
-      for (const stroke of Object.values(this.localStorage)) {
-        if (!strokesDict[stroke.id] || strokesDict[stroke.id].timestamp < this.localStorage[stroke.id].timestamp) {
+      for (const stroke of Object.values(this.strokes)) {
+        if (!strokesDict[stroke.id] || strokesDict[stroke.id].timestamp < this.strokes[stroke.id].timestamp) {
           network.emit("new stroke", stroke);
         }
       }
 
       document.getElementById("note-spinner").style.display = "none";
+      this.cacheIsUpToDate = false;
       RenderLoop.scheduleRender();
     });
 
@@ -69,8 +90,10 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
           this.baseCanvas.add(deserializedStroke);
         }
 
-        this.localStorage[stroke.id] = stroke;
+        this.strokes[stroke.id] = stroke;
       }
+
+      this.cacheIsUpToDate = false;
 
       RenderLoop.scheduleRender();
     });
@@ -102,6 +125,8 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
         RenderLoop.scheduleRender();
       });
     });
+
+    setInterval(() => this.updateCache(), CACHING_INTERVAL);
   }
 
   add(graphic: PersistentGraphic): void {
@@ -109,7 +134,8 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
     graphic = { ...graphic, timestamp: Date.now() };
 
     const serializedGraphic = SerializeGraphic(graphic);
-    this.localStorage[graphic.id] = serializedGraphic;
+    this.strokes[graphic.id] = serializedGraphic;
+    this.cacheIsUpToDate = false;
     this.baseCanvas.add(graphic);
 
     this.network.emit("new stroke", serializedGraphic);
@@ -124,6 +150,13 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
 
     for (let c of Object.values(this.collabs)) {
       c.render(layerIndex);
+    }
+  }
+
+  private updateCache() {
+    if (!this.cacheIsUpToDate) {
+      this.cacheIsUpToDate = true;
+      UpdateCachedNote(this.network.docId, this.strokes);
     }
   }
 }
