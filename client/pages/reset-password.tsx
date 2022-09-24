@@ -14,8 +14,8 @@ export default function ResetPassword() {
   let email = "";
 
   if (router.query) {
-    token = router.query.token;
-    email = router.query.email;
+    token = router.query.token as string;
+    email = router.query.email as string;
   }
 
   const sendResetRequest = async () => {

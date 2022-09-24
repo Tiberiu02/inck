@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import { TrackSignUp } from "../Analytics";
@@ -142,13 +143,13 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
             <input type="checkbox" onClick={toggleTerms} className="accent-primary mr-3" checked={acceptTerms} />
             <div onClick={toggleTerms}>
               I have read and accepted Inck&apos;s
-              <a target="_blank" href="/tos.pdf" className={undelineStyle}>
+              <Link target="_blank" href="/tos.pdf" className={undelineStyle}>
                 terms of service
-              </a>
+              </Link>
               &nbsp;and
-              <a target="_blank" href="/privacy.pdf" className={undelineStyle}>
+              <Link target="_blank" href="/privacy.pdf" className={undelineStyle}>
                 privacy policy
-              </a>
+              </Link>
             </div>
           </div>
 

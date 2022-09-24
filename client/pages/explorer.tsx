@@ -444,7 +444,7 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
   const isNote = file.type == FileTypes.NOTE;
 
   const [newName, setNewName] = useState(file.name);
-  const [newNoteAccess, setNewNoteAccess] = isNote ? useState((file as NoteInfo).defaultAccess) : [];
+  const [newNoteAccess, setNewNoteAccess] = useState(isNote ? (file as NoteInfo).defaultAccess : []);
 
   const saveEdits = async () => {
     await PostFileEdit(file._id, newName.trim(), newNoteAccess, {});
