@@ -10,6 +10,10 @@ declare global {
     app?: App;
     dataLayer: any[];
     gtag: Function;
+
+    // tawk.to
+    Tawk_API: any;
+    Tawk_LoadStart: any;
   }
 }
 

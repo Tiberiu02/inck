@@ -14,6 +14,7 @@ import { Spinner } from "../components/Spinner";
 import { IconType } from "react-icons/lib";
 import { twMerge } from "tailwind-merge";
 import { MaterialSymbol } from "../components/MaterialSymbol";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 enum FileTypes {
   NOTE = "note",
@@ -1171,6 +1172,32 @@ function Explorer({ files, refreshFiles }) {
   );
 }
 
+function InitTawkTo() {
+  window.Tawk_API = window.Tawk_API || {};
+  window.Tawk_LoadStart = new Date();
+
+  const token: any = jwt.decode(getAuthToken());
+  const email: string = token.email;
+  const name = email
+    .split("@")[0]
+    .replaceAll(".", " ")
+    .toLowerCase()
+    .replace(/(^.|\s+.)/g, (m) => m.toUpperCase());
+
+  window.Tawk_API.visitor = {
+    name,
+    email,
+    hash: "hash-value",
+  };
+
+  let s1 = document.createElement("script");
+  s1.async = true;
+  s1.src = "https://embed.tawk.to/632ee39854f06e12d89699a8/1gdnii3gf";
+  s1.charset = "UTF-8";
+  s1.setAttribute("crossorigin", "*");
+  document.body.append(s1);
+}
+
 export default function ExplorerLoader() {
   const [files, setFiles] = useState(null);
 
@@ -1181,6 +1208,7 @@ export default function ExplorerLoader() {
 
   useEffect(() => {
     refreshFiles();
+    InitTawkTo();
   }, []);
 
   if (files) {
