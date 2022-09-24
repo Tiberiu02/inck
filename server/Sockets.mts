@@ -11,12 +11,14 @@ import {
   JwtPayload,
   Stroke,
 } from "./BackendInterfaces.mjs";
+import { Timer } from "./Timer.mjs";
+import { logEvent } from "./logging/AppendAnalytics.mjs";
 
 function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {
     return;
   }
-
+  const timer = new Timer();
   for (let other of docs[user.docId].users) {
     if (other != user) {
       other.socket.emit(`collaborator remove ${user.id}`);
@@ -28,13 +30,19 @@ function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, 
       docs[user.docId].users.length
     } users remaining`
   );
+  logEvent("disconnect_user_wsocket", {
+    userIp: user.ip.toString(),
+    usersLeftCount: Object.keys(docs).length.toString(),
+    docId: user.docId,
+    executionTime: timer.elapsed().toString(),
+  });
 }
 
 async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId || !user.canWrite || typeof id != "string") {
     return;
   }
-
+  const timer = new Timer();
   for (let other of docs[user.docId].users) {
     if (other != user) {
       other.socket.emit("unload strokes", [id]);
@@ -42,6 +50,10 @@ async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string
   }
 
   await NoteModel.updateOne({ id: user.docId }, { $pull: { strokes: { id: id } } });
+  logEvent("remove_stroke", {
+    docId: user.docId,
+    executionTime: timer.elapsed().toString(),
+  });
 }
 
 async function newStrokeFn(
@@ -53,6 +65,7 @@ async function newStrokeFn(
   if (!user.docId || !user.canWrite) {
     return;
   }
+  const timer = new Timer();
   console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /note/${user.docId}`);
   const [uId, sId] = stroke.id.split("-");
 
@@ -70,6 +83,10 @@ async function newStrokeFn(
   }
 
   await NoteModel.updateOne({ id: user.docId }, { $push: { strokes: stroke } });
+  logEvent("draw_new_stroke", {
+    docId: user.docId,
+    executionTime: timer.elapsed().toString(),
+  });
 }
 
 async function docRights(docId: string, user: DrawingUser) {
@@ -128,7 +145,7 @@ async function requestDocumentFn(
   if (user.docId) {
     return;
   }
-
+  const timer = new Timer();
   const noteData: DBNote = await NoteModel.findOne({ id: id });
 
   const noteExists = noteData !== null;
@@ -186,18 +203,28 @@ async function requestDocumentFn(
   }
 
   socket.emit("load note", note);
+  logEvent("request_document_strokes", {
+    docId: id,
+    userIp: user.ip,
+    executionTime: timer.elapsed().toString(),
+  });
 }
 
 function remoteControlFn(args: any, user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
     return;
   }
-
+  const timer = new Timer();
   for (let other of docs[user.docId].users) {
     if (other != user) {
       other.socket.emit(`collaborator update ${user.id}`, ...args);
     }
   }
+  logEvent("remote_control_fn", {
+    docId: user.docId,
+    connectedUsersCount: docs[user.docId].users.length.toString(),
+    executionTime: timer.elapsed().toString(),
+  });
 }
 
 function directedRemoteControlFn(
@@ -210,12 +237,17 @@ function directedRemoteControlFn(
   if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
     return;
   }
-
+  const timer = new Timer();
   for (let other of docs[user.docId].users) {
     if (other.id == targetId) {
       other.socket.emit(`collaborator update ${user.id}`, ...args);
     }
   }
+  logEvent("directed_remote_control_fn", {
+    docId: user.docId,
+    connectedUsersCount: docs[user.docId].users.length.toString(),
+    executionTime: timer.elapsed().toString(),
+  });
 }
 
 export function remoteControl(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {

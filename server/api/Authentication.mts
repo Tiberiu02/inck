@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { sendPasswordConfirmationEmail, sendPasswordRecoveryEmail, sendRegistrationEmail } from "../email/Mailer.mjs";
 import { Request, Response } from "express";
 import { DBUser } from "../BackendInterfaces.mjs";
+import { logEvent } from "../logging/AppendAnalytics.mjs";
 
 function validateEmail(email: string) {
   return String(email)
@@ -71,7 +72,8 @@ export async function register(req: Request, res: Response) {
 
     user.token = token;
     sendRegistrationEmail(email, firstName, lastName);
-
+    const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress)?.toString() || "undefined";
+    logEvent("user_registration", { email, ip });
     return res.status(201).send({ email, token });
   } catch (err) {
     console.log(err);
@@ -97,7 +99,8 @@ export async function login(req: Request, res: Response) {
         },
         process.env.JWT_TOKEN as string
       );
-
+      const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress)?.toString() || "undefined";
+      logEvent("user_login", { email, ip });
       return res.status(200).send({ email, token });
     }
 
@@ -190,6 +193,8 @@ export async function changePasswordEndpoint(req: Request, res: Response) {
 
     res.status(201).send({ status: "success" });
     await sendPasswordConfirmationEmail(userEntry.email, userEntry.firstName, userEntry.lastName);
+    const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress)?.toString() || "undefined";
+    logEvent("change_password", { email, ip });
   } catch (err) {
     console.log("Error while setting new password");
     console.log(err);

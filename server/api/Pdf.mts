@@ -6,6 +6,8 @@ import { FileModel, NoteModel } from "../db/Models.mjs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { Request, Response } from "express";
+import { Timer } from "../Timer.mjs";
+import { logEvent } from "../logging/AppendAnalytics.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,6 +22,7 @@ function hashFile(buffer) {
 
 export async function receivePDF(req: Request, res: Response) {
   try {
+    const timer = new Timer();
     const pdfData = req.files.file.data;
     const { name, parentDir, defaultAccess } = req.body;
 
@@ -50,7 +53,14 @@ export async function receivePDF(req: Request, res: Response) {
     const allFiles = await FileModel.find({
       owner: token.userId,
     });
-
+    logEvent("create_auth_file", {
+      userId: token.userId,
+      fileId: newFileId,
+      type: "note",
+      name,
+      executionTime: timer.elapsed().toString(),
+      pdf: "true",
+    });
     return res.status(201).send({
       status: "success",
       files: allFiles,
@@ -62,6 +72,15 @@ export async function receivePDF(req: Request, res: Response) {
 }
 
 export async function getPDF(req: Request, res: Response) {
-  const pdfName = req.params.pdfName;
-  res.sendFile(join(__dirname, `../../user-data/pdfs/${pdfName}.pdf`));
+  try {
+    const timer = new Timer();
+    const pdfName = req.params.pdfName;
+    res.sendFile(join(__dirname, `../../user-data/pdfs/${pdfName}.pdf`));
+    logEvent("serving_pdf_file", {
+      pdfName,
+      executionTime: timer.elapsed().toString(),
+    });
+  } catch (err) {
+    console.error(err);
+  }
 }

@@ -3,21 +3,38 @@ const fs = _fs.promises;
 import AWS from "aws-sdk";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import { Timer } from "../Timer.mjs";
+import { logEvent } from "../logging/AppendAnalytics.mjs";
 
 dotenv.config();
 
 async function loadRegistrationTemplate() {
+  const timer = new Timer();
   const template = await fs.readFile("server/email/templates/invitation.html");
+  logEvent("load_email_template", {
+    templateName: "invitation",
+    executionTime: timer.elapsed().toString(),
+  });
   return template.toString();
 }
 
 async function loadPasswordResetTemplate() {
+  const timer = new Timer();
   const template = await fs.readFile("server/email/templates/password-recovery.html");
+  logEvent("load_email_template", {
+    templateName: "password-recovery",
+    executionTime: timer.elapsed().toString(),
+  });
   return template.toString();
 }
 
 async function loadPasswordConfirmationTemplate() {
+  const timer = new Timer();
   const template = await fs.readFile("server/email/templates/password-recovery-confirmation.html");
+  logEvent("load_email_template", {
+    templateName: "password-recovery-confirmation",
+    executionTime: timer.elapsed().toString(),
+  });
   return template.toString();
 }
 
@@ -43,6 +60,7 @@ function fillTemplate(html?: string, data?: { [id: string]: string }) {
 
 async function sendEmail(recipient: string, subject: string, htmlBody: string) {
   try {
+    const timer = new Timer();
     // create reusable transporter object using the default SMTP transport
     let transporter = nodemailer.createTransport({
       // @ts-expect-error
@@ -69,6 +87,11 @@ async function sendEmail(recipient: string, subject: string, htmlBody: string) {
     // Preview only available when sending through an Ethereal account
     console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
     // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
+    logEvent("send_email", {
+      recipient,
+      subject,
+      executionTime: timer.elapsed().toString(),
+    });
   } catch (e) {
     console.error(e);
   }

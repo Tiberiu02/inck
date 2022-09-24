@@ -4,6 +4,8 @@ import { ObjectId } from "mongodb";
 import { exploreTree } from "./FsTreeExplorer.mjs";
 import { Request, Response } from "express";
 import { DBUser } from "../BackendInterfaces.mjs";
+import { Timer } from "../Timer.mjs";
+import { logEvent } from "../logging/AppendAnalytics.mjs";
 
 export enum NoteAccess {
   private = "private",
@@ -37,11 +39,17 @@ export async function getAccountDetailsFromToken(req: Request, res: Response) {
  */
 export async function getFilesFn(req: Request, res: Response) {
   try {
+    const timer = new Timer();
     const jwtToken = process.env.JWT_TOKEN as string;
     const token = jwt.verify(req.body.token, jwtToken) as JwtPayload;
     const files = await FileModel.find({ owner: token.userId });
 
     res.status(201).send({ files });
+    logEvent("get_files_for_explorer", {
+      userId: token.userId,
+      filesCount: files.length,
+      executionTime: timer.elapsed().toString(),
+    });
   } catch (err) {
     console.log(err);
     res.status(400).send({ error: "Unable to fetch files" });
@@ -65,7 +73,7 @@ export async function getThrashedFilesFn(req: Request, res: Response) {
   }
 }
 
-function generateRandomString(n) {
+function generateRandomString(n: number) {
   let randomString = "";
   let characters = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -75,7 +83,7 @@ function generateRandomString(n) {
   return randomString;
 }
 
-export async function generateNewFileName(n) {
+export async function generateNewFileName(n: number) {
   let name = generateRandomString(n);
 
   let fileAlreadyExists = false;
@@ -127,9 +135,10 @@ export async function insertNewNoteInDB({
 
 export async function createFileFn(req: Request, res: Response) {
   /**
-   * Create authenticated note
+   * Create authenticated note without pdf background
    */
   try {
+    const timer = new Timer();
     if (req.body.type != "note" && req.body.type != "folder") {
       res.status(400).send({ error: "Invalid request" });
     }
@@ -150,6 +159,14 @@ export async function createFileFn(req: Request, res: Response) {
       owner: token.userId,
     });
 
+    logEvent("create_auth_file", {
+      userId: token.userId,
+      fileId: newFileId,
+      type: req.body.type,
+      name: req.body.name,
+      executionTime: timer.elapsed().toString(),
+      pdf: "false",
+    });
     return res.status(201).send({
       message: "success",
       files: allFiles,
@@ -162,6 +179,7 @@ export async function createFileFn(req: Request, res: Response) {
 
 export async function removeFilesFn(req: Request, res: Response) {
   try {
+    const timer = new Timer();
     const { notesToRemove } = req.body;
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
 
@@ -184,7 +202,11 @@ export async function removeFilesFn(req: Request, res: Response) {
     const allFiles = await FileModel.find({
       owner: token.userId,
     });
-
+    logEvent("remove_files_from_explorer", {
+      userId: token.userId,
+      filesCount: allFiles.length,
+      executionTime: timer.elapsed().toString(),
+    });
     return res.status(201).send({
       message: "success",
       files: allFiles,
@@ -293,6 +315,7 @@ function validVisibility(visibility: NoteAccess) {
 
 export async function editFileFn(req: Request, res: Response) {
   try {
+    const timer = new Timer();
     const { id, newName, newVisibility } = req.body;
     if (!validVisibility(newVisibility)) {
       console.log("Invalid request: visibility requested: " + newVisibility);
@@ -323,7 +346,12 @@ export async function editFileFn(req: Request, res: Response) {
     const allFiles = await FileModel.find({
       owner: token.userId,
     });
-
+    logEvent("edit_file_from_explorer", {
+      user: token.userId,
+      newName: newName,
+      newVisibility: newVisibility,
+      executionTime: timer.elapsed().toString(),
+    });
     return res.status(201).send({
       message: "success",
       files: allFiles,
