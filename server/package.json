@@ -39,7 +39,6 @@
     "socket.io-client": "^4.5.1",
     "tailwind-merge": "^1.6.0",
     "ts-node": "^10.9.1",
-    "typescript": "^4.8.3",
     "universal-cookie": "^4.0.4",
     "uuid": "^9.0.0"
   },
@@ -58,6 +57,7 @@
     "ngrok": "^4.3.1",
     "postcss": "^8.4.12",
     "postman": "^0.2.0",
-    "tailwindcss": "^3.1.8"
+    "tailwindcss": "^3.1.8",
+    "typescript": "^4.8.3"
   }
 }

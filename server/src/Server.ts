@@ -37,6 +37,7 @@ import {
 import { NoteModel } from "./db/Models.js";
 import { getPDF, receivePDF } from "./api/Pdf.js";
 import { DrawingUser, DrawnDocument } from "./BackendInterfaces.js";
+import { API } from "./api/index.js";
 
 const MILLIS_PER_WEEK = 604800000;
 const MILLIS_PER_DAY = 86400000;
@@ -97,6 +98,9 @@ export class Server {
   registerEndpoints() {
     const jsonBodyParser = bodyParser.json();
     const fileuploadParser = fileupload();
+
+    this.buildRestApi(API, "/api");
+
     this.app.post("/api/auth/register", jsonBodyParser, registerFn);
     this.app.post("/api/auth/login", jsonBodyParser, loginFn);
 
@@ -116,6 +120,26 @@ export class Server {
     // PDF loading/serving stuff
     this.app.post("/api/pdf/receive-pdf", fileuploadParser, receivePDF);
     this.app.get("/api/pdf/get-pdf/:pdfName.pdf", getPDF);
+  }
+
+  buildRestApi(handler: any, path: string) {
+    if (typeof handler == "object") {
+      for (const name in handler) {
+        this.buildRestApi(handler[name], `${path}/${name}`);
+      }
+    } else {
+      this.app.post(path, bodyParser.json(), async (req, res) => {
+        try {
+          console.log(req.body);
+          const params: any[] = req.body; //JSON.parse(req.body);
+          const result = await handler(...params);
+          res.status(200).send({ result });
+        } catch (err) {
+          console.log(err);
+          res.status(400).send({ error: err });
+        }
+      });
+    }
   }
 
   startSocketServer() {

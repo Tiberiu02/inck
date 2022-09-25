@@ -15,6 +15,7 @@ import { IconType } from "react-icons/lib";
 import { twMerge } from "tailwind-merge";
 import { MaterialSymbol } from "../components/MaterialSymbol";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import { AppServer } from "../ServerConnector";
 
 enum FileTypes {
   NOTE = "note",
@@ -818,18 +819,8 @@ function ProcessFilesData(rawFileList: RawFile[]): FileTree {
 }
 
 async function GetFiles(): Promise<FileTree> {
-  const response = await fetch(GetApiPath("/api/explorer/getfiles"), {
-    method: "post",
-    body: JSON.stringify({ token: getAuthToken() }),
-    headers: {
-      "Content-type": "application/json;charset=UTF-8",
-    },
-  });
-  const json = await response.json();
-
-  console.log(json.files);
-
-  return ProcessFilesData(json.files);
+  const filesData = await AppServer.files.getFiles(getAuthToken());
+  return ProcessFilesData(filesData);
 }
 
 async function PostFileCreation(name, type, parentDir, options = {}): Promise<boolean> {
