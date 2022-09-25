@@ -28,7 +28,11 @@ const userSchema: Schema = new mongoose.Schema({
 
 const noteSchema: Schema = new mongoose.Schema({
   id: { type: String }, // URL identifier
-  strokes: { type: Array<typeof Stroke>, default: [] },
+  /*
+   * strokes is a mapping strokeId => Stroke object (see Stroke at line 6)
+   *
+   */
+  strokes: { type: Object, default: {} },
   creationDate: { type: Date, default: Date.now() },
   isFreeNote: { type: Boolean, default: true },
   backgroundType: { type: String, default: "blank" },

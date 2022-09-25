@@ -49,7 +49,15 @@ async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string
     }
   }
 
-  await NoteModel.updateOne({ id: user.docId }, { $pull: { strokes: { id: id } } });
+  // await NoteModel.updateOne({ id: user.docId }, { $pull: { strokes: { id: id } } });
+  await NoteModel.updateOne(
+    { id: user.docId },
+    {
+      $unset: {
+        strokes: { id: id },
+      },
+    }
+  );
   logEvent("remove_stroke", {
     docId: user.docId,
     executionTime: timer.elapsed().toString(),
@@ -81,8 +89,11 @@ async function newStrokeFn(
       other.socket.emit("load strokes", [stroke]);
     }
   }
-
-  await NoteModel.updateOne({ id: user.docId }, { $push: { strokes: stroke } });
+  // Javascript quirk, need to create the object beforehand
+  const updateField: { [id: string]: Stroke } = {};
+  const key = `strokes.${stroke.id}`;
+  updateField[key] = stroke;
+  await NoteModel.updateOne({ id: user.docId }, { $set: updateField });
   logEvent("draw_new_stroke", {
     docId: user.docId,
     executionTime: timer.elapsed().toString(),
@@ -136,6 +147,10 @@ function checkSpecialPriviledges(user: DrawingUser) {
   }
 }
 
+function parseObjectToArray(strokes: { [id: string]: Stroke }): Stroke[] {
+  return Object.values(strokes);
+}
+
 async function requestDocumentFn(
   id: string,
   user: DrawingUser,
@@ -159,7 +174,7 @@ async function requestDocumentFn(
   if (!noteExists) {
     await NoteModel.create({ id: id, isFreeNote: true });
   } else {
-    note.strokes = noteData.strokes;
+    note.strokes = parseObjectToArray(noteData.strokes);
 
     if (noteData.backgroundType == BackgroundTypes.pdf) {
       const fileHash = noteData.backgroundOptions.fileHash as string;
