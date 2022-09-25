@@ -3,6 +3,16 @@ import mongoose, { Schema, Model } from "mongoose";
 
 const Mixed = mongoose.Schema.Types.Mixed;
 
+const Stroke: Schema = new mongoose.Schema({
+  id: { type: String },
+  deserializer: { type: String },
+  zIndex: { type: Number },
+  width: { type: Number },
+  color: { type: Array<Number> }, // RGB values
+  data: { type: Array<Number> }, // TODO: check format in frontend
+  timestamp: { type: Number }, // TODO: check what it corresponds to
+});
+
 const userSchema: Schema = new mongoose.Schema({
   firstName: { type: String, default: null },
   lastName: { type: String, default: null },
@@ -18,7 +28,7 @@ const userSchema: Schema = new mongoose.Schema({
 
 const noteSchema: Schema = new mongoose.Schema({
   id: { type: String }, // URL identifier
-  strokes: { type: Array, default: [] },
+  strokes: { type: Array<typeof Stroke>, default: [] },
   creationDate: { type: Date, default: Date.now() },
   isFreeNote: { type: Boolean, default: true },
   backgroundType: { type: String, default: "blank" },
@@ -28,6 +38,19 @@ const noteSchema: Schema = new mongoose.Schema({
    * fileHash: hash of pdf file to request (used as url in frontend)
    */
 });
+
+const noteBenchmarkSchema = new mongoose.Schema({
+  id: { type: String },
+  strokes: { type: Array, default: [] },
+});
+
+const newNoteBenchmarkSchema = new mongoose.Schema({
+  id: { type: String },
+  strokes: { type: Object, default: {} },
+});
+
+export const NoteBenchmarkModel = mongoose.model("note-benchmark", noteBenchmarkSchema);
+export const NewNoteBenchMarkModel = mongoose.model("new-note-benchmark", newNoteBenchmarkSchema);
 
 const fileSchema: Schema = new mongoose.Schema({
   type: { type: String }, // 'file' | 'folder'
