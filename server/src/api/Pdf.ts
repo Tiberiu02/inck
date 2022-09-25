@@ -3,14 +3,11 @@ import crypto from "crypto";
 import { generateNewFileName, insertNewNoteInDB, NEW_FILES_NAME_LENGTH } from "./FileExplorer.js";
 import jwt from "jsonwebtoken";
 import { FileModel, NoteModel } from "../db/Models.js";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
 import { Request, Response } from "express";
 import { Timer } from "../Timer.js";
 import { logEvent } from "../logging/AppendAnalytics.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const PDF_LOCATION = "user-data/pdfs";
 
 const fs = _fs.promises;
 
@@ -31,7 +28,7 @@ export async function receivePDF(req: Request, res: Response) {
     const pdfFileName = `${pdfDataHash}.pdf`;
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
 
-    const pdfPath = `user-data/pdfs/${pdfFileName}`;
+    const pdfPath = `${PDF_LOCATION}/${pdfFileName}`;
     const fsPromise = fs.writeFile(pdfPath, pdfData);
 
     const insertPromise = insertNewNoteInDB({
@@ -75,7 +72,7 @@ export async function getPDF(req: Request, res: Response) {
   try {
     const timer = new Timer();
     const pdfName = req.params.pdfName;
-    res.sendFile(join(__dirname, `../../user-data/pdfs/${pdfName}.pdf`));
+    res.sendFile(`${PDF_LOCATION}/${pdfName}.pdf`, { root: "." });
     logEvent("serving_pdf_file", {
       pdfName,
       executionTime: timer.elapsed().toString(),

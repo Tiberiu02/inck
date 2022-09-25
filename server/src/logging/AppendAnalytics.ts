@@ -43,7 +43,8 @@ export function logEvent(eventName: string, parameters: { [id: string]: string }
 }
 
 // Executed on import
-const loggingDirPath = __dirname + "/analytics";
+const OUTPUT_LOCATION = "../../../user-data/analytics";
+const loggingDirPath = path.join(__dirname + OUTPUT_LOCATION);
 if (!fs.existsSync(loggingDirPath)) {
   fs.mkdirSync(loggingDirPath);
 }
