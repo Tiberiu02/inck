@@ -6,8 +6,9 @@ import { FileModel, NoteModel } from "../db/Models.js";
 import { Request, Response } from "express";
 import { Timer } from "../Timer.js";
 import { logEvent } from "../logging/AppendAnalytics.js";
+import path from "path";
 
-const PDF_LOCATION = "user-data/pdfs";
+const PDF_LOCATION = "../user-data/pdfs";
 
 const fs = _fs.promises;
 
@@ -28,7 +29,7 @@ export async function receivePDF(req: Request, res: Response) {
     const pdfFileName = `${pdfDataHash}.pdf`;
     const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
 
-    const pdfPath = `${PDF_LOCATION}/${pdfFileName}`;
+    const pdfPath = path.resolve(PDF_LOCATION, pdfFileName);
     const fsPromise = fs.writeFile(pdfPath, pdfData);
 
     const insertPromise = insertNewNoteInDB({
@@ -71,8 +72,9 @@ export async function receivePDF(req: Request, res: Response) {
 export async function getPDF(req: Request, res: Response) {
   try {
     const timer = new Timer();
-    const pdfName = req.params.pdfName;
-    res.sendFile(`${PDF_LOCATION}/${pdfName}.pdf`, { root: "." });
+    const pdfName = req.params.pdfName + ".pdf";
+    const pdfPath = path.resolve(PDF_LOCATION, pdfName);
+    res.sendFile(pdfPath);
     logEvent("serving_pdf_file", {
       pdfName,
       executionTime: timer.elapsed().toString(),

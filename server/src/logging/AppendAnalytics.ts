@@ -1,11 +1,8 @@
 import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const replaceSpace = "###SPACE###";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const OUTPUT_LOCATION = "../user-data/analytics";
 
 function YYYYMMDD(date: Date, separator = "/") {
   return `${date.getFullYear()}${separator}${date.getMonth() + 1}${separator}${date.getDate()}`;
@@ -17,7 +14,7 @@ function HHMMSS(date: Date) {
 
 function updateStream() {
   const now = new Date();
-  const fname = `${loggingDirPath}/${YYYYMMDD(now, "-")}.log`;
+  const fname = `${OUTPUT_LOCATION}/${YYYYMMDD(now, "-")}.log`;
   appendStream.close();
   appendStream = fs.createWriteStream(fname, { flags: "a" });
 }
@@ -43,14 +40,12 @@ export function logEvent(eventName: string, parameters: { [id: string]: string }
 }
 
 // Executed on import
-const OUTPUT_LOCATION = "../../../user-data/analytics";
-const loggingDirPath = path.join(__dirname + OUTPUT_LOCATION);
-if (!fs.existsSync(loggingDirPath)) {
-  fs.mkdirSync(loggingDirPath);
+if (!fs.existsSync(OUTPUT_LOCATION)) {
+  fs.mkdirSync(OUTPUT_LOCATION);
 }
 
 const now = new Date();
-const fname = `${loggingDirPath}/${YYYYMMDD(now, "-")}.log`;
+const fname = `${OUTPUT_LOCATION}/${YYYYMMDD(now, "-")}.log`;
 
 let appendStream = fs.createWriteStream(fname, { flags: "a" });
 updateStream();
