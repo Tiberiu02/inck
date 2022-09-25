@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function YYYYMMDD(date: Date, separator = "/") {
-  return `${date.getFullYear()}${separator}${date.getMonth()}${separator}${date.getDay()}`;
+  return `${date.getFullYear()}${separator}${date.getMonth() + 1}${separator}${date.getDate()}`;
 }
 
 function HHMMSS(date: Date) {
@@ -54,4 +54,4 @@ const fname = `${loggingDirPath}/${YYYYMMDD(now, "-")}.log`;
 
 let appendStream = fs.createWriteStream(fname, { flags: "a" });
 updateStream();
-setInterval(updateStream, 1000 * 3600 * 24);
+setInterval(updateStream, 1000 * 60 * 30);
