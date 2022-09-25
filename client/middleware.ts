@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authCookieName } from "./components/AuthToken";
+import { authCookieName } from "./src/components/AuthToken";
 
 function redirect(request, relativeDest) {
   const url = request.nextUrl.clone();
@@ -7,10 +7,7 @@ function redirect(request, relativeDest) {
   return NextResponse.redirect(url);
 }
 
-const AUTH_PAGES = [
-  "/explorer",
-  "/settings"
-]
+const AUTH_PAGES = ["/explorer", "/settings"];
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;

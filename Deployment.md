@@ -5,12 +5,17 @@ The app is deployed using [PM2](https://pm2.keymetrics.io/docs/usage/startup/). 
 ## Cheatsheet
 
 Restart processes using
-- `pm2 restart frontend`
-- `pm2 restart backend`
+- `pm2 restart server`
+- `pm2 restart client`
 - `pm2 restart all`
+- don't forget to rebuild the client if changed (`npm run build` in client folder)
 
 Reset restart counters using
 - `pm2 reset all`
+
+Processes were created by running the following commands in the apropriate folders:
+- `pm2 start "npm run start" --name server`
+- `pm2 start "npm run start" --name client`
 
 ## Ports
 
