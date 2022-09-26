@@ -11,7 +11,7 @@ import {
 import { Collaborator } from "./Collaborator";
 import { NoteData } from "../../types/canvas";
 
-const CACHING_INTERVAL = 5000;
+const CACHING_INTERVAL = 1000;
 
 function LoadCachedNote(noteId: string) {
   const cache = window.localStorage && window.localStorage.getItem(`note-cache-${noteId}`);
@@ -50,13 +50,14 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
       console.log("loaded note", data);
 
       // TO DO: initialize strokesDict with data.strokes after DB redesign
-      const strokesDict: { [id: string]: SerializedGraphic } = {};
-      const strokes = data.strokes.filter((s) => s.timestamp).sort((a, b) => a.timestamp - b.timestamp);
-      for (let stroke of strokes) {
-        if (stroke && stroke.id) {
-          strokesDict[stroke.id] = stroke;
-        }
-      }
+      // const strokesDict: { [id: string]: SerializedGraphic } = {};
+      // const strokes = data.strokes.filter((s) => s.timestamp).sort((a, b) => a.timestamp - b.timestamp);
+      // for (let stroke of strokes) {
+      //   if (stroke && stroke.id) {
+      //     strokesDict[stroke.id] = stroke;
+      //   }
+      // }
+      const strokesDict = data.strokes;
 
       for (let stroke of Object.values(strokesDict)) {
         if (!this.strokes[stroke.id] || this.strokes[stroke.id].timestamp < stroke.timestamp) {

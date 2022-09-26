@@ -19,6 +19,7 @@ export interface Stroke {
   id: string;
   deserializer: string;
   zIndex: number;
+  timestamp: number;
   width: number;
   color: number[];
   data: number[];
@@ -87,7 +88,7 @@ export interface DBPasswordReset {
 
 export interface FrontEndNoteData {
   id: string;
-  strokes: Stroke[];
+  strokes: { [id: string]: Stroke };
   pdfUrl?: string;
   canWrite: boolean;
 }

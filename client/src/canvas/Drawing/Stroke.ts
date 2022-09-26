@@ -31,9 +31,8 @@ export interface SerializedStroke extends SerializedGraphic {
 
 export function SerializeStroke(stroke: Stroke): SerializedStroke {
   const data = [].concat(...stroke.points.map((p) => [p.x, p.y, p.pressure, p.timestamp]));
-  const serializedId = Date.now().toString(36);
   return {
-    id: serializedId,
+    id: stroke.id,
     deserializer: Serializers.STROKE,
     zIndex: stroke.zIndex,
     width: stroke.width,

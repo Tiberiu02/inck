@@ -164,7 +164,6 @@ export class Server {
       socket.emit("userId", user.id);
 
       socket.on("disconnect", disconnect(user, this.docs, socket));
-      socket.on("remove stroke", removeStroke(user, this.docs, socket));
       socket.on("new stroke", newStroke(user, this.docs, socket));
 
       // LIVE COLLABORATION

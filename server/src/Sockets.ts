@@ -38,30 +38,51 @@ function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, 
   });
 }
 
-async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
-  if (!user.docId || !user.canWrite || typeof id != "string") {
-    return;
-  }
-  const timer = new Timer();
-  for (let other of docs[user.docId].users) {
-    if (other != user) {
-      other.socket.emit("unload strokes", [id]);
-    }
-  }
+enum NoteFormats {
+  DictNoteUpdate = "dict_note",
+}
 
-  // await NoteModel.updateOne({ id: user.docId }, { $pull: { strokes: { id: id } } });
-  await NoteModel.updateOne(
-    { id: user.docId },
-    {
-      $unset: {
-        strokes: { id: id },
-      },
+const LAST_NOTE_FORMAT = NoteFormats.DictNoteUpdate;
+
+const UpdateNoteFunctions = {
+  undefined: (noteData: any) => {
+    const oldStrokes: Stroke[] = noteData.strokes;
+    noteData.format = NoteFormats.DictNoteUpdate;
+    noteData.strokes = {};
+
+    if (oldStrokes && oldStrokes.length) {
+      for (const stroke of oldStrokes) {
+        noteData.strokes[stroke.id] = stroke;
+      }
     }
-  );
-  logEvent("remove_stroke", {
-    docId: user.docId,
-    executionTime: timer.elapsed().toString(),
-  });
+
+    return noteData;
+  },
+};
+
+function UpdateNoteFormat(noteData: any) {
+  while (noteData.format != LAST_NOTE_FORMAT) {
+    noteData = UpdateNoteFunctions[noteData.format as "undefined"](noteData);
+  }
+  return noteData;
+}
+
+async function EnsureLastNoteFormat(id: string) {
+  const formatData = (await NoteModel.findOne({ id: id }, { format: 1 })) as any;
+  // console.log(id, formatData);
+  if (formatData == null) return;
+
+  const { format } = formatData;
+  // console.log("format", format);
+  if (format != LAST_NOTE_FORMAT) {
+    let noteData = await NoteModel.findOne({ id: id }, { _id: 0, __v: 0 });
+    if (noteData == null) return;
+    noteData = noteData.toObject();
+    // console.log("initial note data", noteData);
+    noteData = UpdateNoteFormat(noteData);
+    // console.log("updated note data", noteData);
+    await NoteModel.findOneAndReplace({ id: id }, noteData);
+  }
 }
 
 async function newStrokeFn(
@@ -73,27 +94,35 @@ async function newStrokeFn(
   if (!user.docId || !user.canWrite) {
     return;
   }
+
   const timer = new Timer();
   console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /note/${user.docId}`);
-  const [uId, sId] = stroke.id.split("-");
-
-  /*
-    if (uId != user.id) {
-        console.log(`Invalid stroke on ${user.docId}. User id = ${user.id} (received ${uId})`);
-        return;
-    }
-    */
 
   for (let other of docs[user.docId].users) {
     if (other != user) {
       other.socket.emit("load strokes", [stroke]);
     }
   }
-  // Javascript quirk, need to create the object beforehand
-  const updateField: { [id: string]: Stroke } = {};
-  const key = `strokes.${stroke.id}`;
-  updateField[key] = stroke;
-  await NoteModel.updateOne({ id: user.docId }, { $set: updateField });
+
+  const timestampData = await NoteModel.findOne(
+    { id: user.docId },
+    { _id: 0, strokes: { [stroke.id]: { timestamp: 1 } } }
+  );
+
+  const timestamp =
+    (timestampData &&
+      timestampData.strokes &&
+      timestampData.strokes[stroke.id] &&
+      timestampData.strokes[stroke.id].timestamp) ||
+    0;
+  // console.log(timestamp, timestampData);
+
+  if (stroke.timestamp > timestamp) {
+    await NoteModel.updateOne({ id: user.docId }, { $set: { [`strokes.${stroke.id}`]: stroke } });
+  } else {
+    console.log("user tried to add outdated strokes");
+  }
+
   logEvent("draw_new_stroke", {
     docId: user.docId,
     executionTime: timer.elapsed().toString(),
@@ -102,9 +131,9 @@ async function newStrokeFn(
 
 async function docRights(docId: string, user: DrawingUser) {
   // return read acces; write access
-  const noteData = await NoteModel.findOne({ id: docId });
+  const noteData = await NoteModel.findOne({ id: docId }, { isFreeNote: 1 });
 
-  if (noteData.isFreeNote) {
+  if (noteData?.isFreeNote) {
     return [true, true];
   }
 
@@ -160,21 +189,25 @@ async function requestDocumentFn(
   if (user.docId) {
     return;
   }
+
+  await EnsureLastNoteFormat(id);
+
   const timer = new Timer();
   const noteData: DBNote = await NoteModel.findOne({ id: id });
 
   const noteExists = noteData !== null;
   let note: FrontEndNoteData = {
     id: id,
-    strokes: [],
+    strokes: {},
     canWrite: false,
   };
 
   // if note doesn't exist => create free note
   if (!noteExists) {
-    await NoteModel.create({ id: id, isFreeNote: true });
+    await NoteModel.create({ id: id, isFreeNote: true, format: LAST_NOTE_FORMAT });
   } else {
-    note.strokes = parseObjectToArray(noteData.strokes);
+    // object, new format
+    note.strokes = noteData.strokes;
 
     if (noteData.backgroundType == BackgroundTypes.pdf) {
       const fileHash = noteData.backgroundOptions.fileHash as string;
@@ -206,14 +239,6 @@ async function requestDocumentFn(
       // TODO: only communicate the new user if it can write
       user.socket.emit("new collaborator", other.id);
       other.socket.emit("new collaborator", user.id);
-      continue;
-      // Note: only notify about writers
-      if (other.canWrite) {
-        user.socket.emit("new collaborator", other.id);
-      }
-      if (user.canWrite) {
-        other.socket.emit("new collaborator", user.id);
-      }
     }
   }
 
