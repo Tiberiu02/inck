@@ -23,7 +23,7 @@ function LoadNote(id): Promise<[PersistentGraphic[], string]> {
     });
 
     socket.on("load note", (data: any) => {
-      const strokes = data.strokes.map(DeserializeGraphic);
+      const strokes = Object.values(data.strokes).map(DeserializeGraphic);
       const pdfUrl = data.pdfUrl;
       socket.disconnect();
 
@@ -34,7 +34,7 @@ function LoadNote(id): Promise<[PersistentGraphic[], string]> {
 
 export async function NoteToPdf(noteId) {
   const [strokes, pdfBgUrl] = await LoadNote(noteId);
-  const yMax = strokes.map(s => s.geometry.boundingBox.yMax).reduce((a, b) => Math.max(a, b), 0);
+  const yMax = strokes.map((s) => s.geometry.boundingBox.yMax).reduce((a, b) => Math.max(a, b), 0);
 
   // Create a new PDFDocument
   const pdfDoc = await PDFDocument.create();
@@ -48,7 +48,7 @@ export async function NoteToPdf(noteId) {
   page.moveTo(x, PAGE_WIDTH * yMax + PADDING_BOTTOM);
 
   if (pdfBgUrl) {
-    const bytes = await fetch(GetApiPath(pdfBgUrl)).then(res => res.arrayBuffer());
+    const bytes = await fetch(GetApiPath(pdfBgUrl)).then((res) => res.arrayBuffer());
     const bgPdf = await PDFDocument.load(bytes);
 
     let y = 0;
@@ -57,7 +57,7 @@ export async function NoteToPdf(noteId) {
     const bgPages = await pdfDoc.embedPdf(bgPdf, indices);
 
     {
-      let bgHeight = bgPages.map(p => p.height / p.width + PAGE_GAP).reduce((a, b) => a + b);
+      let bgHeight = bgPages.map((p) => p.height / p.width + PAGE_GAP).reduce((a, b) => a + b);
       bgHeight = bgHeight * PAGE_WIDTH + PADDING_TOP + PADDING_BOTTOM;
 
       if (bgHeight > page.getHeight()) {

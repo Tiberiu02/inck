@@ -823,7 +823,7 @@ function ProcessFilesData(rawFileList: RawFile[]): FileTree {
 }
 
 async function GetFiles(): Promise<FileTree> {
-  const filesData = await AppServer.files.getFiles(getAuthToken());
+  const filesData = (await AppServer.files.getFiles(getAuthToken())) as RawFile[];
   return ProcessFilesData(filesData);
 }
 

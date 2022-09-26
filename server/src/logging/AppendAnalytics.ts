@@ -19,7 +19,7 @@ function updateStream() {
   appendStream = fs.createWriteStream(fname, { flags: "a" });
 }
 
-export function logEvent(eventName: string, parameters: { [id: string]: string }) {
+export function logEvent(eventName: string, parameters: { [id: string]: any }) {
   const now = new Date();
 
   let logString = YYYYMMDD(now);

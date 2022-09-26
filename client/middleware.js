@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authCookieName } from "./components/AuthToken";
+import { authCookieName } from "./src/components/AuthToken";
 
 function redirect(request, relativeDest) {
   const url = request.nextUrl.clone();

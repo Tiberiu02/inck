@@ -3,7 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { exploreTree } from "./FsTreeExplorer.js";
 import { Request, Response } from "express";
-import { DBUser } from "../BackendInterfaces.js";
+import { DBUser, FileType } from "../BackendInterfaces.js";
 import { Timer } from "../Timer.js";
 import { logEvent } from "../logging/AppendAnalytics.js";
 
@@ -317,7 +317,7 @@ function validVisibility(visibility: NoteAccess) {
 export async function editFileFn(req: Request, res: Response) {
   try {
     const timer = new Timer();
-    const { id, newName, newVisibility } = req.body;
+    const { id, newName, newVisibility, type } = req.body;
     if (!validVisibility(newVisibility)) {
       console.log("Invalid request: visibility requested: " + newVisibility);
       res.status(400).send({ error: "Invalid request" });
