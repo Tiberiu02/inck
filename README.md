@@ -69,4 +69,4 @@ See number of lines of code using `npm run line-count`.
 
 # License
 
-All right reserved.
+No licence. All right reserved.
