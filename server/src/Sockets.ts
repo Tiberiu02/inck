@@ -67,46 +67,20 @@ function UpdateNoteFormat(noteData: any) {
   return noteData;
 }
 
-async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
-  if (!user.docId || !user.canWrite || typeof id != "string") {
-    return;
-  }
-  const timer = new Timer();
-  for (let other of docs[user.docId].users) {
-    if (other != user) {
-      other.socket.emit("unload strokes", [id]);
-    }
-  }
-
-  // await NoteModel.updateOne({ id: user.docId }, { $pull: { strokes: { id: id } } });
-  await NoteModel.updateOne(
-    { id: user.docId },
-    {
-      $unset: {
-        strokes: { id: id },
-      },
-    }
-  );
-  logEvent("remove_stroke", {
-    docId: user.docId,
-    executionTime: timer.elapsed().toString(),
-  });
-}
-
 async function EnsureLastNoteFormat(id: string) {
   const formatData = (await NoteModel.findOne({ id: id }, { format: 1 })) as any;
-  console.log(id, formatData);
+  // console.log(id, formatData);
   if (formatData == null) return;
 
   const { format } = formatData;
-  console.log("format", format);
+  // console.log("format", format);
   if (format != LAST_NOTE_FORMAT) {
     let noteData = await NoteModel.findOne({ id: id }, { _id: 0, __v: 0 });
     if (noteData == null) return;
     noteData = noteData.toObject();
-    console.log("initial note data", noteData);
+    // console.log("initial note data", noteData);
     noteData = UpdateNoteFormat(noteData);
-    console.log("updated note data", noteData);
+    // console.log("updated note data", noteData);
     await NoteModel.findOneAndReplace({ id: id }, noteData);
   }
 }
@@ -130,7 +104,25 @@ async function newStrokeFn(
     }
   }
 
-  await NoteModel.updateOne({ id: user.docId }, { $set: { [`strokes.${stroke.id}`]: stroke } });
+  const timestampData = await NoteModel.findOne(
+    { id: user.docId },
+    { _id: 0, strokes: { [stroke.id]: { timestamp: 1 } } }
+  );
+
+  const timestamp =
+    (timestampData &&
+      timestampData.strokes &&
+      timestampData.strokes[stroke.id] &&
+      timestampData.strokes[stroke.id].timestamp) ||
+    0;
+  // console.log(timestamp, timestampData);
+
+  if (stroke.timestamp > timestamp) {
+    await NoteModel.updateOne({ id: user.docId }, { $set: { [`strokes.${stroke.id}`]: stroke } });
+  } else {
+    console.log("user tried to add outdated strokes");
+  }
+
   logEvent("draw_new_stroke", {
     docId: user.docId,
     executionTime: timer.elapsed().toString(),

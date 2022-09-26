@@ -19,6 +19,7 @@ export interface Stroke {
   id: string;
   deserializer: string;
   zIndex: number;
+  timestamp: number;
   width: number;
   color: number[];
   data: number[];
