@@ -113,9 +113,10 @@ async function EnsureLastNoteFormat(id: string) {
   if (format != LAST_NOTE_FORMAT) {
     let noteData: any = await NoteModel.findOne({ id: id });
     if (noteData == null) return;
-    console.log(noteData);
+    console.log("initial note data", noteData);
     noteData = UpdateNoteFormat(noteData);
     noteData = FlattenDict(noteData);
+    console.log("updated note data", noteData);
     await NoteModel.findOneAndReplace({ id: id }, noteData);
   }
 }
