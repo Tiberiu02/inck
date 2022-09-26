@@ -62,7 +62,7 @@ export interface DBUser {
 
 export interface DBNote {
   id: string;
-  strokes: Stroke[];
+  strokes: { [id: string]: Stroke };
   creationDate: Date;
   isFreeNote: Boolean;
   backgroundType: BackgroundTypes;

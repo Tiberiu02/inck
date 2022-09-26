@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import mongoose from "mongoose";
 
 export class Timer {
@@ -86,13 +87,12 @@ async function newFormatBenchmark(experimentId, nRuns) {
 
   for (let idx = 0; idx < nRuns; idx++) {
     const newField = {}
-    newField[obj.id] = obj
+    const key = `strokes.${obj.id}-${idx}`
+    newField[key] = obj
     await NewNoteBenchMarkModel.updateOne(
       { id: experimentId , },
       {
-        $set: {
-          strokes: newField
-        },
+        $set: newField
       }
     );
   }
@@ -101,8 +101,8 @@ async function newFormatBenchmark(experimentId, nRuns) {
 async function insertBenchmark() {
   mongoose.connect("mongodb://127.0.0.1:27017/benchmark");
 
-  const nRuns = 3
-  const entriesPerRun = 2500
+  const nRuns = 4
+  const entriesPerRun = 4000
 
   const oldFormatRuns = []
   const newFormatRuns = []
@@ -135,8 +135,8 @@ async function insertBenchmark() {
   console.log("Std: " + newStd)
 
 
-  await NewNoteBenchMarkModel.remove({})
-  await NoteBenchmarkModel.remove({})
+  //await NewNoteBenchMarkModel.remove({})
+  //await NoteBenchmarkModel.remove({})
   console.log("DONE")
 
 }
