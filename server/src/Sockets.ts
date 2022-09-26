@@ -64,6 +64,7 @@ function UpdateNoteFormat(noteData: any) {
   while (noteData.format != LAST_NOTE_FORMAT) {
     noteData = UpdateNoteFunctions[noteData.format as "undefined"](noteData);
   }
+  return noteData;
 }
 
 async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
