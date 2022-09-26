@@ -1,0 +1,19 @@
+{
+  "name": "inck",
+  "version": "1.0.0",
+  "description": "A web-based note taking app.",
+  "scripts": {
+    "install": "cd client && npm install && cd ../server && npm install",
+    "line-count": "npx sloc --exclude \"(node_modules|next)\" .",
+    "dev": "npx concurrently \"cd client && npm run dev\" \"cd server && npm run start\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tiberiu02/inck.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tiberiu02/inck/issues"
+  },
+  "homepage": "https://github.com/Tiberiu02/inck#readme"
+}
