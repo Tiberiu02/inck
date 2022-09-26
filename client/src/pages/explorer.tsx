@@ -803,7 +803,11 @@ function ProcessFilesData(rawFileList: RawFile[]): FileTree {
   fileDict["f/trash"] = { name: "Trash", children: [], type: FileTypes.FOLDER, _id: "f/trash" };
 
   for (const f of rawFileList) {
-    (fileDict[f.parentDir] as FolderInfo).children.push(fileDict[f._id]);
+    if (fileDict[f.parentDir]) {
+      (fileDict[f.parentDir] as FolderInfo).children.push(fileDict[f._id]);
+    } else {
+      console.warn("detected orhan file", { f, rawFileList, fileDict });
+    }
   }
 
   for (const f of Object.values(fileDict))
