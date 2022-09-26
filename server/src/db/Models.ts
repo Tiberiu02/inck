@@ -28,6 +28,7 @@ const userSchema: Schema = new mongoose.Schema({
 
 const noteSchema: Schema = new mongoose.Schema({
   id: { type: String }, // URL identifier
+  format: { type: String }, // URL identifier
   /*
    * strokes is a mapping strokeId => Stroke object (see Stroke at line 6)
    *
@@ -89,7 +90,7 @@ const passwordResetSchema: Schema = new mongoose.Schema({
  * TL;DR: allows easier creationg + validation of mongoDB objects => clearer code
  */
 // TODO: check how to type it better
-export const UserModel: Model = mongoose.model("user", userSchema);
-export const FileModel: Model = mongoose.model("file", fileSchema);
-export const NoteModel: Model = mongoose.model("note", noteSchema);
-export const PasswordResetModel: Model = mongoose.model("password-reset", passwordResetSchema);
+export const UserModel = mongoose.model("user", userSchema);
+export const FileModel = mongoose.model("file", fileSchema);
+export const NoteModel = mongoose.model("note", noteSchema);
+export const PasswordResetModel = mongoose.model("password-reset", passwordResetSchema);

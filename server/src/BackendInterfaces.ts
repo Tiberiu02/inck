@@ -87,7 +87,7 @@ export interface DBPasswordReset {
 
 export interface FrontEndNoteData {
   id: string;
-  strokes: Stroke[];
+  strokes: { [id: string]: Stroke };
   pdfUrl?: string;
   canWrite: boolean;
 }
