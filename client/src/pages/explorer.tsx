@@ -806,7 +806,7 @@ function ProcessFilesData(rawFileList: RawFile[]): FileTree {
     if (fileDict[f.parentDir]) {
       (fileDict[f.parentDir] as FolderInfo).children.push(fileDict[f._id]);
     } else {
-      console.warn("detected orhan file", { f, rawFileList, fileDict });
+      console.warn("detected orphan file", { f, rawFileList, fileDict });
     }
   }
 
