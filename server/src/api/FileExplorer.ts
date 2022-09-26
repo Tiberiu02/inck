@@ -127,6 +127,7 @@ export async function insertNewNoteInDB({
     isFreeNote: false,
     backgroundType,
     backgroundOptions,
+    strokes: {},
   });
 
   await filePromise;
