@@ -92,6 +92,17 @@ async function removeStrokeFn(id: string, user: DrawingUser, docs: { [id: string
   });
 }
 
+function FlattenDict(dict: any, target: any = {}, pref = "") {
+  for (const key in dict) {
+    if (typeof dict[key] == "object") {
+      FlattenDict(dict[key], target, `${pref}${key}.`);
+    } else {
+      target[pref + key] = dict[key];
+    }
+  }
+  return target;
+}
+
 async function EnsureLastNoteFormat(id: string) {
   const formatData = (await NoteModel.findOne({ id: id }, { format: 1 })) as any;
   console.log(id, formatData);
@@ -104,6 +115,7 @@ async function EnsureLastNoteFormat(id: string) {
     if (noteData == null) return;
     console.log(noteData);
     noteData = UpdateNoteFormat(noteData);
+    noteData = FlattenDict(noteData);
     await NoteModel.findOneAndReplace({ id: id }, noteData);
   }
 }
