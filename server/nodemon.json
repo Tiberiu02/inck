@@ -1,0 +1,9 @@
+{
+  "ignore": [
+    ".git",
+    "node_modules"
+  ],
+  "watch": [
+    "../common-types"
+  ]
+}

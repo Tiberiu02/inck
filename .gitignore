@@ -7,8 +7,8 @@ package-lock.json
 .pnp.js
 
 # transpiled files
-common-types/*.js
-server/*.js
+common-types/**/*.js
+server/**/*.js
 
 # environment variables
 .env

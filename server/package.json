@@ -1,7 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "start": "ts-node src/index"
+    "dev": "nodemon src/index.js",
+    "start": "tsc && node src/index"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.169.0",

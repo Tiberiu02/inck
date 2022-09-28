@@ -22,17 +22,19 @@ Node.js, MongoDB, as well as a few Node.js packages.
 2. Install [Node.js & NPM](https://nodejs.org/en/download/)
 3. Open the project in command-line
 4. Install server and client dependencies using `npm install`
-5. Start project in development mode using `npm run dev`
+5. Start project in development mode using `npm run dev-all`
 
 # Usage
 
 Open your browser and go to https://localhost:3080.
 
-The client and server are separate modules. Start each one individually by running `npm run start` in the respective directory.
-
-Note: client requires building with `npm run build`.
-
 # Deployment
+
+This project has 3 components: server, client, and common types.
+
+Build everything with `npm run build-all`.
+
+Start everything with `npm run start-all` or just the server/client with `npm run start-server` and `npm run start-client`
 
 ## PM2
 
