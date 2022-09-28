@@ -26,7 +26,7 @@ function BuildSkeleton(obj: any) {
 }
 
 const skeleton = `// This file was generated automatically by the server code
-export const ServerApiSkeleton = ${JSON.stringify(BuildSkeleton(API))};`;
+export const ServerApiSkeleton = ${JSON.stringify(BuildSkeleton(API), null, 2)};`;
 
 const path = "../client/server-api-skeleton.js";
 let change = false;

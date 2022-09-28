@@ -28,7 +28,7 @@ function BuildApiConnector(api: any, path: string) {
 
       const json = await response.json();
 
-      if (json.result) {
+      if (response.ok) {
         return json.result;
       } else if (json.error) {
         throw new Error(json.error);

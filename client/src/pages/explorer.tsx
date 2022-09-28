@@ -17,16 +17,8 @@ import { MaterialSymbol } from "../components/MaterialSymbol";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { AppServer } from "../ServerConnector";
 
-enum FileTypes {
-  NOTE = "note",
-  FOLDER = "folder",
-}
-
-enum AccessTypes {
-  NONE = "private",
-  READ = "read_only",
-  WRITE = "read_write",
-}
+import { FileTypes, AccessTypes } from "../../../common-types/Files";
+import { BackgroundTypes } from "../../../common-types/Notes";
 
 type FileInfo = {
   _id: string;
@@ -473,8 +465,8 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
               onChange={(e) => setNewNoteAccess(e.target.value as AccessTypes)}
               className="bg-gray-100 ml-4 w-full border-[1px] px-2 border-gray-400 rounded-md"
             >
-              <option value={AccessTypes.WRITE}>View &amp; edit</option>
-              <option value={AccessTypes.READ}>View only</option>
+              <option value={AccessTypes.EDIT}>View &amp; edit</option>
+              <option value={AccessTypes.VIEW}>View only</option>
               <option value={AccessTypes.NONE}>None</option>
             </select>
           </div>
@@ -503,9 +495,9 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
           onChange={(e) => setPublicAccess(e.target.value)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         >
-          <option value="read_write">View &amp; edit</option>
-          <option value="read_only">View only</option>
-          <option value="private">None</option>
+          <option value={AccessTypes.EDIT}>View &amp; edit</option>
+          <option value={AccessTypes.VIEW}>View only</option>
+          <option value={AccessTypes.NONE}>None</option>
         </select>
       </div>
     </div>
@@ -599,9 +591,9 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
           onChange={(e) => setPublicAccess(e.target.value)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         >
-          <option value="read_write">View &amp; edit</option>
-          <option value="read_only">View only</option>
-          <option value="private">No public access</option>
+          <option value={AccessTypes.EDIT}>View &amp; edit</option>
+          <option value={AccessTypes.VIEW}>View only</option>
+          <option value={AccessTypes.NONE}>None</option>
         </select>
       </div>
 
@@ -617,8 +609,11 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
 
 async function CreateNote(name: string, parentFolderId: string, publicAccess: AccessTypes) {
   TrackNoteCreation("simple");
-  await PostFileCreation(name, FileTypes.NOTE, parentFolderId, {
+  await AppServer.files.createNote(getAuthToken(), {
+    name,
+    parentFolderId,
     publicAccess,
+    backgroundType: BackgroundTypes.blank,
   });
 }
 

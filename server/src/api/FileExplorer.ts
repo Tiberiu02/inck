@@ -7,14 +7,10 @@ import { DBUser, FileType } from "../BackendInterfaces.js";
 import { Timer } from "../Timer.js";
 import { logEvent } from "../logging/AppendAnalytics.js";
 
-export enum NoteAccess {
-  private = "private",
-  readOnly = "read_only",
-  readWrite = "readWrite",
-}
+import { AccessTypes } from "../../../common-types/Files.js";
 
 // TODO: make cleaner once sure everything works
-const VALID_VISIBILITIES = [NoteAccess.private, NoteAccess.readOnly, NoteAccess.readWrite];
+const VALID_VISIBILITIES = [AccessTypes.NONE, AccessTypes.VIEW, AccessTypes.EDIT];
 export const NEW_FILES_NAME_LENGTH = 6;
 
 export async function getAccountDetailsFromToken(req: Request, res: Response) {
@@ -310,7 +306,7 @@ export async function importFreeNote(req: Request, res: Response) {
   }
 }
 
-function validVisibility(visibility: NoteAccess) {
+function validVisibility(visibility: AccessTypes) {
   return VALID_VISIBILITIES.includes(visibility);
 }
 

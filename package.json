@@ -5,7 +5,8 @@
   "scripts": {
     "install": "cd client && npm install && cd ../server && npm install",
     "line-count": "npx sloc --exclude \"(node_modules|next)\" .",
-    "dev": "npx concurrently \"cd client && npm run dev\" \"cd server && npm run start\""
+    "dev": "npx concurrently \"cd client && npm run dev\" \"cd server && npm run start\"",
+    "compile-types": "cd common-types && npx tsc"
   },
   "repository": {
     "type": "git",

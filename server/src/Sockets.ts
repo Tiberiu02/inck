@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import { NoteAccess } from "./api/FileExplorer.js";
 import { FileModel, NoteModel } from "./db/Models.js";
 import { Socket as WebSocket } from "socket.io";
 import {
@@ -13,6 +12,7 @@ import {
 } from "./BackendInterfaces.js";
 import { Timer } from "./Timer.js";
 import { logEvent } from "./logging/AppendAnalytics.js";
+import { AccessTypes } from "../../common-types/Files.js";
 
 function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {
@@ -161,8 +161,8 @@ async function docRights(docId: string, user: DrawingUser) {
   const access = fileData.defaultAccess;
   const isOwner = token.userId == fileData.owner;
 
-  const readAccess = access == NoteAccess.readWrite || access == NoteAccess.readOnly || isOwner;
-  const writeAccess = access == NoteAccess.readWrite || isOwner;
+  const readAccess = access == AccessTypes.readWrite || access == AccessTypes.readOnly || isOwner;
+  const writeAccess = access == AccessTypes.readWrite || isOwner;
 
   return [readAccess, writeAccess];
 }
