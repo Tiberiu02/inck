@@ -8,6 +8,7 @@ package-lock.json
 
 # transpiled files
 common-types/*.js
+server/*.js
 
 # environment variables
 .env

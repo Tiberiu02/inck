@@ -15,7 +15,7 @@ import { IconType } from "react-icons/lib";
 import { twMerge } from "tailwind-merge";
 import { MaterialSymbol } from "../components/MaterialSymbol";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { AppServer } from "../ServerConnector";
+import { HttpServer } from "../ServerConnector";
 
 import { FileTypes, AccessTypes } from "../../../common-types/Files";
 import { BackgroundTypes } from "../../../common-types/Notes";
@@ -609,7 +609,7 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
 
 async function CreateNote(name: string, parentFolderId: string, publicAccess: AccessTypes) {
   TrackNoteCreation("simple");
-  await AppServer.files.createNote(getAuthToken(), {
+  await HttpServer.files.createNote(getAuthToken(), {
     name,
     parentFolderId,
     publicAccess,
@@ -818,7 +818,7 @@ function ProcessFilesData(rawFileList: RawFile[]): FileTree {
 }
 
 async function GetFiles(): Promise<FileTree> {
-  const filesData = (await AppServer.files.getFiles(getAuthToken())) as RawFile[];
+  const filesData = (await HttpServer.files.getFiles(getAuthToken())) as RawFile[];
   return ProcessFilesData(filesData);
 }
 

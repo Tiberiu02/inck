@@ -1,4 +1,4 @@
-import { API } from "../../server/src/api/index";
+import type { API } from "../../server/src/api/index";
 import { ServerApiSkeleton } from "../server-api-skeleton";
 
 function GetApiPath(path) {
@@ -39,4 +39,4 @@ function BuildApiConnector(api: any, path: string) {
   }
 }
 
-export const AppServer = BuildApiConnector(ServerApiSkeleton, "/api") as typeof API;
+export const HttpServer = BuildApiConnector(ServerApiSkeleton, "/api") as typeof API;
