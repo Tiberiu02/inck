@@ -25,8 +25,5 @@
   ],
   "exclude": [
     "node_modules"
-  ],
-  "references": [
-    { "path": "../server" }
   ]
 }

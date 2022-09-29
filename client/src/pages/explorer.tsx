@@ -19,6 +19,7 @@ import { HttpServer } from "../ServerConnector";
 
 import { FileTypes, AccessTypes } from "../../../common-types/Files";
 import { BackgroundTypes } from "../../../common-types/Notes";
+import { ApiUrlStrings } from "@inck/common-types/ApiUrlStrings";
 
 type FileInfo = {
   _id: string;
@@ -224,7 +225,7 @@ function Modal({ children, onCancel, className = "", onBack = null }) {
             </button>
           )}
         </div>
-        <div className="mx-2">
+        <div className="my-2 mx-3">
           <div className={className}>{children}</div>
         </div>
       </div>
@@ -256,9 +257,18 @@ function ModalButtons({ submitText, onSubmit, onCancel, submitEnabled = true, su
   );
 }
 
-function RemoveFilesModal({ onCancel, onSuccess, selectedFiles }) {
+function RemoveFilesModal({
+  onCancel,
+  onSuccess,
+  selectedFiles,
+}: {
+  onCancel: () => void;
+  onSuccess: () => void;
+  selectedFiles: FileTree;
+}) {
   const onRemoveClick = async () => {
-    await PostFileRemoval(Object.values(selectedFiles));
+    const files = Object.keys(selectedFiles);
+    await HttpServer.files.deleteFiles(getAuthToken(), files);
     onSuccess();
   };
 
@@ -316,7 +326,7 @@ function MoveModalListing({ files, selectedFiles, target, setTarget }: MoveModal
       <div key={folder._id}>
         <div
           onClick={onClick}
-          className={`pl-2 flex items-center text-md select-none ${
+          className={`pl-2 flex items-center text-md select-none w-72 ${
             target == folder._id ? "bg-gray-600 hover:bg-gray-800 text-white" : ""
           } ${forbidden.has(folder._id) ? "cursor-not-allowed text-gray-300" : "cursor-pointer hover:bg-gray-200"}`}
         >
@@ -343,7 +353,7 @@ function MoveFilesModal({ files, selectedFiles, onCancel, onSuccess }: MoveFiles
   const [target, setTarget] = useState(null);
 
   const onMoveClick = async () => {
-    await PostFileMove(selectedFiles, target);
+    await HttpServer.files.moveFiles(getAuthToken(), Object.keys(selectedFiles), target);
     onSuccess();
   };
 
@@ -353,7 +363,7 @@ function MoveFilesModal({ files, selectedFiles, onCancel, onSuccess }: MoveFiles
     <Modal onCancel={onCancel} className="flex flex-col">
       <ModalTitle>Move notes</ModalTitle>
 
-      <div className="my-8 w-72">
+      <div className="my-8">
         <div className="text-left mb-1">Select new destination:</div>
         <MoveModalListing files={files} setTarget={setTarget} target={target} selectedFiles={selectedFiles} />
       </div>
@@ -437,10 +447,20 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
   const isNote = file.type == FileTypes.NOTE;
 
   const [newName, setNewName] = useState(file.name);
-  const [newNoteAccess, setNewNoteAccess] = useState(isNote ? (file as NoteInfo).defaultAccess : []);
+  const [newNoteAccess, setNewNoteAccess] = useState(isNote ? (file as NoteInfo).defaultAccess : AccessTypes.NONE);
 
   const saveEdits = async () => {
-    await PostFileEdit(file._id, newName.trim(), newNoteAccess, {});
+    if (isNote) {
+      await HttpServer.files.editNoteInfo(getAuthToken(), file._id, {
+        name: newName,
+        publicAccess: newNoteAccess,
+        backgroundType: BackgroundTypes.blank,
+      });
+    } else {
+      await HttpServer.files.editFolderInfo(getAuthToken(), file._id, {
+        name: newName,
+      });
+    }
 
     onSuccess();
   };
@@ -448,7 +468,7 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
   return (
     <Modal onCancel={onCancel} className="flex flex-col items-center">
       <ModalTitle>Edit {file.type == FileTypes.FOLDER ? "folder" : "note"}</ModalTitle>
-      <div className="flex flex-col my-12 w-full px-6">
+      <div className="flex flex-col my-12 w-full">
         <div className="flex">
           Name
           <input
@@ -477,9 +497,21 @@ function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
   );
 }
 
-function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
+function CreateNoteSubmodal({ onSuccess, path }) {
+  const [name, setName] = useState("");
+  const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
+
+  const submit = async () => {
+    await HttpServer.files.createNote(getAuthToken(), path.at(-1), {
+      name,
+      publicAccess,
+      backgroundType: BackgroundTypes.blank,
+    });
+    onSuccess();
+  };
+
   return (
-    <div className="flex flex-col my-12 gap-6">
+    <div className="flex flex-col mt-10 gap-6">
       <div className="flex gap-4">
         Name
         <input
@@ -492,7 +524,7 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
         Public&nbsp;access
         <select
           value={publicAccess}
-          onChange={(e) => setPublicAccess(e.target.value)}
+          onChange={(e) => setPublicAccess(e.target.value as AccessTypes)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         >
           <option value={AccessTypes.EDIT}>View &amp; edit</option>
@@ -500,13 +532,23 @@ function CreateNoteSubmodal({ name, setName, publicAccess, setPublicAccess }) {
           <option value={AccessTypes.NONE}>None</option>
         </select>
       </div>
+      <CreateFileButton className="mt-6" onClick={submit} text="Create note" />
     </div>
   );
 }
 
-function CreateFolderSubmodal({ name, setName }) {
+function CreateFolderSubmodal({ onSuccess, path }) {
+  const [name, setName] = useState("");
+
+  const submit = async () => {
+    await HttpServer.files.createFolder(getAuthToken(), path.at(-1), {
+      name,
+    });
+    onSuccess();
+  };
+
   return (
-    <div className="flex flex-col my-12 gap-6">
+    <div className="flex flex-col pt-4 gap-6">
       <div className="flex gap-4">
         Name
         <input
@@ -515,26 +557,20 @@ function CreateFolderSubmodal({ name, setName }) {
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         />
       </div>
+      <CreateFileButton className="mt-6" onClick={submit} text="Create folder" />
     </div>
   );
 }
 
 function PDFDropZone({ setPdfContent, setFileSize }) {
-  const onDrop = useCallback(
-    (acceptedFiles) => {
+  const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: async (acceptedFiles) => {
       if (acceptedFiles.length > 0) {
         const [file] = acceptedFiles;
         setFileSize(file.size);
-
-        const formData = new FormData();
-        formData.append("file", file);
-        setPdfContent(formData);
+        setPdfContent(file);
       }
     },
-    [setPdfContent, setFileSize]
-  );
-  const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
     accept: {
       "application/pdf": [".pdf"],
     },
@@ -569,12 +605,46 @@ function PDFDropZone({ setPdfContent, setFileSize }) {
   );
 }
 
-function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPdfContent }) {
+function ImportPDFSubmodal({ onSuccess, path }) {
+  const [name, setName] = useState("");
+  const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
   const [fileSize, setFileSize] = useState(0);
+  const [pdfConent, setPdfContent] = useState<File>(null);
+
   const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
 
+  const submit = async () => {
+    const formData = new FormData();
+    formData.append("file", pdfConent);
+    formData.append("token", getAuthToken());
+
+    const response = await fetch(GetApiPath(ApiUrlStrings.POST_PDF), {
+      method: "post",
+      body: formData,
+    });
+
+    const jsonReply = await response.json();
+
+    if (!response.ok) {
+      throw new Error("Failed to upload PDF. " + jsonReply.error);
+    }
+
+    const { fileHash } = jsonReply;
+
+    await HttpServer.files.createNote(getAuthToken(), path.at(-1), {
+      name,
+      publicAccess,
+      backgroundType: BackgroundTypes.pdf,
+      backgroundOptions: {
+        fileHash,
+      },
+    });
+
+    onSuccess();
+  };
+
   return (
-    <div className="flex flex-col my-12 gap-6">
+    <div className="flex flex-col gap-6">
       <div className="flex gap-4">
         Name
         <input
@@ -588,7 +658,7 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
         Public&nbsp;access
         <select
           value={publicAccess}
-          onChange={(e) => setPublicAccess(e.target.value)}
+          onChange={(e) => setPublicAccess(e.target.value as AccessTypes)}
           className="bg-gray-100 w-full border-[1px] px-2 border-gray-400 rounded-md"
         >
           <option value={AccessTypes.EDIT}>View &amp; edit</option>
@@ -603,23 +673,23 @@ function ImportPDFSubmodal({ name, setName, publicAccess, setPublicAccess, setPd
           File size: {fileSizeFormat} MB
         </p>
       </div>
+      <CreateFileButton onClick={submit} text="Create folder" />
     </div>
   );
 }
 
 async function CreateNote(name: string, parentFolderId: string, publicAccess: AccessTypes) {
   TrackNoteCreation("simple");
-  await HttpServer.files.createNote(getAuthToken(), {
+  await HttpServer.files.createNote(getAuthToken(), parentFolderId, {
     name,
-    parentFolderId,
     publicAccess,
     backgroundType: BackgroundTypes.blank,
   });
 }
 
-async function CreateFolder(name, parentDir) {
+async function CreateFolder(name: string, parentFolderId: string) {
   TrackFolderCreation();
-  await PostFileCreation(name, FileTypes.FOLDER, parentDir);
+  await HttpServer.files.createFolder(getAuthToken(), parentFolderId, { name });
 }
 
 async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent) {
@@ -631,6 +701,8 @@ async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent) {
   pdfFileContent.set("parentDir", parentDir);
   pdfFileContent.set("token", getAuthToken());
   pdfFileContent.set("defaultAccess", publicAccess);
+
+  console.log(pdfFileContent, JSON.stringify(pdfFileContent));
 
   const response = await fetch(GetApiPath("/api/pdf/receive-pdf"), {
     method: "post",
@@ -646,6 +718,17 @@ async function importPDFSubmit(name, parentDir, publicAccess, pdfFileContent) {
   }
 }
 
+function CreateFileButton({ onClick, text, className = "" }) {
+  return (
+    <button
+      onClick={onClick}
+      className={twMerge("bg-slate-800 hover:bg-slate-900 text-white px-4 py-1 rounded-md", className)}
+    >
+      {text}
+    </button>
+  );
+}
+
 function CreateFileModal({ path, onCancel, onSuccess }) {
   enum States {
     SELECT_ACTION,
@@ -655,10 +738,6 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
   }
 
   const [state, setState] = useState(States.SELECT_ACTION);
-
-  const [name, setName] = useState("");
-  const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
-  const [pdfContent, setPdfContent] = useState(null);
 
   const ModalHeader = () => {
     const Element = ({ children, state }) => {
@@ -708,44 +787,15 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
     );
   };
 
-  const submit = async () => {
-    const parentDir = path.at(-1);
-
-    if (state == States.CREATE_NOTE) {
-      await CreateNote(name, parentDir, publicAccess);
-    } else if (state == States.CREATE_FOLDER) {
-      await CreateFolder(name, parentDir);
-    } else if (state == States.IMPORT_PDF) {
-      await importPDFSubmit(name, parentDir, publicAccess, pdfContent);
-    }
-
-    onSuccess();
-  };
-
   const modalBody = () => {
     if (state == States.SELECT_ACTION) {
       return <ModalHeader />;
     } else if (state == States.CREATE_NOTE) {
-      return (
-        <CreateNoteSubmodal
-          name={name}
-          setName={setName}
-          publicAccess={publicAccess}
-          setPublicAccess={setPublicAccess}
-        />
-      );
+      return <CreateNoteSubmodal path={path} onSuccess={onSuccess} />;
     } else if (state == States.CREATE_FOLDER) {
-      return <CreateFolderSubmodal name={name} setName={setName} />;
+      return <CreateFolderSubmodal path={path} onSuccess={onSuccess} />;
     } else if (state == States.IMPORT_PDF) {
-      return (
-        <ImportPDFSubmodal
-          name={name}
-          setName={setName}
-          publicAccess={publicAccess}
-          setPublicAccess={setPublicAccess}
-          setPdfContent={setPdfContent}
-        />
-      );
+      return <ImportPDFSubmodal path={path} onSuccess={onSuccess} />;
     }
   };
 
@@ -755,16 +805,7 @@ function CreateFileModal({ path, onCancel, onSuccess }) {
       className="flex flex-col text-lg"
       onBack={state != States.SELECT_ACTION && (() => setState(States.SELECT_ACTION))}
     >
-      <div className="flex flex-col basis-full justify-center items-center">{modalBody()}</div>
-
-      {state != States.SELECT_ACTION && (
-        <button
-          onClick={submit}
-          className="w-full bg-slate-800 hover:bg-black text-white px-4 py-1 rounded-md self-center"
-        >
-          Create
-        </button>
-      )}
+      {modalBody()}
     </Modal>
   );
 }
@@ -819,81 +860,8 @@ function ProcessFilesData(rawFileList: RawFile[]): FileTree {
 
 async function GetFiles(): Promise<FileTree> {
   const filesData = (await HttpServer.files.getFiles(getAuthToken())) as RawFile[];
+  console.log(filesData);
   return ProcessFilesData(filesData);
-}
-
-async function PostFileCreation(name, type, parentDir, options = {}): Promise<boolean> {
-  const response = await fetch(GetApiPath("/api/explorer/addfile"), {
-    method: "post",
-    body: JSON.stringify({ token: getAuthToken(), name, type, parentDir, options }),
-    headers: {
-      "Content-type": "application/json;charset=UTF-8",
-    },
-  });
-
-  return response.status == 200;
-}
-
-async function PostFileEdit(id, newName, newVisibility = null, options = {}): Promise<boolean> {
-  const response = await fetch(GetApiPath("/api/explorer/editfile"), {
-    method: "post",
-    body: JSON.stringify({
-      token: getAuthToken(),
-      id: id,
-      newName: newName,
-      newVisibility: newVisibility || AccessTypes.NONE,
-      options: options,
-    }),
-    headers: {
-      "Content-type": "application/json;charset=UTF-8",
-    },
-  });
-
-  return response.status == 200;
-}
-
-async function PostFileRemoval(notes): Promise<boolean> {
-  const notesData = notes.map((x) => ({
-    type: x.type,
-    _id: x._id,
-  }));
-
-  const response = await fetch(GetApiPath("/api/explorer/removefiles"), {
-    method: "post",
-    body: JSON.stringify({
-      token: getAuthToken(),
-      notesToRemove: notesData,
-    }),
-    headers: {
-      "Content-type": "application/json;charset=UTF-8",
-    },
-  });
-
-  return response.status == 200;
-}
-
-async function PostFileMove(notes: FileTree, targetId: string): Promise<boolean> {
-  // Send only required stuff
-  const notesData = Object.values(notes).map((x) => {
-    return {
-      type: x.type,
-      _id: x._id,
-    };
-  });
-
-  const response = await fetch(GetApiPath("/api/explorer/movefiles"), {
-    method: "post",
-    body: JSON.stringify({
-      token: getAuthToken(),
-      notesToMove: notesData,
-      target: targetId,
-    }),
-    headers: {
-      "Content-type": "application/json;charset=UTF-8",
-    },
-  });
-
-  return response.status == 200;
 }
 
 enum Modals {

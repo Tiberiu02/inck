@@ -25,6 +25,21 @@ function validatePhoneNumber(phone: string) {
     );
 }
 
+export async function getAccountDetailsFromToken(req: Request, res: Response) {
+  try {
+    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN as string) as JwtPayload;
+    const userEntry: DBUser = await UserModel.findOne({ _id: token.userId });
+    res.status(201).send({
+      firstName: userEntry.firstName,
+      lastName: userEntry.lastName,
+      email: userEntry.email,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(400).send({ error: "Unable to fetch files" });
+  }
+}
+
 /**
  * Potential errors w/ status:
  * 400: missing fields, invalid email

@@ -1,6 +1,6 @@
 import { Timer } from "../Timer";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { FileModel, NoteModel, UserModel } from "../db/Models";
+import { FileModel, NoteModel } from "../db/Models";
 import { logEvent } from "../logging/AppendAnalytics";
 
 import { FileTypes, AccessTypes } from "../../../common-types/Files";
@@ -26,17 +26,45 @@ export async function getFiles(authToken: string) {
   return files;
 }
 
+export async function deleteFiles(authToken: string, fileIds: string[]) {
+  const user = parseAuthToken(authToken);
+
+  await FileModel.deleteMany({
+    _id: {
+      $in: fileIds,
+    },
+    owner: user.userId,
+  });
+}
+
+export async function moveFiles(authToken: string, fileIds: string[], targetId: string) {
+  const user = parseAuthToken(authToken);
+
+  await FileModel.updateMany(
+    {
+      _id: {
+        $in: fileIds,
+      },
+      owner: user.userId,
+    },
+    {
+      $set: {
+        parentDir: targetId,
+      },
+    }
+  );
+}
+
 // Create a new note
 
 type NoteOptions = {
   name: string;
-  parentFolderId: string;
   publicAccess: AccessTypes;
   backgroundType: BackgroundTypes;
   backgroundOptions?: BackgroundOptions;
 };
 
-export async function createNote(authToken: string, options: NoteOptions): Promise<void> {
+export async function createNote(authToken: string, parentFolderId: string, options: NoteOptions): Promise<void> {
   const user = parseAuthToken(authToken);
 
   const noteId = await generateNoteId();
@@ -44,7 +72,7 @@ export async function createNote(authToken: string, options: NoteOptions): Promi
   const createFile = FileModel.create({
     type: FileTypes.NOTE,
     name: options.name,
-    parentDir: options.parentFolderId,
+    parentDir: parentFolderId,
     owner: user.userId,
     fileId: noteId,
     defaultAccess: options.publicAccess,
@@ -61,6 +89,29 @@ export async function createNote(authToken: string, options: NoteOptions): Promi
   await Promise.all([createFile, createNote]);
 }
 
+export async function editNoteInfo(authToken: string, noteFileId: string, newOptions: NoteOptions) {
+  const user = parseAuthToken(authToken);
+
+  const note = await FileModel.findOne({ _id: noteFileId });
+
+  if (!note) {
+    throw new Error("Note not found");
+  }
+
+  if (note.owner != user.userId) {
+    throw new Error("Unauthorized");
+  }
+
+  console.log(newOptions);
+
+  note.name = newOptions.name;
+  note.defaultAccess = newOptions.publicAccess;
+  note.backgroundType = newOptions.backgroundType;
+  note.backgroundOptions = newOptions.backgroundOptions;
+
+  await note.save();
+}
+
 async function generateNoteId(): Promise<string> {
   const NOTE_ID_LEN = 6;
 
@@ -73,18 +124,40 @@ async function generateNoteId(): Promise<string> {
   return !notesWithId ? id : await generateNoteId();
 }
 
-async function generateFileId(): Promise<string> {
-  const FILE_ID_LEN = 10;
-
-  const id = Array(FILE_ID_LEN).fill(0).map(randomAlphaNumeric).join("");
-
-  const filesWithId = await FileModel.count({
-    fileId: id,
-  });
-
-  return !filesWithId ? id : await generateFileId();
-}
-
 const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randomUppercaseLetter = () => String.fromCharCode(randInt(65, 90));
-const randomAlphaNumeric = () => Math.random().toString(36).charAt(2);
+
+// Create a new folder
+
+type FolderOptions = {
+  name: string;
+};
+
+export async function createFolder(authToken: string, parentFolderId: string, options: FolderOptions): Promise<void> {
+  const user = parseAuthToken(authToken);
+
+  await FileModel.create({
+    type: FileTypes.FOLDER,
+    name: options.name,
+    parentDir: parentFolderId,
+    owner: user.userId,
+  });
+}
+
+export async function editFolderInfo(authToken: string, folderFileId: string, newOptions: FolderOptions) {
+  const user = parseAuthToken(authToken);
+
+  const folder = await FileModel.findOne({ _id: folderFileId });
+
+  if (!folder) {
+    throw new Error("Folder not found");
+  }
+
+  if (folder.owner != user.userId) {
+    throw new Error("Unauthorized");
+  }
+
+  folder.name = newOptions.name;
+
+  await folder.save();
+}

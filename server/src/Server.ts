@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { Server as SocketServer, Socket as WebSocket } from "socket.io";
 import mongoose from "mongoose";
 import fileupload from "express-fileupload";
+import { ApiUrlStrings } from "../../common-types/ApiUrlStrings";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -16,16 +17,8 @@ import {
   initializeResetPasswordUsingEmail,
   initializeResetPasswordUsingToken,
   changePasswordEndpoint,
-} from "./api/Authentication";
-import {
-  createFileFn,
-  editFileFn,
   getAccountDetailsFromToken,
-  getFilesFn,
-  importFreeNote,
-  moveFilesFn,
-  removeFilesFn,
-} from "./api/FileExplorer";
+} from "./api/Authentication";
 import { disconnect, newStroke, removeStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets";
 import { NoteModel } from "./db/Models";
 import { getPDF, receivePDF } from "./api/Pdf";
@@ -97,22 +90,15 @@ export class Server {
     this.app.post("/api/auth/register", jsonBodyParser, registerFn);
     this.app.post("/api/auth/login", jsonBodyParser, loginFn);
 
-    this.app.post("/api/explorer/getfiles", jsonBodyParser, getFilesFn);
-    this.app.post("/api/explorer/addfile", jsonBodyParser, createFileFn);
-    this.app.post("/api/explorer/editfile", jsonBodyParser, editFileFn);
-    this.app.post("/api/explorer/removefiles", jsonBodyParser, removeFilesFn);
-    this.app.post("/api/explorer/movefiles", jsonBodyParser, moveFilesFn);
-    this.app.post("/api/explorer/import-free-note", jsonBodyParser, importFreeNote);
-
     this.app.post("/api/settings/account-details", jsonBodyParser, getAccountDetailsFromToken);
     // Request a password change (send email, save request in db, etc)
     this.app.post("/api/auth/reset-password-with-token", jsonBodyParser, initializeResetPasswordUsingToken);
     this.app.post("/api/auth/reset-password-with-email", jsonBodyParser, initializeResetPasswordUsingEmail);
     this.app.post("/api/auth/change-password", jsonBodyParser, changePasswordEndpoint);
 
-    // PDF loading/serving stuff
-    this.app.post("/api/pdf/receive-pdf", fileuploadParser, receivePDF);
-    this.app.get("/api/pdf/get-pdf/:pdfName.pdf", getPDF);
+    // PDF uploading/serving stuff
+    this.app.post(ApiUrlStrings.POST_PDF, fileuploadParser, receivePDF);
+    this.app.get(`${ApiUrlStrings.GET_PDF}/:pdfName.pdf`, getPDF);
   }
 
   buildRestApi(handler: any, path: string) {
@@ -129,7 +115,7 @@ export class Server {
           res.status(200).send({ result });
         } catch (err) {
           console.log(err);
-          res.status(400).send({ error: err });
+          res.status(400).send({ error: err.message });
         }
       });
     }

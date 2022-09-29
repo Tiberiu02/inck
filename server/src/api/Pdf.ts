@@ -1,16 +1,15 @@
-import _fs from "fs";
+import fs from "fs";
 import crypto from "crypto";
 import { generateNewFileName, insertNewNoteInDB, NEW_FILES_NAME_LENGTH } from "./FileExplorer";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { FileModel, NoteModel } from "../db/Models";
 import { Request, Response } from "express";
 import { Timer } from "../Timer";
 import { logEvent } from "../logging/AppendAnalytics";
 import path from "path";
+import { UploadedFile } from "express-fileupload";
 
 const PDF_LOCATION = "../user-data/pdfs";
-
-const fs = _fs.promises;
 
 function hashFile(buffer) {
   const hashSum = crypto.createHash("sha256");
@@ -20,65 +19,38 @@ function hashFile(buffer) {
 
 export async function receivePDF(req: Request, res: Response) {
   try {
-    const timer = new Timer();
-    const pdfData = req.files.file.data;
-    const { name, parentDir, defaultAccess } = req.body;
+    const user = jwt.verify(req.body.token, process.env.JWT_TOKEN) as JwtPayload;
 
-    const newFileId = await generateNewFileName(NEW_FILES_NAME_LENGTH);
+    const pdfData = (req.files.file as UploadedFile).data;
+
     const pdfDataHash = hashFile(pdfData);
     const pdfFileName = `${pdfDataHash}.pdf`;
-    const token = jwt.verify(req.body.token, process.env.JWT_TOKEN);
 
     const pdfPath = path.resolve(PDF_LOCATION, pdfFileName);
-    const fsPromise = fs.writeFile(pdfPath, pdfData);
+    fs.writeFileSync(pdfPath, pdfData);
 
-    const insertPromise = insertNewNoteInDB({
-      type: "note",
-      name: name,
-      parentDir: parentDir,
-      owner: token.userId,
-      fileId: newFileId,
-      defaultAccess: defaultAccess,
-      backgroundType: "pdf",
-      backgroundOptions: {
-        fileHash: pdfDataHash,
-      },
-    });
+    logEvent("pdf-upload", { user: user.email, hash: pdfDataHash });
 
-    await fsPromise;
-    await insertPromise;
-
-    const allFiles = await FileModel.find({
-      owner: token.userId,
-    });
-    logEvent("create_auth_file", {
-      userId: token.userId,
-      fileId: newFileId,
-      type: "note",
-      name,
-      executionTime: timer.elapsed().toString(),
-      pdf: "true",
-    });
     return res.status(201).send({
       status: "success",
-      files: allFiles,
+      fileHash: pdfDataHash,
     });
   } catch (err) {
     console.log(err);
-    res.status(400).send({ error: "Unable to import pdf (454)" });
+    res.status(400).send({ error: err.message });
   }
 }
 
 export async function getPDF(req: Request, res: Response) {
   try {
-    const timer = new Timer();
     const pdfName = req.params.pdfName + ".pdf";
     const pdfPath = path.resolve(PDF_LOCATION, pdfName);
-    res.sendFile(pdfPath);
+
     logEvent("serving_pdf_file", {
       pdfName,
-      executionTime: timer.elapsed().toString(),
     });
+
+    res.sendFile(pdfPath);
   } catch (err) {
     console.error(err);
   }

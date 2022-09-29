@@ -1,7 +1,7 @@
 {
   "name": "@inck/server",
   "scripts": {
-    "dev": "nodemon",
+    "dev": "nodemon --ext js,json,ts",
     "start": "ts-node src/index"
   },
   "dependencies": {
