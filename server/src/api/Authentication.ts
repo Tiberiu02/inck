@@ -1,11 +1,11 @@
-import { PasswordResetModel, UserModel } from "../db/Models.js";
+import { PasswordResetModel, UserModel } from "../db/Models";
 import bcrypt from "bcryptjs";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
-import { sendPasswordConfirmationEmail, sendPasswordRecoveryEmail, sendRegistrationEmail } from "../email/Mailer.js";
+import { sendPasswordConfirmationEmail, sendPasswordRecoveryEmail, sendRegistrationEmail } from "../email/Mailer";
 import { Request, Response } from "express";
-import { DBUser } from "../BackendInterfaces.js";
-import { logEvent } from "../logging/AppendAnalytics.js";
+import { DBUser } from "../BackendInterfaces";
+import { logEvent } from "../logging/AppendAnalytics";
 
 function validateEmail(email: string) {
   return String(email)

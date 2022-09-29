@@ -2,7 +2,7 @@
   "ignore": [
     "node_modules"
   ],
-  "exctensions": [
+  "extensions": [
     "js", "ts", "json"
   ]
 }

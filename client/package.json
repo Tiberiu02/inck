@@ -10,6 +10,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.1.1",
     "@fortawesome/free-solid-svg-icons": "^6.1.1",
     "@fortawesome/react-fontawesome": "^0.1.18",
+    "@inck/common-types": "workspace:*",
     "@tailwindcss/line-clamp": "^0.3.1",
     "@types/node": "^18.0.1",
     "aws-sdk": "^2.1214.0",

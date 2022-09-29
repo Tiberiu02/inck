@@ -17,8 +17,8 @@ import { MaterialSymbol } from "../components/MaterialSymbol";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { HttpServer } from "../ServerConnector";
 
-import { FileTypes, AccessTypes } from "../../../server/common-types/Files";
-import { BackgroundTypes } from "../../../server/common-types/Notes";
+import { FileTypes, AccessTypes } from "../../../common-types/Files";
+import { BackgroundTypes } from "../../../common-types/Notes";
 
 type FileInfo = {
   _id: string;

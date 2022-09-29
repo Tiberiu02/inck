@@ -1,4 +1,4 @@
-import { FileModel } from "../db/Models.js";
+import { FileModel } from "../db/Models";
 
 /**
  * keep files only now

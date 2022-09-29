@@ -16,7 +16,7 @@ import {
   initializeResetPasswordUsingEmail,
   initializeResetPasswordUsingToken,
   changePasswordEndpoint,
-} from "./api/Authentication.js";
+} from "./api/Authentication";
 import {
   createFileFn,
   editFileFn,
@@ -25,19 +25,12 @@ import {
   importFreeNote,
   moveFilesFn,
   removeFilesFn,
-} from "./api/FileExplorer.js";
-import {
-  disconnect,
-  newStroke,
-  removeStroke,
-  requestDocument,
-  remoteControl,
-  directedRemoteControl,
-} from "./Sockets.js";
-import { NoteModel } from "./db/Models.js";
-import { getPDF, receivePDF } from "./api/Pdf.js";
-import { DrawingUser, DrawnDocument } from "./BackendInterfaces.js";
-import { API } from "./api/index.js";
+} from "./api/FileExplorer";
+import { disconnect, newStroke, removeStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets";
+import { NoteModel } from "./db/Models";
+import { getPDF, receivePDF } from "./api/Pdf";
+import { DrawingUser, DrawnDocument } from "./BackendInterfaces";
+import { API } from "./api/index";
 
 const MILLIS_PER_WEEK = 604800000;
 const MILLIS_PER_DAY = 86400000;

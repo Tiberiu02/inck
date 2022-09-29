@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { Socket } from "socket.io";
-import { NoteAccess } from "./api/FileExplorer.js";
+import { NoteAccess } from "./api/FileExplorer";
 
 export interface DrawingUser {
   ip: string;

@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 dotenv.config();
 
-import { UserModel } from "../db/Models.js";
+import { UserModel } from "../db/Models";
 
 async function main() {
   mongoose.connect(process.env.MONGO_URI);

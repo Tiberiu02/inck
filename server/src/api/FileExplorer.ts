@@ -1,13 +1,13 @@
-import { FileModel, NoteModel, UserModel } from "../db/Models.js";
+import { FileModel, NoteModel, UserModel } from "../db/Models";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { ObjectId } from "mongodb";
-import { exploreTree } from "./FsTreeExplorer.js";
+import { exploreTree } from "./FsTreeExplorer";
 import { Request, Response } from "express";
-import { DBUser, FileType } from "../BackendInterfaces.js";
-import { Timer } from "../Timer.js";
-import { logEvent } from "../logging/AppendAnalytics.js";
+import { DBUser, FileType } from "../BackendInterfaces";
+import { Timer } from "../Timer";
+import { logEvent } from "../logging/AppendAnalytics";
 
-import { AccessTypes } from "../../common-types/Files.js";
+import { AccessTypes } from "../../../common-types/Files";
 
 // TODO: make cleaner once sure everything works
 const VALID_VISIBILITIES = [AccessTypes.NONE, AccessTypes.VIEW, AccessTypes.EDIT];

@@ -1,10 +1,10 @@
 import nodemailer from "nodemailer";
 
-import { Timer } from "../Timer.js";
-import { logEvent } from "../logging/AppendAnalytics.js";
+import { Timer } from "../Timer";
+import { logEvent } from "../logging/AppendAnalytics";
 
 import dotenv from "dotenv";
-import { EmailTemplates } from "./templates/TemplateLoader.js";
+import { EmailTemplates } from "./templates/TemplateLoader";
 dotenv.config();
 
 function fillTemplate(html: string, data: { [id: string]: string }) {

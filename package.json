@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "A web-based note taking app.",
   "scripts": {
-    "install": "npm install && cd client && npm install && cd ../server && npm install",
     "dev-server": "cd server && npm run dev",
     "dev-client": "cd client && npm run dev",
     "dev-all": "npx concurrently \"npm run dev-server\" \"npm run dev-client\"",

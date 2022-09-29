@@ -1,4 +1,4 @@
-import * as files from "./files.js";
+import * as files from "./files";
 
 export const API = {
   files: files,

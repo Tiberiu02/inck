@@ -1,11 +1,11 @@
 import _fs from "fs";
 import crypto from "crypto";
-import { generateNewFileName, insertNewNoteInDB, NEW_FILES_NAME_LENGTH } from "./FileExplorer.js";
+import { generateNewFileName, insertNewNoteInDB, NEW_FILES_NAME_LENGTH } from "./FileExplorer";
 import jwt from "jsonwebtoken";
-import { FileModel, NoteModel } from "../db/Models.js";
+import { FileModel, NoteModel } from "../db/Models";
 import { Request, Response } from "express";
-import { Timer } from "../Timer.js";
-import { logEvent } from "../logging/AppendAnalytics.js";
+import { Timer } from "../Timer";
+import { logEvent } from "../logging/AppendAnalytics";
 import path from "path";
 
 const PDF_LOCATION = "../user-data/pdfs";

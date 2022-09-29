@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { FileModel, NoteModel } from "./db/Models.js";
+import { FileModel, NoteModel } from "./db/Models";
 import { Socket as WebSocket } from "socket.io";
 import {
   BackgroundTypes,
@@ -9,10 +9,10 @@ import {
   FrontEndNoteData,
   JwtPayload,
   Stroke,
-} from "./BackendInterfaces.js";
-import { Timer } from "./Timer.js";
-import { logEvent } from "./logging/AppendAnalytics.js";
-import { AccessTypes } from "../common-types/Files.js";
+} from "./BackendInterfaces";
+import { Timer } from "./Timer";
+import { logEvent } from "./logging/AppendAnalytics";
+import { AccessTypes } from "../../common-types/Files";
 
 function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {
