@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.js",
+    "dev": "nodemon",
     "start": "ts-node src/index"
   },
   "dependencies": {

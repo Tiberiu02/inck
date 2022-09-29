@@ -6,10 +6,6 @@ package-lock.json
 /.pnp
 .pnp.js
 
-# transpiled files
-common-types/**/*.js
-server/**/*.js
-
 # environment variables
 .env
 

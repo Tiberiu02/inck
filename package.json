@@ -4,17 +4,15 @@
   "description": "A web-based note taking app.",
   "scripts": {
     "install": "npm install && cd client && npm install && cd ../server && npm install",
-    "dev-types": "cd common-types && tsc -w",
     "dev-server": "cd server && npm run dev",
     "dev-client": "cd client && npm run dev",
-    "dev-all": "npx concurrently \"npm run dev-types\" \"npm run dev-server\" \"npm run dev-client\"",
-    "build-types": "cd common-types && npx tsc",
+    "dev-all": "npx concurrently \"npm run dev-server\" \"npm run dev-client\"",
     "build-client": "cd server && npm run build",
-    "build-all": "npx concurrently \"npm run build-types\" \"npm run build-client\"",
+    "build-all": "npm run build-client",
     "start-client": "cd client && npm run start",
     "start-server": "cd server && npm run start",
     "start-all": "npx concurrently \"npm run start-client\" \"npm run start-server\"",
-    "line-count": "npx sloc --exclude \"(node_modules|next|\\.js$)\" ."
+    "line-count": "npx sloc --exclude \"(node_modules|next)\" ."
   },
   "repository": {
     "type": "git",

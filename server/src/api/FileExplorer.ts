@@ -7,7 +7,7 @@ import { DBUser, FileType } from "../BackendInterfaces.js";
 import { Timer } from "../Timer.js";
 import { logEvent } from "../logging/AppendAnalytics.js";
 
-import { AccessTypes } from "../../../common-types/Files.js";
+import { AccessTypes } from "../../common-types/Files.js";
 
 // TODO: make cleaner once sure everything works
 const VALID_VISIBILITIES = [AccessTypes.NONE, AccessTypes.VIEW, AccessTypes.EDIT];

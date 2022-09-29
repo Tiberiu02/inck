@@ -3,8 +3,8 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { FileModel, NoteModel, UserModel } from "../db/Models.js";
 import { logEvent } from "../logging/AppendAnalytics.js";
 
-import { FileTypes, AccessTypes } from "../../../common-types/Files.js";
-import { BackgroundOptions, BackgroundTypes } from "../../../common-types/Notes.js";
+import { FileTypes, AccessTypes } from "../../common-types/Files.js";
+import { BackgroundOptions, BackgroundTypes } from "../../common-types/Notes.js";
 
 function parseAuthToken(token: string): JwtPayload {
   return jwt.verify(token, process.env.JWT_TOKEN as string) as JwtPayload;

@@ -12,7 +12,7 @@ import {
 } from "./BackendInterfaces.js";
 import { Timer } from "./Timer.js";
 import { logEvent } from "./logging/AppendAnalytics.js";
-import { AccessTypes } from "../../common-types/Files.js";
+import { AccessTypes } from "../common-types/Files.js";
 
 function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {

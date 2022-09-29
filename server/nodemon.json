@@ -1,9 +1,8 @@
 {
   "ignore": [
-    ".git",
     "node_modules"
   ],
-  "watch": [
-    "../common-types"
+  "exctensions": [
+    "js", "ts", "json"
   ]
 }

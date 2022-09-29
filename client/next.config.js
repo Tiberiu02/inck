@@ -7,6 +7,11 @@ const nextConfig = {
       exclude: /node_modules/,
       use: "raw-loader",
     });
+    config.module.rules.push({
+      test: /common-types.*\.ts$/,
+      exclude: /node_modules/,
+      use: "ts-loader",
+    });
     return config;
   },
 };
