@@ -3,6 +3,7 @@ export const ServerApiSkeleton = {
   "files": {
     "getFiles": 1,
     "deleteFiles": 1,
+    "exploreTree": 1,
     "moveFiles": 1,
     "createNote": 1,
     "editNoteInfo": 1,

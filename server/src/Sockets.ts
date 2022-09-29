@@ -200,14 +200,15 @@ async function requestDocumentFn(
     id: id,
     strokes: {},
     canWrite: false,
+    creationDate: Date.now(),
   };
 
   // if note doesn't exist => create free note
   if (!noteExists) {
     await NoteModel.create({ id: id, isFreeNote: true, format: LAST_NOTE_FORMAT });
   } else {
-    // object, new format
     note.strokes = noteData.strokes;
+    note.creationDate = noteData.creationDate.getTime();
 
     if (noteData.backgroundType == BackgroundTypes.pdf) {
       const fileHash = noteData.backgroundOptions.fileHash as string;
@@ -225,6 +226,7 @@ async function requestDocumentFn(
   user.docId = id;
   user.canWrite = canWrite;
   checkSpecialPriviledges(user);
+
   note.canWrite = user.canWrite;
 
   const docUserList = docs[id] || { users: [] };

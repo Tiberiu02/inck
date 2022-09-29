@@ -57,21 +57,26 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
       //     strokesDict[stroke.id] = stroke;
       //   }
       // }
-      const strokesDict = data.strokes;
+      const receivedStrokes = data.strokes;
 
-      for (let stroke of Object.values(strokesDict)) {
+      for (const stroke of Object.values(this.strokes)) {
+        if (
+          (!receivedStrokes[stroke.id] && stroke.timestamp > data.creationDate) ||
+          (receivedStrokes[stroke.id] && receivedStrokes[stroke.id].timestamp < this.strokes[stroke.id].timestamp)
+        ) {
+          network.emit("new stroke", stroke);
+        } else {
+          this.baseCanvas.add(RemovedGraphic(stroke.id));
+        }
+      }
+
+      for (let stroke of Object.values(receivedStrokes)) {
         if (!this.strokes[stroke.id] || this.strokes[stroke.id].timestamp < stroke.timestamp) {
           this.strokes[stroke.id] = stroke;
           const deserializedGraphic = DeserializeGraphic(stroke);
           if (deserializedGraphic) {
             this.baseCanvas.add(deserializedGraphic);
           }
-        }
-      }
-
-      for (const stroke of Object.values(this.strokes)) {
-        if (!strokesDict[stroke.id] || strokesDict[stroke.id].timestamp < this.strokes[stroke.id].timestamp) {
-          network.emit("new stroke", stroke);
         }
       }
 

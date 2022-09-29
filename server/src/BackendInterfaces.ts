@@ -91,4 +91,5 @@ export interface FrontEndNoteData {
   strokes: { [id: string]: Stroke };
   pdfUrl?: string;
   canWrite: boolean;
+  creationDate: number;
 }

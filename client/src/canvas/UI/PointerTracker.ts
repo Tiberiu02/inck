@@ -127,7 +127,9 @@ export class PointerTracker {
         target: t.target,
       });
 
-      for (const t of e.changedTouches) {
+      const touches = e.changedTouches;
+      for (let i = 0; i < touches.length; i++) {
+        const t = touches.item(i);
         if (e.type == "touchstart" || e.type == "touchmove") {
           this.fingers[t.identifier] = touchToFinger(t);
         } else {

@@ -3,14 +3,14 @@ import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { BUFFER_SIZE } from "./BaseStrokeContainer";
 
 export function OptimizeDrawables(drawables: Graphic[]): Graphic[] {
-  const vectors: VectorGraphic[] = drawables.filter(d => d.type == GraphicTypes.VECTOR) as VectorGraphic[];
-  const nonVectors = drawables.filter(d => d.type != GraphicTypes.VECTOR);
+  const vectors: VectorGraphic[] = drawables.filter((d) => d.type == GraphicTypes.VECTOR) as VectorGraphic[];
+  const nonVectors = drawables.filter((d) => d.type != GraphicTypes.VECTOR);
 
-  const layers = new Set(drawables.map(d => d.zIndex));
+  const layers = new Set(drawables.map((d) => d.zIndex));
 
   const optimized = [];
-  for (const layer of layers) {
-    const v = vectors.filter(g => g.zIndex == layer);
+  layers.forEach((layer) => {
+    const v = vectors.filter((g) => g.zIndex == layer);
     if (v.length) {
       let compounded = v[0];
       for (let i = 1; i < v.length; i++) {
@@ -26,7 +26,7 @@ export function OptimizeDrawables(drawables: Graphic[]): Graphic[] {
       }
       optimized.push(compounded);
     }
-  }
+  });
 
   return optimized.concat(nonVectors);
 }

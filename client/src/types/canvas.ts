@@ -4,4 +4,5 @@ export type NoteData = {
   id: string;
   canWrite: boolean;
   strokes: SerializedGraphic[];
+  creationDate: number;
 };

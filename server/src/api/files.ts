@@ -26,8 +26,22 @@ export async function getFiles(authToken: string) {
   return files;
 }
 
-export async function deleteFiles(authToken: string, fileIds: string[]) {
+export async function deleteFiles(authToken: string, rootFileIds: string[]) {
   const user = parseAuthToken(authToken);
+
+  const fileIds = [];
+  const noteIds = [];
+
+  await exploreTree(rootFileIds, (file) => {
+    if (file.owner != user.userId) {
+      throw new Error("Unauthorized");
+    }
+
+    fileIds.push(file._id);
+    if (file.type == FileTypes.NOTE) {
+      noteIds.push(file.fileId);
+    }
+  });
 
   await FileModel.deleteMany({
     _id: {
@@ -35,6 +49,30 @@ export async function deleteFiles(authToken: string, fileIds: string[]) {
     },
     owner: user.userId,
   });
+
+  await NoteModel.deleteMany({
+    id: {
+      $in: noteIds,
+    },
+  });
+}
+
+export async function exploreTree(roots: string[], callback): Promise<void> {
+  await Promise.all(
+    roots.map(async (fileId) => {
+      const file = await FileModel.findOne({ _id: fileId });
+      if (file.type == FileTypes.FOLDER) {
+        const children = await FileModel.find({
+          parentDir: fileId,
+        });
+        await exploreTree(
+          children.map((f) => f._id.toString() as string),
+          callback
+        );
+      }
+      await callback(file.toObject());
+    })
+  );
 }
 
 export async function moveFiles(authToken: string, fileIds: string[], targetId: string) {

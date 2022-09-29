@@ -222,7 +222,7 @@ export class GL {
       } else if (u.length == 16) {
         GL.setUniformMatrix4fv(this.ctx, program, name, u);
       } else {
-        throw new Error("Unknown uniform:", u);
+        throw new Error(`Unknown uniform: ${u}`);
       }
     }
   }
