@@ -65,7 +65,7 @@ function WelcomeMessage() {
 
 function SignInBtn({ className }) {
   return (
-    <Link href="/auth">
+    <Link href="/app">
       <div className={`relative lg:w-104 w-full max-w-lg ${className}`}>
         {/* <WelcomeMessage /> */}
         <button className="flex flex-row w-full py-3 px-6 items-center justify-center relative z-10 bg-primary hover:bg-primary-dark duration-200 rounded-xl">

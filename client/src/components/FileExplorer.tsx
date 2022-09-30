@@ -3,24 +3,25 @@ import React, { useState, useEffect, PointerEvent, ReactNode } from "react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { FaAngleDown, FaAngleRight, FaPencilAlt, FaBook, FaFolder, FaFolderOpen } from "react-icons/fa";
-import { getAuthToken, disconnect } from "../components/AuthToken";
-import GetApiPath from "../components/GetApiPath";
+import { getAuthToken, disconnect } from "./AuthToken";
+import GetApiPath from "./GetApiPath";
 import Link from "next/link";
-import { TrackFolderCreation, TrackNoteCreation } from "../components/Analytics";
+import { TrackFolderCreation, TrackNoteCreation } from "./Analytics";
 import { NoteToPdf } from "../canvas/PDF/PdfExport";
 import download from "downloadjs";
 import JSZip from "jszip";
-import { Spinner } from "../components/Spinner";
+import { Spinner } from "./Spinner";
 import { IconType } from "react-icons/lib";
 import { twMerge } from "tailwind-merge";
-import { MaterialSymbol } from "../components/MaterialSymbol";
+import { MaterialSymbol } from "./MaterialSymbol";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { HttpServer } from "../ServerConnector";
 
-import { FileTypes, AccessTypes } from "../../../common-types/Files";
-import { BackgroundTypes } from "../../../common-types/Notes";
+import { FileTypes, AccessTypes } from "@inck/common-types/Files";
+import { BackgroundTypes } from "@inck/common-types/Notes";
 import { ApiUrlStrings } from "@inck/common-types/ApiUrlStrings";
 import Router from "next/router";
+import { LoadingPage } from "./LoadingPage";
 
 type FileInfo = {
   _id: string;
@@ -860,6 +861,9 @@ function ProcessFilesData(rawFileList: RawFile[]): FileTree {
 }
 
 async function GetFiles(): Promise<FileTree> {
+  if (!getAuthToken()) {
+    throw new Error("not logged in");
+  }
   const filesData = (await HttpServer.files.getFiles(getAuthToken())) as RawFile[];
   console.log(filesData);
   return ProcessFilesData(filesData);
@@ -1166,12 +1170,8 @@ export default function ExplorerLoader() {
   };
 
   const init = async () => {
-    try {
-      await refreshFiles();
-      InitTawkTo();
-    } catch (e) {
-      Router.push("/auth");
-    }
+    await refreshFiles();
+    InitTawkTo();
   };
 
   useEffect(() => {
@@ -1181,6 +1181,6 @@ export default function ExplorerLoader() {
   if (files) {
     return <Explorer files={files} refreshFiles={refreshFiles} />;
   } else {
-    return <Spinner className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10" />;
+    return <LoadingPage />;
   }
 }

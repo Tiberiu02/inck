@@ -1,34 +1,31 @@
-import Head from "next/head";
-import Script from "next/script";
 import React, { useEffect, useState } from "react";
-import Register from "../components/auth/register";
-import Login from "../components/auth/login";
-import { useRouter } from "next/router";
-import { getAuthToken } from "../components/AuthToken";
-import ResetPassword from "../components/auth/resetPassword";
+import Register from "./auth/register";
+import Login from "./auth/login";
+import ResetPassword from "./auth/resetPassword";
+import { getAuthToken } from "./AuthToken";
+import Router from "next/router";
 
 // "@next/swc-win32-x64-msvc": "^12.1.5",
 
 export default function AuthPage() {
-  /*
-   * Possible display states:
-   * login
-   * sign-up
-   * reset-password
-   */
-  const [displayLogin, setDisplayLogin] = useState(true);
-  const [displayState, setDisplayState] = useState("login");
+  enum States {
+    LOGIN,
+    SIGN_UP,
+    RESET_PASSWORD,
+  }
+
+  const [displayState, setDisplayState] = useState(States.LOGIN);
 
   let displayedComponent;
-  const toSignUp = () => setDisplayState("sign-up");
-  const toLogin = () => setDisplayState("login");
-  const toResetPassword = () => setDisplayState("reset-password");
+  const toSignUp = () => setDisplayState(States.SIGN_UP);
+  const toLogin = () => setDisplayState(States.LOGIN);
+  const toResetPassword = () => setDisplayState(States.RESET_PASSWORD);
 
-  if (displayState == "login") {
+  if (displayState == States.LOGIN) {
     displayedComponent = <Login toSignUpCallback={toSignUp} toPasswordResetCallback={toResetPassword} />;
-  } else if (displayState == "sign-up") {
+  } else if (displayState == States.SIGN_UP) {
     displayedComponent = <Register toLoginCallback={toLogin} toResetPasswordCallback={toResetPassword} />;
-  } else if (displayState == "reset-password") {
+  } else if (displayState == States.RESET_PASSWORD) {
     displayedComponent = <ResetPassword toLoginCallback={toLogin} toRegisterCallback={toSignUp} />;
   }
 

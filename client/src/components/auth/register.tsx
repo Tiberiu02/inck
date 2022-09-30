@@ -73,7 +73,7 @@ export default function Register({ toLoginCallback, toResetPasswordCallback }) {
       if (response.status == 201) {
         TrackSignUp(email);
         setAuthToken(jsonResponse.token);
-        router.push("/explorer");
+        router.reload();
       } else {
         setTimedError(jsonResponse["error"]);
       }

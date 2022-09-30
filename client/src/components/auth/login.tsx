@@ -33,7 +33,7 @@ export default function Login({ toSignUpCallback, toPasswordResetCallback }) {
     if (response.status == 200) {
       TrackLogin(email);
       setAuthToken(jsonResponse.token);
-      router.push("/explorer");
+      router.reload();
     } else {
       setError("Error: " + jsonResponse["error"]);
       setTimeout(() => setError(""), 10_000);
