@@ -20,6 +20,7 @@ import { HttpServer } from "../ServerConnector";
 import { FileTypes, AccessTypes } from "../../../common-types/Files";
 import { BackgroundTypes } from "../../../common-types/Notes";
 import { ApiUrlStrings } from "@inck/common-types/ApiUrlStrings";
+import Router from "next/router";
 
 type FileInfo = {
   _id: string;
@@ -1164,9 +1165,17 @@ export default function ExplorerLoader() {
     setFiles(newFiles);
   };
 
+  const init = async () => {
+    try {
+      await refreshFiles();
+      InitTawkTo();
+    } catch (e) {
+      Router.push("/auth");
+    }
+  };
+
   useEffect(() => {
-    refreshFiles();
-    InitTawkTo();
+    init();
   }, []);
 
   if (files) {
