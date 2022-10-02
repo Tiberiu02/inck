@@ -4,7 +4,7 @@
   "private": true,
   "description": "A web-based note taking app.",
   "scripts": {
-    "install": "cd packages/client && npm run install && cd ../server && npm run install",
+    "install": "cd packages/client && npm install && cd ../server && npm install",
     "dev-server": "cd packages/server && npm run dev",
     "dev-client": "cd packages/client && npm run dev",
     "dev-all": "npx concurrently \"npm run dev-server\" \"npm run dev-client\"",
