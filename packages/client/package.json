@@ -1,4 +1,7 @@
 {
+  "name": "@inck/client",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "next dev -- -p 3080",
     "build": "next build",
@@ -11,6 +14,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.1.1",
     "@fortawesome/react-fontawesome": "^0.1.18",
     "@inck/common-types": "^1.0.0",
+    "@inck/server": "^1.0.0",
     "@tailwindcss/line-clamp": "^0.3.1",
     "@types/node": "^18.0.1",
     "aws-sdk": "^2.1214.0",
@@ -38,7 +42,7 @@
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.2",
     "react-icons": "^4.4.0",
-    "sloc": "^0.2.1",
+    "sloc": "^0.1.11",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.5.1",
     "tailwind-merge": "^1.6.0",

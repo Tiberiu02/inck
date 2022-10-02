@@ -12,7 +12,7 @@ import {
 } from "./BackendInterfaces";
 import { Timer } from "./Timer";
 import { logEvent } from "./logging/AppendAnalytics";
-import { AccessTypes } from "../../common-types/Files";
+import { AccessTypes } from "@inck/common-types/Files";
 
 function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {
@@ -161,8 +161,8 @@ async function docRights(docId: string, user: DrawingUser) {
   const access = fileData.defaultAccess;
   const isOwner = token.userId == fileData.owner;
 
-  const readAccess = access == AccessTypes.readWrite || access == AccessTypes.readOnly || isOwner;
-  const writeAccess = access == AccessTypes.readWrite || isOwner;
+  const readAccess = access == AccessTypes.EDIT || access == AccessTypes.VIEW || isOwner;
+  const writeAccess = access == AccessTypes.EDIT || isOwner;
 
   return [readAccess, writeAccess];
 }

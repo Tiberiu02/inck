@@ -1,4 +1,4 @@
-import type { API } from "../../server/src/api/index";
+import type { API } from "@inck/server/src/api/index";
 import { ServerApiSkeleton } from "../server-api-skeleton";
 
 function GetApiPath(path) {

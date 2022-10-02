@@ -1,15 +1,16 @@
 {
   "name": "inck",
   "version": "1.0.0",
+  "private": true,
   "description": "A web-based note taking app.",
   "scripts": {
-    "dev-server": "cd server && npm run dev",
-    "dev-client": "cd client && npm run dev",
+    "dev-server": "cd packages/server && npm run dev",
+    "dev-client": "cd packages/client && npm run dev",
     "dev-all": "npx concurrently \"npm run dev-server\" \"npm run dev-client\"",
-    "build-client": "cd client && npm run build",
+    "build-client": "cd packages/client && npm run build",
     "build-all": "npm run build-client",
-    "start-client": "cd client && npm run start",
-    "start-server": "cd server && npm run start",
+    "start-client": "cd packages/client && npm run start",
+    "start-server": "cd packages/server && npm run start",
     "start-all": "npx concurrently \"npm run start-client\" \"npm run start-server\"",
     "line-count": "npx sloc --exclude \"(node_modules|next)\" ."
   },
@@ -27,7 +28,8 @@
     "typescript": "^4.8.4"
   },
   "workspaces": [
-    "common-types",
-    "client"
+    "packages/common-types",
+    "packages/server",
+    "packages/client"
   ]
 }

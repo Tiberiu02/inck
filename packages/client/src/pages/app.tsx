@@ -3,7 +3,7 @@ import { getAuthToken } from "../components/AuthToken";
 import { LoadingPage } from "../components/LoadingPage";
 import AuthPage from "../components/AuthPage";
 import { ExplorerLoader } from "../components/file-explorer/FileExplorer";
-import { Settings } from "../components/settings";
+import { Settings } from "../components/Settings";
 
 export default function App() {
   enum Pages {

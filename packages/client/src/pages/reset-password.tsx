@@ -1,8 +1,6 @@
 import Head from "next/head";
 import { useState } from "react";
-import Router from "next/router";
 import { postFetchAPI } from "../components/GetApiPath";
-import { disconnect } from "../components/AuthToken";
 
 export default function ResetPassword() {
   const [newPass, setNewPass] = useState("");

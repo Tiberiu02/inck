@@ -13,8 +13,8 @@ package-lock.json
 /coverage
 
 # next.js
-/client/.next/
-/client/out/
+packages/client/.next/
+packages/client/out/
 
 # production
 /build
@@ -36,4 +36,4 @@ yarn-error.log*
 .vercel
 
 # user data
-user-data/*
+packages/user-data/*
