@@ -3,7 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { FileModel, NoteModel } from "../db/Models";
 import { logEvent } from "../logging/AppendAnalytics";
 
-import { FileTypes, AccessTypes } from "../../../common-types/Files";
+import { FileTypes, AccessTypes, FileData } from "../../../common-types/Files";
 import { BackgroundOptions, BackgroundTypes } from "../../../common-types/Notes";
 
 function parseAuthToken(token: string): JwtPayload {
@@ -12,10 +12,10 @@ function parseAuthToken(token: string): JwtPayload {
 
 // Get files for the file explorer
 
-export async function getFiles(authToken: string) {
+export async function getFiles(authToken: string): Promise<FileData[]> {
   const timer = new Timer();
   const user = parseAuthToken(authToken);
-  const files = (await FileModel.find({ owner: user.userId })).map((f) => f.toObject());
+  const files = (await FileModel.find({ owner: user.userId })).map((f) => f.toObject() as FileData);
 
   logEvent("get_files_for_explorer", {
     userId: user.userId,

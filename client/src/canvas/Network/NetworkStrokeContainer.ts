@@ -65,7 +65,10 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
           (receivedStrokes[stroke.id] && receivedStrokes[stroke.id].timestamp < this.strokes[stroke.id].timestamp)
         ) {
           network.emit("new stroke", stroke);
-        } else {
+        } else if (
+          receivedStrokes[stroke.id] &&
+          receivedStrokes[stroke.id].timestamp > this.strokes[stroke.id].timestamp
+        ) {
           this.baseCanvas.add(RemovedGraphic(stroke.id));
         }
       }

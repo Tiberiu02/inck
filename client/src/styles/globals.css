@@ -41,6 +41,11 @@ body {
   padding: 0;
   margin: 0;
   font-family: 'Varela Round', sans-serif;
+  
+}
+
+.dark-mode {
+  filter: invert(100%) hue-rotate(180deg);
 }
 
 a {

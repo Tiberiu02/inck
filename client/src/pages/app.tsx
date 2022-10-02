@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getAuthToken } from "../components/AuthToken";
 import { LoadingPage } from "../components/LoadingPage";
 import AuthPage from "../components/AuthPage";
-import ExplorerLoader from "../components/FileExplorer";
+import { ExplorerLoader } from "../components/file-explorer/FileExplorer";
 
 export default function App() {
   enum States {

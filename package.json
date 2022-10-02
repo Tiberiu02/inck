@@ -6,7 +6,7 @@
     "dev-server": "cd server && npm run dev",
     "dev-client": "cd client && npm run dev",
     "dev-all": "npx concurrently \"npm run dev-server\" \"npm run dev-client\"",
-    "build-client": "cd server && npm run build",
+    "build-client": "cd client && npm run build",
     "build-all": "npm run build-client",
     "start-client": "cd client && npm run start",
     "start-server": "cd server && npm run start",
@@ -25,5 +25,9 @@
   "dependencies": {
     "nodemon": "^2.0.20",
     "typescript": "^4.8.4"
-  }
+  },
+  "workspaces": [
+    "common-types",
+    "client"
+  ]
 }
