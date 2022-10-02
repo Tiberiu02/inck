@@ -3,27 +3,31 @@ import { getAuthToken } from "../components/AuthToken";
 import { LoadingPage } from "../components/LoadingPage";
 import AuthPage from "../components/AuthPage";
 import { ExplorerLoader } from "../components/file-explorer/FileExplorer";
+import { Settings } from "../components/settings";
 
 export default function App() {
-  enum States {
+  enum Pages {
     LOADING,
     AUTH,
     EXPLORER,
+    SETTINGS,
   }
 
-  const [state, setState] = useState(States.LOADING);
+  const [page, setPage] = useState(Pages.LOADING);
 
   useEffect(() => {
     if (getAuthToken()) {
-      setState(States.EXPLORER);
+      setPage(Pages.EXPLORER);
     } else {
-      setState(States.AUTH);
+      setPage(Pages.AUTH);
     }
-  });
+  }, []);
 
-  if (state == States.EXPLORER) {
-    return <ExplorerLoader />;
-  } else if (state == States.AUTH) {
+  if (page == Pages.EXPLORER) {
+    return <ExplorerLoader openSettings={() => setPage(Pages.SETTINGS)} />;
+  } else if (page == Pages.SETTINGS) {
+    return <Settings openExplorer={() => setPage(Pages.EXPLORER)} />;
+  } else if (page == Pages.AUTH) {
     return <AuthPage />;
   } else {
     return <LoadingPage />;

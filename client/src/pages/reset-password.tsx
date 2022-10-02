@@ -1,6 +1,5 @@
 import Head from "next/head";
 import { useState } from "react";
-import { useRouter } from "next/router";
 import Router from "next/router";
 import { postFetchAPI } from "../components/GetApiPath";
 import { disconnect } from "../components/AuthToken";
@@ -9,14 +8,8 @@ export default function ResetPassword() {
   const [newPass, setNewPass] = useState("");
   const [repeatPass, setRepeatPass] = useState("");
   const [error, setError] = useState("");
-  const router = useRouter();
   let token = "";
   let email = "";
-
-  if (router.query) {
-    token = router.query.token as string;
-    email = router.query.email as string;
-  }
 
   const sendResetRequest = async () => {
     if (newPass != repeatPass) {
@@ -32,10 +25,7 @@ export default function ResetPassword() {
         email: email,
       });
 
-      if (result.status == "success") {
-        disconnect(false);
-        Router.push("/auth");
-      } else {
+      if (!result.ok) {
         setError("Error: " + result.error);
         setTimeout(() => setError(""), 10_000);
       }

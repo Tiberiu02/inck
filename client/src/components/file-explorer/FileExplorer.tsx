@@ -331,7 +331,7 @@ function FileExplorer({ files, path, selectedFiles, setPath, setSelectedFiles, s
   );
 }
 
-function Explorer({ files, refreshFiles }) {
+function Explorer({ files, refreshFiles, openSettings }) {
   const [modal, setModal] = useState(ModalTypes.NONE);
   const [path, setPath] = useState(["f/notes"]);
   const [selectedFiles, setSelectedFiles] = useState({});
@@ -352,7 +352,7 @@ function Explorer({ files, refreshFiles }) {
       <main className="font-round bg-white">
         <div className="relative flex flex-col w-[100vw] h-[100vh]">
           {/** Top bar */}
-          <NavBar>
+          <NavBar openSettings={openSettings}>
             <SelectionOptionsWidget
               selectedFiles={selectedFiles}
               setSelectedFiles={setSelectedFiles}
@@ -383,7 +383,7 @@ function Explorer({ files, refreshFiles }) {
   );
 }
 
-export function ExplorerLoader() {
+export function ExplorerLoader({ openSettings }) {
   const [files, setFiles] = useState(null);
 
   const refreshFiles = async () => {
@@ -397,7 +397,7 @@ export function ExplorerLoader() {
   }, []);
 
   if (files) {
-    return <Explorer files={files} refreshFiles={refreshFiles} />;
+    return <Explorer openSettings={openSettings} files={files} refreshFiles={refreshFiles} />;
   } else {
     return <LoadingPage />;
   }

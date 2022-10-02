@@ -3,7 +3,7 @@ import { disconnect } from "../AuthToken";
 import { MaterialSymbol } from "../MaterialSymbol";
 import { FaPencilAlt } from "react-icons/fa";
 
-export function NavBar({ children }) {
+export function NavBar({ children, openSettings }) {
   return (
     <div className="flex flex-row gap-10 sm:gap-10 justify-between h-16 items-center px-4 sm:px-6 border-b-[1px] bg-white border-gray-300">
       <div className="flex gap-16">
@@ -22,11 +22,11 @@ export function NavBar({ children }) {
       {/** User Options */}
       <div className="flex flex-row gap-2">
         {/** Settings */}
-        <Link href="/settings">
+        <div onClick={openSettings}>
           <div className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
             <MaterialSymbol name="settings" className="text-2xl" />
           </div>
-        </Link>
+        </div>
 
         {/** Log out */}
         <button

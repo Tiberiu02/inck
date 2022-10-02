@@ -1,9 +1,9 @@
 import Head from "next/head";
 import { FaPencilAlt, FaRegUserCircle } from "react-icons/fa";
 
-import { getAuthToken, disconnect } from "../components/AuthToken";
+import { getAuthToken, disconnect } from "./AuthToken";
 import React, { useState, useEffect } from "react";
-import { postFetchAPI } from "../components/GetApiPath";
+import { postFetchAPI } from "./GetApiPath";
 import Link from "next/link";
 
 function UserDetails({}) {
@@ -90,7 +90,7 @@ function UserDetails({}) {
   );
 }
 
-export default function Settings() {
+export function Settings({ openExplorer }) {
   return (
     <div>
       <Head>
@@ -112,21 +112,11 @@ export default function Settings() {
             <div className="w-full" />
 
             <div className="flex flex-row gap-2">
-              {/*
-              <a
-                href="faq"
-                className="hover:bg-gray-300 flex 
-                        items-center justify-center w-10 h-10 rounded-full
-                        cursor-pointer"
-              >
-                <FaRegQuestionCircle className="text-2xl" />
-              </a>
-                */}
-              <Link href="/explorer">
+              <div onClick={openExplorer}>
                 <div className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer">
                   <span className="material-symbols-outlined text-2xl">folder</span>
                 </div>
-              </Link>
+              </div>
               <button
                 onClick={() => disconnect()}
                 className="hover:bg-gray-300 flex items-center justify-center w-10 h-10 rounded-full"
