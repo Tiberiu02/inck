@@ -304,10 +304,6 @@ export function disconnect(user: DrawingUser, docs: { [id: string]: DrawnDocumen
   return () => disconnectFn(user, docs, socket);
 }
 
-export function removeStroke(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
-  return (id: string) => removeStrokeFn(id, user, docs, socket);
-}
-
 export function newStroke(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   return (stroke: Stroke) => newStrokeFn(stroke, user, docs, socket);
 }

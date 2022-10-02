@@ -19,7 +19,7 @@ import {
   changePasswordEndpoint,
   getAccountDetailsFromToken,
 } from "./api/Authentication";
-import { disconnect, newStroke, removeStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets";
+import { disconnect, newStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets";
 import { NoteModel } from "./db/Models";
 import { getPDF, receivePDF } from "./api/Pdf";
 import { DrawingUser, DrawnDocument } from "./BackendInterfaces";
