@@ -52,12 +52,7 @@ export class ToolManager {
 
       if (obj.inckObject == "selection") {
         this.selectSelection();
-        const graphics = (obj.data as SerializedGraphic[])
-          .map((s) => ({
-            ...s,
-            id: Math.random().toString(36).slice(2),
-          }))
-          .map(DeserializeGraphic);
+        const graphics = (obj.data as SerializedGraphic[]).map(DeserializeGraphic);
         (this.tool as MySelection).paste(graphics);
       }
     } catch (e) {}

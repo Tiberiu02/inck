@@ -1,10 +1,8 @@
 import { LayeredStrokeContainer } from "../../LayeredStrokeContainer";
 import { Display } from "../../DeviceProps";
 import {
-  DeserializeGraphic,
   PersistentGraphic,
   RemovedGraphic,
-  SerializedGraphic,
   SerializeGraphic,
   Serializers,
   TranslatePersistentGraphic,
@@ -16,10 +14,8 @@ import { MyTool } from "../Tool";
 import { PointerTracker } from "../../UI/PointerTracker";
 import { NetworkConnection } from "../../Network/NetworkConnection";
 import { V2, Vector2D } from "../../Math/V2";
-import { LASSO_COLOR, SelectionBase, SHADOW_SIZE } from "./SelectionBase";
+import { SelectionBase } from "./SelectionBase";
 import { EmitterSelection, SelectionController, SerializedSelection } from "./TheirSelection";
-import { SelectionUI } from "../../UI/SelectionUI";
-import { V3 } from "../../Math/V3";
 import { Icons } from "../../UI/Icons";
 
 const UI_COLOR = [115, 160, 255];
@@ -243,7 +239,19 @@ export class MySelection extends SelectionBase implements MyTool {
     this.applyTranslation();
   }
 
+  duplicateSelection() {
+    const selected = this.selected;
+    this.deselect();
+    this.paste(selected);
+  }
+
   paste(selection: PersistentGraphic[]) {
+    // Update IDs
+    selection = selection.map((s) => ({
+      ...s,
+      id: Math.random().toString(36).slice(2),
+    }));
+
     this.selected = selection;
     this.computeSelectionCenter();
 
@@ -342,6 +350,7 @@ export class MySelection extends SelectionBase implements MyTool {
     menu.style.transform = "translate(-50%, 100%)";
     menu.style.borderRadius = "9999em";
     menu.style.filter = "drop-shadow(0 2px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 5px rgb(0 0 0 / 0.25))";
+    menu.style.alignItems = "center";
 
     const createBtn = (cb: Function) => {
       const btn = document.createElement("div");
@@ -379,8 +388,19 @@ export class MySelection extends SelectionBase implements MyTool {
     const deleteBtn = createBtn(() => this.deleteSelection());
     deleteBtn.innerHTML = `${Icons.Delete("#d32f2f")}`;
 
+    const duplicate = createBtn(() => this.duplicateSelection());
+    duplicate.innerHTML = `${Icons.Duplicate("#388e3c")}`;
+
+    const separator = document.createElement("div");
+    separator.style.width = "2px";
+    separator.style.borderRadius = "1px";
+    separator.style.height = "1.5em";
+    separator.style.margin = "0 0.2rem 0 0.4rem";
+    separator.style.backgroundColor = "#CCC";
+    menu.appendChild(separator);
+
     const deselectBtn = createBtn(() => this.deselect());
-    deselectBtn.innerHTML = `${Icons.Check("#388e3c")}`;
+    deselectBtn.innerHTML = `${Icons.Check("#999")}`;
 
     this.menu = menu;
     return menu;

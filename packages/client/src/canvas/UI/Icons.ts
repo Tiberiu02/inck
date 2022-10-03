@@ -27,6 +27,10 @@ export class Icons {
     return Icons.MaterialSymbol("check_circle", color);
   }
 
+  static Duplicate(color?: string) {
+    return Icons.MaterialSymbol("control_point_duplicate", color);
+  }
+
   static Delete(color?: string) {
     return Icons.MaterialSymbol("delete", color);
   }
