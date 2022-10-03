@@ -45,6 +45,9 @@ export class PointerTracker {
   public onFingerEvent: EventCore<FingerEvent>;
   private triggerFingerEvent: EventTrigger<FingerEvent>;
 
+  public onPenButton: EventCore<boolean>;
+  private triggerPenButton: EventTrigger<boolean>;
+
   private fingers: { [id: number]: Finger };
 
   private trackingSufrace: HTMLDivElement;
@@ -52,6 +55,7 @@ export class PointerTracker {
   constructor() {
     [this.onPenEvent, this.triggerPenEvent] = CreateEvent();
     [this.onFingerEvent, this.triggerFingerEvent] = CreateEvent();
+    [this.onPenButton, this.triggerPenButton] = CreateEvent();
 
     this.fingers = {};
     this.trackingSufrace = this.createTrackingSurface();
@@ -150,9 +154,19 @@ export class PointerTracker {
     }
   }
 
+  static penButton: boolean = false;
   // non iOS
   private handlePointerEvent(e: PointerEvent) {
     if (e.pointerType == "mouse" || e.pointerType == "pen") {
+      const oldPenButton = PointerTracker.penButton;
+      PointerTracker.penButton = PointerTracker.penButton
+        ? e.buttons > 0
+        : e.buttons > 1 || (e.buttons == 1 && !e.pressure);
+
+      if (PointerTracker.penButton != oldPenButton) {
+        this.triggerPenButton(PointerTracker.penButton);
+      }
+
       const penEvent: PenEvent = {
         x: e.clientX,
         y: e.clientY,

@@ -77,6 +77,10 @@ export default class App {
     // Pointer tracker
     this.pointerTracker = new PointerTracker();
     this.pointerTracker.onPenEvent.addListener((e) => this.handlePenEvent(e));
+    this.pointerTracker.onPenButton.addListener((buttonState) => {
+      buttonState ? this.toolManager.enableEraser() : this.toolManager.disableEraser();
+      this.caddie.refreshEraserButton();
+    });
 
     // Enable navigation
     this.pageNavigation = new PageNavigation();

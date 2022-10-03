@@ -43,6 +43,7 @@ export class CaddieMenu {
   private opacity: number;
   private state: STATES;
   private enteredIdle: number;
+  private eraseBtn: HTMLDivElement;
 
   constructor(toolManager: ToolManager, wheel: ToolWheel) {
     this.toolManager = toolManager;
@@ -147,6 +148,19 @@ export class CaddieMenu {
     requestAnimationFrame(() => this.update());
   }
 
+  refreshEraserButton() {
+    const primary = tailwind.theme.extend.colors["primary"];
+    const primaryDark = tailwind.theme.extend.colors["primary-dark"];
+
+    if (this.toolManager.isErasing) {
+      this.eraseBtn.style.backgroundColor = primaryDark;
+      this.eraseBtn.style.color = "rgba(255, 255, 255, 0.6)";
+    } else {
+      this.eraseBtn.style.backgroundColor = primary;
+      this.eraseBtn.style.color = "rgba(255, 255, 255, 1)";
+    }
+  }
+
   private createMenu() {
     const primary = tailwind.theme.extend.colors["primary"];
     const primaryDark = tailwind.theme.extend.colors["primary-dark"];
@@ -169,15 +183,10 @@ export class CaddieMenu {
     const toggleEraser = () => {
       if (this.toolManager.isErasing) {
         this.toolManager.disableEraser();
-        // eraseBtn.innerHTML = CaddieMenu.EraserIcon();
-        eraseBtn.style.backgroundColor = primary;
-        eraseBtn.style.color = "rgba(255, 255, 255, 1)";
       } else {
         this.toolManager.enableEraser();
-        eraseBtn.style.backgroundColor = primaryDark;
-        eraseBtn.style.color = "rgba(255, 255, 255, 0.6)";
-        // eraseBtn.innerHTML = CaddieMenu.EraserOffIcon();
       }
+      this.refreshEraserButton();
     };
 
     const button = (animatePress = true) => {
@@ -215,27 +224,27 @@ export class CaddieMenu {
     this.el.appendChild(toolBtn);
 
     let eraserBtnDown = false;
-    const eraseBtn = button(false);
-    eraseBtn.innerHTML = CaddieMenu.EraserIcon();
-    eraseBtn.addEventListener("pointerdown", () => {
+    this.eraseBtn = button(false);
+    this.eraseBtn.innerHTML = CaddieMenu.EraserIcon();
+    this.eraseBtn.addEventListener("pointerdown", () => {
       if (!this.toolManager.isErasing) {
         toggleEraser();
         eraserBtnDown = true;
       }
     });
-    eraseBtn.addEventListener("pointermove", () => {
+    this.eraseBtn.addEventListener("pointermove", () => {
       if (eraserBtnDown && dragging) {
         toggleEraser();
         eraserBtnDown = false;
       }
     });
-    eraseBtn.addEventListener("pointerup", () => {
+    this.eraseBtn.addEventListener("pointerup", () => {
       if (this.toolManager.isErasing && !dragging && !eraserBtnDown) {
         toggleEraser();
       }
       eraserBtnDown = false;
     });
-    this.el.appendChild(eraseBtn);
+    this.el.appendChild(this.eraseBtn);
 
     // Add dragging functionality
 
