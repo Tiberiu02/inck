@@ -221,18 +221,20 @@ export class MySelection extends SelectionBase implements MyTool {
     this.remoteController.clearSelection();
   }
 
-  copySelection(): void {
+  copySelection(delesect: boolean = true): void {
     navigator.clipboard.writeText(
       JSON.stringify({
         inckObject: "selection",
         data: this.selected.map(SerializeGraphic),
       })
     );
-    this.deselect();
+    if (delesect) {
+      this.deselect();
+    }
   }
 
   cutSelection(): void {
-    this.copySelection();
+    this.copySelection(false);
     this.deleteSelection();
   }
 

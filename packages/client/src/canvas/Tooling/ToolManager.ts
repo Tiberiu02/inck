@@ -28,10 +28,13 @@ export class ToolManager {
       }
     });
 
-    window.addEventListener("keydown", e => {
+    window.addEventListener("keydown", (e) => {
       if (e.code == "KeyV" && e.ctrlKey) {
-        console.log("pasting");
         this.paste();
+      } else if (e.code == "KeyZ" && e.ctrlKey && !e.shiftKey) {
+        this.undo();
+      } else if ((e.code == "KeyZ" && e.ctrlKey && e.shiftKey) || (e.code == "KeyY" && e.ctrlKey)) {
+        this.redo();
       }
     });
   }
@@ -50,7 +53,7 @@ export class ToolManager {
       if (obj.inckObject == "selection") {
         this.selectSelection();
         const graphics = (obj.data as SerializedGraphic[])
-          .map(s => ({
+          .map((s) => ({
             ...s,
             id: Math.random().toString(36).slice(2),
           }))
