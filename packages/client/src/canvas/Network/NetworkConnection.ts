@@ -57,7 +57,11 @@ export class NetworkConnection {
       document.getElementById("offline-warning").style.visibility = "visible";
     });
 
-    window.addEventListener("pointermove", (e) => this.updatePointer(new Vector2D(...View.getCanvasCoords(e.x, e.y))));
+    window.addEventListener("pointermove", (e) => {
+      if (e.pointerType != "touch") {
+        this.updatePointer(new Vector2D(...View.getCanvasCoords(e.x, e.y)));
+      }
+    });
   }
 
   emit(name: string, ...args: any[]) {
