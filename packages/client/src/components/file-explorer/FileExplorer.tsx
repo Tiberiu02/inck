@@ -96,10 +96,15 @@ function FileTree({ className, files, path, setPath }) {
 }
 
 function Note({ title, isSelected = false }) {
+  const longest = Math.max(...title.split(" ").map((s) => s.length));
+  const textSize = longest <= 10 ? "text-sm sm:text-lg" : longest <= 15 ? "text-xs sm:text-base" : "text-xs sm:text-sm";
+
   return (
     <button className="no-tap-highlight relative rounded-xl overflow-hidden">
       <div className="flex flex-col items-center justify-center w-32 h-24 sm:w-40 sm:h-32 bg-note border-2 border-slate-800 rounded-xl shadow-inner duration-100">
-        <p className="relative py-1 px-3 w-[calc(100%+0.5rem)] bg-slate-800 shadow-md text-white text-sm sm:text-lg text-center line-clamp-3">
+        <p
+          className={`relative py-1 px-3 w-[calc(100%+0.5rem)] bg-slate-800 shadow-md text-white ${textSize} text-center line-clamp-3`}
+        >
           {title}
         </p>
       </div>
@@ -108,14 +113,17 @@ function Note({ title, isSelected = false }) {
   );
 }
 
-function Book({ title, isSelected = false }) {
+function Book({ title = "", isSelected = false }) {
+  const longest = Math.max(...title.split(" ").map((s) => s.length));
+  const textSize = longest <= 10 ? "text-sm sm:text-lg" : longest <= 15 ? "text-xs sm:text-base" : "text-xs sm:text-sm";
+
   return (
     <button className="relative no-tap-highlight w-32 h-24 sm:w-40 sm:h-32 text-white duration-100 flex flex-col">
       <div className="relative bg-slate-800 h-7 w-14 rounded-t-xl -mb-2 overflow-hidden">
         {isSelected && <div className="absolute inset-0 bg-select opacity-select"></div>}
       </div>
       <div className="relative bottom-0 h-full w-full flex flex-col justify-center p-2 items-center bg-slate-800 rounded-b-xl rounded-tr-xl overflow-hidden">
-        <p className="text-sm sm:text-lg text-center line-clamp-3"> {title} </p>
+        <p className={`${textSize} px-2 w-[calc(100%+0.5rem)] text-center line-clamp-3`}> {title} </p>
         {isSelected && <div className="absolute inset-0 bg-select opacity-select"></div>}
       </div>
     </button>
