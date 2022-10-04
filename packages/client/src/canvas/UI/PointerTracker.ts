@@ -170,7 +170,7 @@ export class PointerTracker {
       const penEvent: PenEvent = {
         x: e.clientX,
         y: e.clientY,
-        pressure: e.pressure,
+        pressure: PointerTracker.penButton ? 0.5 : e.pressure,
         timeStamp: e.timeStamp,
         target: e.target,
         pointerType: e.pointerType == "mouse" ? PenTypes.MOUSE : PenTypes.STYLUS,
