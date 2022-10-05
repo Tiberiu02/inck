@@ -31,7 +31,7 @@ export class NetworkConnection {
 
     this.socket.on("connect_error", (err) => {
       console.log(err.message);
-      window.location.href = "/";
+      //window.location.href = "/";
     });
 
     this.socket.on("load note", (data: any) => {
