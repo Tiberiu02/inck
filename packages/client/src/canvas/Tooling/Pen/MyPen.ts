@@ -16,7 +16,7 @@ import { RemovedGraphic } from "../../Drawing/Graphic";
 
 const LONG_PRESS_TIME = 500; // (ms)
 const INTERVAL_TIME = 100; //   (ms)
-const LONG_PRESS_DIST = 0.1; // (in)
+const LONG_PRESS_DIST = 0.05; // (in)
 
 export class MyPen implements MyTool {
   private color: RGB;
