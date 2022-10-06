@@ -6,22 +6,39 @@ import { AccessTypes, FileTypes } from "@inck/common-types/Files";
 import { HttpServer } from "../../../ServerConnector";
 import { getAuthToken } from "../../AuthToken";
 import { Modal, ModalButtons, ModalTitle } from "../../common/Modals";
-import { BackgroundTypes } from "@inck/common-types/Notes";
+import { BackgroundOptions, BackgroundTypes } from "@inck/common-types/Notes";
 import GetApiPath from "../../GetApiPath";
 import { ApiUrlStrings } from "@inck/common-types/ApiUrlStrings";
 import { twMerge } from "tailwind-merge";
 import { useDropzone } from "react-dropzone";
 import { Dropdown, TextField } from "../../common/Input";
+import { LocalStorage } from "../../../LocalStorage";
 
 function CreateNoteSubmodal({ onSuccess, path }) {
   const [name, setName] = useState("");
   const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
+  const [background, setBackground] = useState(BackgroundTypes.blank);
+  const [bgSpacing, setBgSpacing] = useState(50);
 
   const submit = async () => {
+    let backgroundOptions: BackgroundOptions;
+    if (background == BackgroundTypes.lines) {
+      backgroundOptions = {
+        spacing: bgSpacing / screen.width,
+      };
+      LocalStorage.updateLastSpacing(background, bgSpacing);
+    } else if (background == BackgroundTypes.grid) {
+      backgroundOptions = {
+        spacing: bgSpacing / screen.width / 2,
+      };
+      LocalStorage.updateLastSpacing(background, bgSpacing);
+    }
+
     await HttpServer.files.createNote(getAuthToken(), path.at(-1), {
       name,
       publicAccess,
-      backgroundType: BackgroundTypes.blank,
+      backgroundType: background,
+      backgroundOptions,
     });
     onSuccess();
   };
@@ -34,12 +51,55 @@ function CreateNoteSubmodal({ onSuccess, path }) {
       </div>
       <div className="flex gap-4">
         Public&nbsp;access
-        <Dropdown value={publicAccess} onChange={setPublicAccess}>
-          <option value={AccessTypes.EDIT}>View &amp; edit</option>
-          <option value={AccessTypes.VIEW}>View only</option>
+        <Dropdown className="w-full" value={publicAccess} onChange={setPublicAccess}>
           <option value={AccessTypes.NONE}>None</option>
+          <option value={AccessTypes.VIEW}>View only</option>
+          <option value={AccessTypes.EDIT}>View &amp; edit</option>
         </Dropdown>
       </div>
+      <div className="flex gap-4">
+        Background
+        <Dropdown
+          className="w-full"
+          value={background}
+          onChange={(bg) => {
+            setBackground(bg);
+            setBgSpacing(LocalStorage.lastSpacing(bg));
+          }}
+        >
+          <option value={BackgroundTypes.blank}>None</option>
+          <option value={BackgroundTypes.grid}>Grid</option>
+          <option value={BackgroundTypes.lines}>Lines</option>
+        </Dropdown>
+      </div>
+      {(background == BackgroundTypes.grid || background == BackgroundTypes.lines) && (
+        <>
+          <div className="flex gap-4">
+            Spacing
+            <input
+              className="w-full"
+              type="range"
+              min="30"
+              max="120"
+              value={bgSpacing}
+              onChange={(e) => setBgSpacing(+e.target.value)}
+            />
+          </div>
+          {background == BackgroundTypes.lines && (
+            <div
+              className="relative w-full h-40 -mb-6 border-[1px] border-slate-400 rounded-lg bg-note"
+              style={{ backgroundSize: `${bgSpacing}px ${bgSpacing}px` }}
+            ></div>
+          )}
+          {background == BackgroundTypes.grid && (
+            <div
+              className="relative w-full h-40 -mb-6 border-[1px] border-slate-400 rounded-lg bg-grid"
+              style={{ backgroundSize: `${bgSpacing / 2}px ${bgSpacing / 2}px` }}
+            ></div>
+          )}
+        </>
+      )}
+
       <CreateFileButton className="mt-6" onClick={submit} text="Create note" />
     </div>
   );

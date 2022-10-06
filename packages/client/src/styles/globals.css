@@ -16,7 +16,14 @@
 }
 
 .bg-note {
-  background-image: linear-gradient(0deg, #ddd 4.55%, #f9f9f9 4.55%, #f9f9f9 50%, #ddd 50%, #ddd 54.55%, #f9f9f9 54.55%, #f9f9f9 100%);
+  background-image: linear-gradient(0deg, #ddd 0%, #ddd 4.55%, #f9f9f9 4.55%, #f9f9f9 100%);
+  background-size: 22.00px 22.00px;
+}
+
+.bg-grid {
+  background-image:
+  linear-gradient(to right, #ddd 0%, #ddd 4.55%, transparent 4.55%, transparent 100%),
+  linear-gradient(0deg, #ddd 0%, #ddd 4.55%, #f9f9f9 4.55%, #f9f9f9 100%);
   background-size: 22.00px 22.00px;
 }
 

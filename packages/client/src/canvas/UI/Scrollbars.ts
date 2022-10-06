@@ -50,10 +50,10 @@ export class ScrollBars {
 
     window.addEventListener("resize", () => this.updateBars());
 
-    this.vertical.addEventListener("pointerdown", e => this.handlePointerDown(Direction.VERTICAL, e));
-    this.horizontal.addEventListener("pointerdown", e => this.handlePointerDown(Direction.HORIZONTAL, e));
-    window.addEventListener("pointermove", e => this.handlePointerMove(e));
-    window.addEventListener("pointerup", e => this.handlePointerUp(e));
+    this.vertical.addEventListener("pointerdown", (e) => this.handlePointerDown(Direction.VERTICAL, e));
+    this.horizontal.addEventListener("pointerdown", (e) => this.handlePointerDown(Direction.HORIZONTAL, e));
+    window.addEventListener("pointermove", (e) => this.handlePointerMove(e));
+    window.addEventListener("pointerup", (e) => this.handlePointerUp(e));
   }
 
   private handlePointerDown(direction: Direction, e: PointerEvent) {

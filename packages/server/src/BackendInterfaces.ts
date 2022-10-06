@@ -36,10 +36,14 @@ export enum UserPremiumTier {
 export enum BackgroundTypes {
   blank = "blank",
   pdf = "pdf",
+  grid = "grid",
+  lines = "lines",
+  cornell = "cornell",
 }
 
 export interface BackgroundOptions {
   fileHash?: string;
+  spacing?: number;
 }
 
 export enum FileType {
@@ -90,6 +94,8 @@ export interface FrontEndNoteData {
   id: string;
   strokes: { [id: string]: Stroke };
   pdfUrl?: string;
+  bgPattern?: BackgroundTypes;
+  bgSpacing?: number;
   canWrite: boolean;
   creationDate: number;
 }
