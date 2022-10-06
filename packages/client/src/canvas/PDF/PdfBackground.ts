@@ -4,6 +4,7 @@ import { MutableView, View } from "../View/View";
 import { MutableObservableProperty } from "../DesignPatterns/Observable";
 import { GL } from "../Rendering/GL";
 import { RGB } from "../types";
+import { CreateRectangleVector } from "../Rendering/Utils";
 
 export const BG_COLOR: RGB = [0.9, 0.9, 0.9];
 export const PAGE_GAP = 0.01; // %w
@@ -23,32 +24,6 @@ type PdfPage = {
   status: PdfPageStatus;
   texture: WebGLTexture;
 };
-
-function CreateRectangleVector(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  color: RGB,
-  joinable: boolean = false
-): number[] {
-  const vector = [];
-
-  if (joinable) {
-    vector.push(x, y, ...color, 1);
-    vector.push(x, y, ...color, 1);
-  }
-  vector.push(x, y, ...color, 1);
-  vector.push(x + w, y, ...color, 1);
-  vector.push(x, y + h, ...color, 1);
-  vector.push(x + w, y + h, ...color, 1);
-  if (joinable) {
-    vector.push(x + w, y + h, ...color, 1);
-    vector.push(x + w, y + h, ...color, 1);
-  }
-
-  return vector;
-}
 
 export class PdfBackground {
   private url: string;
@@ -142,7 +117,7 @@ export class PdfBackground {
       }
     }
 
-    if (pageToLoad && this.pdf && this.pages.every(page => page.status != PdfPageStatus.LOADING)) {
+    if (pageToLoad && this.pdf && this.pages.every((page) => page.status != PdfPageStatus.LOADING)) {
       this.startLoadingPage(pageToLoad);
     }
   }

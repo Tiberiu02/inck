@@ -10,19 +10,9 @@ import {
 } from "../Drawing/Graphic";
 import { Collaborator } from "./Collaborator";
 import { NoteData } from "../../types/canvas";
+import { LocalStorage } from "../../LocalStorage";
 
 const CACHING_INTERVAL = 1000;
-
-function LoadCachedNote(noteId: string) {
-  const cache = window.localStorage && window.localStorage.getItem(`note-cache-${noteId}`);
-  return cache ? JSON.parse(cache) : {};
-}
-
-function UpdateCachedNote(noteId: string, data: any) {
-  if (window.localStorage) {
-    window.localStorage.setItem(`note-cache-${noteId}`, JSON.stringify(data));
-  }
-}
 
 export class NetworkStrokeContainer implements LayeredStrokeContainer {
   private baseCanvas: LayeredStrokeContainer;
@@ -37,7 +27,7 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
     this.baseCanvas = baseCanvas;
     this.network = network;
 
-    this.strokes = LoadCachedNote(network.docId);
+    this.strokes = LocalStorage.loadCachedNote(network.docId);
     console.log("storage", this.strokes);
     for (const stroke of Object.values(this.strokes)) {
       baseCanvas.add(DeserializeGraphic(stroke));
@@ -164,7 +154,7 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
   private updateCache() {
     if (!this.cacheIsUpToDate) {
       this.cacheIsUpToDate = true;
-      UpdateCachedNote(this.network.docId, this.strokes);
+      LocalStorage.updateCachedNote(this.network.docId, this.strokes);
     }
   }
 }

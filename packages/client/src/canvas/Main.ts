@@ -17,6 +17,11 @@ import { Vector2D } from "./Math/V2";
 import GetApiPath from "../components/GetApiPath";
 import { GL } from "./Rendering/GL";
 import { NoteToPdf } from "./PDF/PdfExport";
+import { LinesBackground } from "./Backgrounds/LinesBackground";
+import { Background } from "./types";
+import { Display } from "./DeviceProps";
+import { GridBackground } from "./Backgrounds/GridBackground";
+import { BackgroundTypes } from "@inck/common-types/Notes";
 
 export const NUM_LAYERS = 2;
 export const HIGHLIGHTER_OPACITY = 0.35;
@@ -33,7 +38,7 @@ export default class App {
   private scrollBars: ScrollBars;
   private wheel: ToolWheel;
   private caddie: CaddieMenu;
-  pdfBackground: PdfBackground;
+  private background: Background;
 
   constructor() {
     Object.assign(document.body.style, {
@@ -62,6 +67,7 @@ export default class App {
     // Horizontal page size
     const yMax = new MutableObservableProperty<number>(0);
     this.strokeContainer = new PageSizeTracker(this.strokeContainer, yMax);
+    this.scrollBars = new ScrollBars(yMax as ObservableProperty<number>);
 
     // Network
     this.network = new NetworkConnection();
@@ -69,8 +75,14 @@ export default class App {
 
     this.network.on("load note", (data: any) => {
       // PDF import
-      if (data.pdfUrl && !this.pdfBackground) {
-        this.pdfBackground = new PdfBackground(GetApiPath(data.pdfUrl), yMax);
+      if (!this.background) {
+        if (data.pdfUrl) {
+          this.background = new PdfBackground(GetApiPath(data.pdfUrl), yMax);
+        } else if (data.bgPattern == BackgroundTypes.grid) {
+          this.background = new GridBackground(data.bgSpacing || 0.015);
+        } else if (data.bgPattern == BackgroundTypes.lines) {
+          this.background = new LinesBackground(data.bgSpacing || 0.03);
+        }
       }
     });
 
@@ -91,14 +103,13 @@ export default class App {
     this.toolManager = new ToolManager(this.strokeContainer, this.network);
 
     // Create UI
-    this.scrollBars = new ScrollBars(yMax as ObservableProperty<number>);
     this.wheel = new ToolWheel(this.toolManager);
     this.caddie = new CaddieMenu(this.toolManager, this.wheel);
 
     // Enable rendering
     RenderLoop.onRender(() => {
-      if (this.pdfBackground) {
-        this.pdfBackground.render();
+      if (this.background) {
+        this.background.render();
       }
 
       GL.beginLayer();
@@ -110,7 +121,7 @@ export default class App {
       this.toolManager.render(1);
     });
 
-    window["PdfExport"] = (id) => NoteToPdf(id);
+    window.addEventListener("resize", () => RenderLoop.scheduleRender());
   }
 
   async handlePenEvent(e: PenEvent) {

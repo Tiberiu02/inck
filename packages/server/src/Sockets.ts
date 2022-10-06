@@ -214,6 +214,9 @@ async function requestDocumentFn(
       const fileHash = noteData.backgroundOptions.fileHash as string;
       const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
       note.pdfUrl = url;
+    } else if (noteData.backgroundType) {
+      note.bgPattern = noteData.backgroundType;
+      note.bgSpacing = noteData.backgroundOptions.spacing;
     }
   }
 
