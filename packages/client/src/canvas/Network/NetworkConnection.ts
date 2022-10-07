@@ -74,6 +74,10 @@ export class NetworkConnection {
     this.socket.on(name, handler);
   }
 
+  isConnected() {
+    return this.connected;
+  }
+
   updatePointer(pointer: Vector2D) {
     this.socket.emit("remote control", "setPointer", pointer);
   }

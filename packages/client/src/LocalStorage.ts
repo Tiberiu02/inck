@@ -24,4 +24,16 @@ export class LocalStorage {
       window.localStorage.setItem(`note-cache-${noteId}`, JSON.stringify(data));
     }
   }
+
+  static removeCachedNote(noteId: string) {
+    if (window.localStorage) {
+      window.localStorage.removeItem(`note-cache-${noteId}`);
+    }
+  }
+
+  static cachedNotes(): string[] {
+    return Object.keys(localStorage)
+      .filter((s) => s.match(/^note-cache-([\w\d]+)$/))
+      .map((s) => s.match(/^note-cache-([\w\d]+)$/)[1]);
+  }
 }

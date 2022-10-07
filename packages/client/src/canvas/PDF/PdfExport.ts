@@ -5,31 +5,18 @@ import { DeserializeGraphic, GraphicTypes, PersistentGraphic } from "../Drawing/
 import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { ELEMENTS_PER_VERTEX } from "../Rendering/GL";
 import { HIGHLIGHTER_OPACITY, NUM_LAYERS } from "../Main";
-import { SERVER_PORT } from "../Network/NetworkConnection";
-import { io } from "socket.io-client";
-import { getAuthToken } from "../../components/AuthToken";
 import GetApiPath from "../../components/GetApiPath";
+import { LoadNoteData } from "../Network/LoadNoteData";
 
 const PAGE_WIDTH = 1000;
 const PADDING_BOTTOM = 500; // %w
 
-function LoadNote(id): Promise<[PersistentGraphic[], string]> {
-  return new Promise((resolve, reject) => {
-    const socket = io(`${window.location.host.split(":")[0]}:${SERVER_PORT}`, {
-      query: {
-        authToken: getAuthToken(),
-        docId: id,
-      },
-    });
+async function LoadNote(id): Promise<[PersistentGraphic[], string]> {
+  const data = await LoadNoteData(id);
+  const strokes = Object.values(data.strokes).map(DeserializeGraphic);
+  const pdfUrl = data.pdfUrl;
 
-    socket.on("load note", (data: any) => {
-      const strokes = Object.values(data.strokes).map(DeserializeGraphic);
-      const pdfUrl = data.pdfUrl;
-      socket.disconnect();
-
-      resolve([strokes, pdfUrl]);
-    });
-  });
+  return [strokes, pdfUrl];
 }
 
 export async function NoteToPdf(noteId) {

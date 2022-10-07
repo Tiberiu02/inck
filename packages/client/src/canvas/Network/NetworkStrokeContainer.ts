@@ -39,14 +39,6 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
     network.on("load note", (data: NoteData) => {
       console.log("loaded note", data);
 
-      // TO DO: initialize strokesDict with data.strokes after DB redesign
-      // const strokesDict: { [id: string]: SerializedGraphic } = {};
-      // const strokes = data.strokes.filter((s) => s.timestamp).sort((a, b) => a.timestamp - b.timestamp);
-      // for (let stroke of strokes) {
-      //   if (stroke && stroke.id) {
-      //     strokesDict[stroke.id] = stroke;
-      //   }
-      // }
       const receivedStrokes = data.strokes;
 
       for (const stroke of Object.values(this.strokes)) {
@@ -73,6 +65,7 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
       }
 
       document.getElementById("note-spinner").style.display = "none";
+      LocalStorage.removeCachedNote(network.docId);
       this.cacheIsUpToDate = false;
       RenderLoop.scheduleRender();
     });
@@ -153,8 +146,10 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
 
   private updateCache() {
     if (!this.cacheIsUpToDate) {
+      if (!this.network.isConnected()) {
+        LocalStorage.updateCachedNote(this.network.docId, this.strokes);
+      }
       this.cacheIsUpToDate = true;
-      LocalStorage.updateCachedNote(this.network.docId, this.strokes);
     }
   }
 }

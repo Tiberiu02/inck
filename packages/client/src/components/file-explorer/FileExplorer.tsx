@@ -13,6 +13,10 @@ import { ModalTypes, DisplayModal } from "./DisplayModal";
 import { FolderInfo, NoteInfo, FileTree, FileInfo } from "./types";
 import { SelectionOptionsWidget } from "./OptionsWidget";
 import { NoteData } from "../../types/canvas";
+import { MaterialSymbol } from "../MaterialSymbol";
+import { resolve } from "path";
+import { LocalStorage } from "../../LocalStorage";
+import { SyncNote } from "./SyncNote";
 
 type DirListingProps = {
   Symbol: IconType;
@@ -339,6 +343,52 @@ function FileExplorer({ files, path, selectedFiles, setPath, setSelectedFiles, s
   );
 }
 
+function NoteCacheSync() {
+  const [syncing, setSyncing] = useState(false);
+
+  function sync() {
+    let cancelSync = false;
+
+    (async () => {
+      const cachedNotes = LocalStorage.cachedNotes();
+      console.log(cachedNotes);
+      if (cachedNotes.length) {
+        setSyncing(true);
+        for (const noteId of cachedNotes) {
+          if (!cancelSync) {
+            console.log("Syncing", noteId);
+            await SyncNote(noteId);
+          }
+        }
+        if (!cancelSync) {
+          setSyncing(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelSync = true;
+    };
+  }
+
+  useEffect(() => {
+    return sync();
+  }, []);
+
+  return (
+    syncing && (
+      <div className="flex flex-row gap-2 bg-slate-200 py-2 px-3 rounded-lg">
+        <div className="flex animate-spin">
+          <div className="flex -scale-x-100">
+            <MaterialSymbol name="sync" className="" />
+          </div>
+        </div>
+        <div className="font-bold mr-1">Syncing...</div>
+      </div>
+    )
+  );
+}
+
 function Explorer({ files, refreshFiles, openSettings }) {
   const [modal, setModal] = useState(ModalTypes.NONE);
   const [path, setPath] = useState(["f/notes"]);
@@ -361,6 +411,7 @@ function Explorer({ files, refreshFiles, openSettings }) {
         <div className="relative flex flex-col w-[100vw] h-[100vh]">
           {/** Top bar */}
           <NavBar openSettings={openSettings}>
+            <NoteCacheSync />
             <SelectionOptionsWidget
               selectedFiles={selectedFiles}
               setSelectedFiles={setSelectedFiles}
