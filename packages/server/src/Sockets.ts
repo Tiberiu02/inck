@@ -326,6 +326,20 @@ export function newStroke(
   return (stroke: Stroke) => newStrokeFn(stroke, user, docs, socket, cache);
 }
 
+export function syncStrokes(
+  user: DrawingUser,
+  docs: { [id: string]: DrawnDocument },
+  socket: WebSocket,
+  cache: RedisCache
+) {
+  return async (strokes: Stroke[]) => {
+    for (const stroke of strokes) {
+      await newStrokeFn(stroke, user, docs, socket, cache);
+    }
+    socket.emit("sync complete");
+  };
+}
+
 export function requestDocument(
   user: DrawingUser,
   docs: { [id: string]: DrawnDocument },

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "nodemon --ext js,json,ts",
+    "dev": "nodemon --config nodemon.json",
     "start": "ts-node src/index"
   },
   "dependencies": {

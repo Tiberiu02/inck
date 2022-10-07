@@ -18,33 +18,30 @@ export function SyncNote(noteId: string): Promise<void> {
 
       const receivedStrokes = data.strokes as { [id: string]: SerializedGraphic };
 
-      console.log("note received", noteId);
-
-      for (const stroke of Object.values(cachedStrokes)) {
-        // console.log("stroke", stroke);
-        if (
+      const newStrokes = Object.values(cachedStrokes).filter(
+        (stroke) =>
           stroke.timestamp > data.creationDate &&
           (!receivedStrokes[stroke.id] || receivedStrokes[stroke.id].timestamp < cachedStrokes[stroke.id].timestamp)
-        ) {
-          // console.log("sending stroke");
-          socket.emit("new stroke", stroke);
-        }
-      }
+      );
 
-      console.log("Synced note", noteId);
+      socket.emit("sync strokes", newStrokes);
+      socket.on("sync complete", () => {
+        console.log("Synced note", noteId);
+        LocalStorage.removeCachedNote(noteId);
+        socket.disconnect();
+        resolve();
+      });
+    });
+
+    socket.on("unauthorized", () => {
+      console.log("Unauthorized", noteId);
+      LocalStorage.removeCachedNote(noteId);
       socket.disconnect();
       resolve();
     });
 
-    socket.on("unauthorized", () => {
-      console.log("Unauthorized:", noteId);
-      console.log("Deleting cache");
-      resolve();
-    });
-
     socket.on("disconnect", () => {
-      console.log("Disconnected:", noteId);
-      console.log("Deleting cache");
+      socket.disconnect();
       resolve();
     });
   });
