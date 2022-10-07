@@ -86,7 +86,6 @@ export class RedisCache {
   }
 
   private async putStrokeInRedis(docId: string, stroke: Stroke) {
-    console.log("Write to redis");
     const key = stroke.id;
     if (stroke.deserializer == "removed") {
       // TODO: fix cache
