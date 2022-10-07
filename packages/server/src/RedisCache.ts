@@ -34,7 +34,7 @@ export class RedisCache {
       if (this.client) {
         this.writeAllToDB();
       }
-    }, 100_000);
+    }, cacheFlushDelay);
   }
 
   async putStroke(docId: string, stroke: Stroke) {
@@ -95,6 +95,17 @@ export class RedisCache {
       stroke.zIndex = 0.0;
       stroke.width = 0.0;
     }
+
+    // Get previous entry from redis
+    // TODO: could factor serdes when more things are in redis
+    const prevEntryB64 = await this.client.hget(docId, stroke.id);
+
+    if (prevEntryB64) {
+      const prevEntryBuffer = Buffer.from(prevEntryB64, "base64");
+      const prevEntry = this.avroSchema.fromBuffer(prevEntryBuffer);
+    } else {
+    }
+
     const buffer = this.avroSchema.toBuffer(stroke);
     const value = buffer.toString("base64");
     await this.client.hset(docId, key, value);
