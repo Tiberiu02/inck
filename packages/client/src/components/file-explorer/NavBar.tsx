@@ -16,7 +16,7 @@ export function NavBar({ children, openSettings }) {
         </Link>
 
         {/** Selection options */}
-        <div className="justify-center align-middle">{children}</div>
+        <div className="flex flex-row justify-center items-center gap-8">{children}</div>
       </div>
 
       {/** User Options */}

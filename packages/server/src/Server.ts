@@ -19,7 +19,7 @@ import {
   changePasswordEndpoint,
   getAccountDetailsFromToken,
 } from "./api/Authentication";
-import { disconnect, newStroke, requestDocument, remoteControl, directedRemoteControl } from "./Sockets";
+import { disconnect, newStroke, requestDocument, remoteControl, directedRemoteControl, syncStrokes } from "./Sockets";
 import { NoteModel } from "./db/Models";
 import { getPDF, receivePDF } from "./api/Pdf";
 import { DrawingUser, DrawnDocument } from "./BackendInterfaces";
@@ -152,6 +152,7 @@ export class Server {
 
       socket.on("disconnect", disconnect(user, this.docs, socket));
       socket.on("new stroke", newStroke(user, this.docs, socket, this.cache));
+      socket.on("sync strokes", syncStrokes(user, this.docs, socket, this.cache));
 
       // LIVE COLLABORATION
       socket.on("remote control", remoteControl(user, this.docs, socket));
