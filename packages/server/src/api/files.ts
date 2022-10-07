@@ -140,7 +140,7 @@ export async function editNoteInfo(authToken: string, noteFileId: string, newOpt
     throw new Error("Unauthorized");
   }
 
-  console.log(newOptions);
+  //console.log(newOptions);
 
   note.name = newOptions.name;
   note.defaultAccess = newOptions.publicAccess;

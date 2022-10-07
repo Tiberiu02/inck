@@ -13,6 +13,7 @@ import {
 import { Timer } from "./Timer";
 import { logEvent } from "./logging/AppendAnalytics";
 import { AccessTypes } from "@inck/common-types/Files";
+import { RedisCache } from "./RedisCache";
 
 function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
   if (!user.docId) {
@@ -89,7 +90,8 @@ async function newStrokeFn(
   stroke: Stroke,
   user: DrawingUser,
   docs: { [id: string]: DrawnDocument },
-  socket: WebSocket
+  socket: WebSocket,
+  cache: RedisCache
 ) {
   if (!user.docId || !user.canWrite) {
     return;
@@ -97,7 +99,6 @@ async function newStrokeFn(
 
   const timer = new Timer();
   console.log(`[${new Date().toLocaleString()}] ${user.ip} is drawing on /note/${user.docId}`);
-
   for (let other of docs[user.docId].users) {
     if (other != user) {
       other.socket.emit("load strokes", [stroke]);
@@ -115,10 +116,19 @@ async function newStrokeFn(
       timestampData.strokes[stroke.id] &&
       timestampData.strokes[stroke.id].timestamp) ||
     0;
-  // console.log(timestamp, timestampData);
 
   if (stroke.timestamp > timestamp) {
-    await NoteModel.updateOne({ id: user.docId }, { $set: { [`strokes.${stroke.id}`]: stroke } });
+    cache.putStroke(user.docId, stroke);
+    /*
+    if (stroke.deserializer == "stroke") {
+      cache.putStroke(user.docId, stroke);
+    } else if (stroke.deserializer == "removed") {
+      await cache.removeStroke(user.docId, stroke.id);
+    } else {
+      throw Error(`Unknown deserializer ${stroke.deserializer}`);
+    }
+    */
+    //await NoteModel.updateOne({ id: user.docId }, { $set: { [`strokes.${stroke.id}`]: stroke } });
   } else {
     console.log("user tried to add outdated strokes");
   }
@@ -176,15 +186,12 @@ function checkSpecialPriviledges(user: DrawingUser) {
   }
 }
 
-function parseObjectToArray(strokes: { [id: string]: Stroke }): Stroke[] {
-  return Object.values(strokes);
-}
-
 async function requestDocumentFn(
   id: string,
   user: DrawingUser,
   docs: { [id: string]: DrawnDocument },
-  socket: WebSocket
+  socket: WebSocket,
+  cache: RedisCache
 ) {
   if (user.docId) {
     return;
@@ -209,6 +216,9 @@ async function requestDocumentFn(
   } else {
     note.strokes = noteData.strokes;
     note.creationDate = noteData.creationDate.getTime();
+
+    const cacheStrokes = await cache.getAllStrokes(id);
+    note.strokes = { ...note.strokes, ...cacheStrokes };
 
     if (noteData.backgroundType == BackgroundTypes.pdf) {
       const fileHash = noteData.backgroundOptions.fileHash as string;
@@ -307,10 +317,20 @@ export function disconnect(user: DrawingUser, docs: { [id: string]: DrawnDocumen
   return () => disconnectFn(user, docs, socket);
 }
 
-export function newStroke(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
-  return (stroke: Stroke) => newStrokeFn(stroke, user, docs, socket);
+export function newStroke(
+  user: DrawingUser,
+  docs: { [id: string]: DrawnDocument },
+  socket: WebSocket,
+  cache: RedisCache
+) {
+  return (stroke: Stroke) => newStrokeFn(stroke, user, docs, socket, cache);
 }
 
-export function requestDocument(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {
-  return (id: string) => requestDocumentFn(id, user, docs, socket);
+export function requestDocument(
+  user: DrawingUser,
+  docs: { [id: string]: DrawnDocument },
+  socket: WebSocket,
+  cache: RedisCache
+) {
+  return (id: string) => requestDocumentFn(id, user, docs, socket, cache);
 }

@@ -24,6 +24,7 @@ import { NoteModel } from "./db/Models";
 import { getPDF, receivePDF } from "./api/Pdf";
 import { DrawingUser, DrawnDocument } from "./BackendInterfaces";
 import { API } from "./api/index";
+import { RedisCache } from "./RedisCache";
 
 const MILLIS_PER_WEEK = 604800000;
 const MILLIS_PER_DAY = 86400000;
@@ -34,9 +35,15 @@ export class Server {
   server: HTTPServer;
   io: SocketServer;
   docs: { [id: string]: DrawnDocument };
+  cache: RedisCache;
 
   constructor(port = 8080) {
-    mongoose.connect(process.env.MONGO_URI || "");
+    // Check env is correct
+    const { MONGO_URI, REDIS_URI, REDIS_PORT, CACHE_FLUSH_EVERY } = process.env;
+    if (!MONGO_URI || !REDIS_URI || !REDIS_PORT || !CACHE_FLUSH_EVERY) {
+      throw Error("Missing fields in .env file");
+    }
+    mongoose.connect(MONGO_URI);
 
     this.port = port;
     this.app = express();
@@ -49,6 +56,7 @@ export class Server {
       },
     });
     this.docs = {};
+    this.cache = new RedisCache(REDIS_URI, parseInt(REDIS_PORT), parseInt(CACHE_FLUSH_EVERY));
 
     const corsOptions = {
       origin: "*",
@@ -139,11 +147,11 @@ export class Server {
         socket,
       };
 
-      requestDocument(user, this.docs, socket)(docId as string);
+      requestDocument(user, this.docs, socket, this.cache)(docId as string);
       socket.emit("userId", user.id);
 
       socket.on("disconnect", disconnect(user, this.docs, socket));
-      socket.on("new stroke", newStroke(user, this.docs, socket));
+      socket.on("new stroke", newStroke(user, this.docs, socket, this.cache));
 
       // LIVE COLLABORATION
       socket.on("remote control", remoteControl(user, this.docs, socket));
