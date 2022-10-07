@@ -109,7 +109,7 @@ async function newStrokeFn(
     { id: user.docId },
     { _id: 0, strokes: { [stroke.id]: { timestamp: 1 } } }
   );
-
+  /*
   const timestamp =
     (timestampData &&
       timestampData.strokes &&
@@ -118,8 +118,9 @@ async function newStrokeFn(
     0;
 
   if (stroke.timestamp > timestamp) {
-    cache.putStroke(user.docId, stroke);
-    /*
+    */
+  cache.putStroke(user.docId, stroke);
+  /*
     if (stroke.deserializer == "stroke") {
       cache.putStroke(user.docId, stroke);
     } else if (stroke.deserializer == "removed") {
@@ -127,11 +128,11 @@ async function newStrokeFn(
     } else {
       throw Error(`Unknown deserializer ${stroke.deserializer}`);
     }
-    */
     //await NoteModel.updateOne({ id: user.docId }, { $set: { [`strokes.${stroke.id}`]: stroke } });
   } else {
     console.log("user tried to add outdated strokes");
   }
+    */
 
   logEvent("draw_new_stroke", {
     docId: user.docId,
