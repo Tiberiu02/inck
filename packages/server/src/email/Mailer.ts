@@ -59,7 +59,7 @@ async function sendEmail(recipient: string, subject: string, htmlBody: string) {
 }
 
 export async function sendRegistrationEmail(recipient: string, firstName: string, lastName: string) {
-  const confirmationURL = "https://inck.io/auth";
+  const confirmationURL = "https://inck.io/app";
   const html = fillTemplate(EmailTemplates.Registration, { firstName, lastName, confirmationURL });
 
   await sendEmail(recipient, "Welcome to Inck!", html);
@@ -80,7 +80,7 @@ export async function sendPasswordConfirmationEmail(recipient: string, firstName
   const html = fillTemplate(EmailTemplates.PasswordResetConfirmation, {
     firstName,
     lastName,
-    targetURL: "https://inck.io/auth",
+    targetURL: "https://inck.io/app",
   });
 
   await sendEmail(recipient, "Inck: password reset confirmation", html);
