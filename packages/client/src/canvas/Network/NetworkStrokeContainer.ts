@@ -70,6 +70,10 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
       RenderLoop.scheduleRender();
     });
 
+    network.on("disconnect", () => {
+      this.cacheIsUpToDate = false;
+    });
+
     network.on("load strokes", (data: SerializedGraphic[]) => {
       console.log("loaded strokes", data);
 

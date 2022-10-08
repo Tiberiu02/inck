@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { MaterialSymbol } from "../../MaterialSymbol";
-import { FileTree, FolderInfo } from "../types";
-import { FaAngleDown, FaAngleRight, FaPencilAlt, FaBook, FaFolder, FaFolderOpen } from "react-icons/fa";
-import { AccessTypes, FileTypes } from "@inck/common-types/Files";
+import { AccessTypes } from "@inck/common-types/Files";
 import { HttpServer } from "../../../ServerConnector";
 import { getAuthToken } from "../../AuthToken";
-import { Modal, ModalButtons, ModalTitle } from "../../common/Modals";
+import { Modal } from "../../common/Modals";
 import { BackgroundOptions, BackgroundTypes } from "@inck/common-types/Notes";
 import GetApiPath from "../../GetApiPath";
 import { ApiUrlStrings } from "@inck/common-types/ApiUrlStrings";
@@ -13,6 +11,7 @@ import { twMerge } from "tailwind-merge";
 import { useDropzone } from "react-dropzone";
 import { Dropdown, TextField } from "../../common/Input";
 import { LocalStorage } from "../../../LocalStorage";
+import { BgSpacingSelector } from "../../common/BgSpacingSelector";
 
 function CreateNoteSubmodal({ onSuccess, path }) {
   const [name, setName] = useState("");
@@ -73,31 +72,7 @@ function CreateNoteSubmodal({ onSuccess, path }) {
         </Dropdown>
       </div>
       {(background == BackgroundTypes.grid || background == BackgroundTypes.lines) && (
-        <>
-          <div className="flex gap-4">
-            Spacing
-            <input
-              className="w-full"
-              type="range"
-              min="30"
-              max="120"
-              value={bgSpacing}
-              onChange={(e) => setBgSpacing(+e.target.value)}
-            />
-          </div>
-          {background == BackgroundTypes.lines && (
-            <div
-              className="relative w-full h-40 -mb-6 border-[1px] border-slate-400 rounded-lg bg-note"
-              style={{ backgroundSize: `${bgSpacing}px ${bgSpacing}px` }}
-            ></div>
-          )}
-          {background == BackgroundTypes.grid && (
-            <div
-              className="relative w-full h-40 -mb-6 border-[1px] border-slate-400 rounded-lg bg-grid"
-              style={{ backgroundSize: `${bgSpacing / 2}px ${bgSpacing / 2}px` }}
-            ></div>
-          )}
-        </>
+        <BgSpacingSelector background={background} spacing={bgSpacing} setSpacing={setBgSpacing} />
       )}
 
       <CreateFileButton className="mt-6" onClick={submit} text="Create note" />

@@ -1,4 +1,5 @@
 import { AccessTypes, FileTypes } from "@inck/common-types/Files";
+import { BackgroundOptions, BackgroundTypes } from "@inck/common-types/Notes";
 
 export type FileInfo = {
   _id: string;
@@ -15,6 +16,8 @@ export type NoteInfo = FileInfo & {
   type: FileTypes.NOTE;
   fileId: string;
   defaultAccess: AccessTypes;
+  backgroundType: BackgroundTypes;
+  backgroundOptions?: BackgroundOptions;
 };
 
 export type FileTree = { [id: string]: FolderInfo | NoteInfo };
