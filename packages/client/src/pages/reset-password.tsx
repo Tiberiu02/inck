@@ -25,7 +25,7 @@ export default function ResetPassword() {
         email: email,
       });
 
-      if (!result.ok) {
+      if (result.status != "success") {
         setError("Error: " + result.error);
         setTimeout(() => setError(""), 10_000);
       }
