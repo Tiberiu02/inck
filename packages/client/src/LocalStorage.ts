@@ -20,8 +20,9 @@ export class LocalStorage {
   }
 
   static updateCachedNote(noteId: string, data: any) {
+    const roundNumbersToFiveDecimals = (_, v: any) => (typeof v == "number" ? Math.round(v * 1e5) / 1e5 : v);
     if (window.localStorage) {
-      window.localStorage.setItem(`note-cache-${noteId}`, JSON.stringify(data));
+      window.localStorage.setItem(`note-cache-${noteId}`, JSON.stringify(data, roundNumbersToFiveDecimals));
     }
   }
 
