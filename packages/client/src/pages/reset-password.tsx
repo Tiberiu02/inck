@@ -1,13 +1,15 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useReducer, useState } from "react";
 import { postFetchAPI } from "../components/GetApiPath";
 
 export default function ResetPassword() {
   const [newPass, setNewPass] = useState("");
   const [repeatPass, setRepeatPass] = useState("");
   const [error, setError] = useState("");
-  let token = "";
-  let email = "";
+  const router = useRouter();
+  const token = router.query["token"] || "";
+  const email = router.query["email"] || "";
 
   const sendResetRequest = async () => {
     if (newPass != repeatPass) {
