@@ -148,8 +148,11 @@ export default class ToolWheel {
     this.wheel.classList.remove("wheel-hidden");
     this.wheel.classList.remove("wheel-active");
     this.wheel.setPointerCapture(pointerId); // useless
-    setTimeout(() => this.wheel.classList.add("wheel-active"), 500 + 50);
-    setTimeout(() => (this.wheel.style.transform = transform), 50);
+
+    // setTimeout(() => this.wheel.classList.add("wheel-active"), 500 + 50);
+    // setTimeout(() => (this.wheel.style.transform = transform), 50);
+    this.wheel.classList.add("wheel-active");
+    this.wheel.style.transform = transform;
   }
 
   private hide() {
