@@ -105,8 +105,13 @@ export class RedisCache {
     } else {
     }
 
-    const buffer = this.avroSchema.toBuffer(stroke);
-    const value = buffer.toString("base64");
-    await this.client.hset(docId, key, value);
+    try {
+      const buffer = this.avroSchema.toBuffer(stroke);
+      const value = buffer.toString("base64");
+      await this.client.hset(docId, key, value);
+    } catch (e) {
+      console.log(e);
+      console.log("error", stroke);
+    }
   }
 }
