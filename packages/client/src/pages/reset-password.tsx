@@ -28,6 +28,8 @@ export default function ResetPassword() {
       if (result.status != "success") {
         setError("Error: " + result.error);
         setTimeout(() => setError(""), 10_000);
+      } else {
+        window.location.href = "/app";
       }
     } catch (err) {
       console.log(err);
