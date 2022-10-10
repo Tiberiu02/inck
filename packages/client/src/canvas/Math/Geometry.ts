@@ -1,6 +1,10 @@
 import { LineSegment, Rectangle, Vector3D } from "../types";
 import { Vector2D } from "./V2";
 
+export function RectContains(r: Rectangle, p: Vector2D) {
+  return r.xMin <= p.x && p.x <= this.xMax && r.yMin <= p.y && p.y <= this.yMax;
+}
+
 export function RectangleIntersectsRectangle(a: Rectangle, b: Rectangle, padding: number = 0): boolean {
   return (
     Math.max(a.xMin, b.xMin) <= Math.min(a.xMax, b.xMax) + padding &&
