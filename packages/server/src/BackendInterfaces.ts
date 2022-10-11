@@ -70,8 +70,6 @@ export interface DBNote {
   strokes: { [id: string]: Stroke };
   creationDate: Date;
   isFreeNote: Boolean;
-  backgroundType: BackgroundTypes;
-  backgroundOptions: BackgroundOptions;
 }
 
 export interface DBFile {
@@ -81,6 +79,8 @@ export interface DBFile {
   fileId?: String;
   parentDir: "f/notes" | string;
   defaultAccess: NoteAccess;
+  backgroundType: BackgroundTypes;
+  backgroundOptions: BackgroundOptions;
 }
 
 export interface DBPasswordReset {

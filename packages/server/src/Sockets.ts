@@ -3,6 +3,7 @@ import { FileModel, NoteModel } from "./db/Models";
 import { Socket as WebSocket } from "socket.io";
 import {
   BackgroundTypes,
+  DBFile,
   DBNote,
   DrawingUser,
   DrawnDocument,
@@ -203,6 +204,8 @@ async function requestDocumentFn(
   const timer = new Timer();
   const noteData: DBNote = await NoteModel.findOne({ id: id });
 
+  const fileData: DBFile = await FileModel.findOne({ fileId: id });
+
   const noteExists = noteData !== null;
   let note: FrontEndNoteData = {
     id: id,
@@ -221,13 +224,13 @@ async function requestDocumentFn(
     const cacheStrokes = await cache.getAllStrokes(id);
     note.strokes = { ...note.strokes, ...cacheStrokes };
 
-    if (noteData.backgroundType == BackgroundTypes.pdf) {
-      const fileHash = noteData.backgroundOptions.fileHash as string;
+    if (fileData.backgroundType == BackgroundTypes.pdf) {
+      const fileHash = fileData.backgroundOptions.fileHash as string;
       const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
       note.pdfUrl = url;
-    } else if (noteData.backgroundType) {
-      note.bgPattern = noteData.backgroundType;
-      note.bgSpacing = noteData.backgroundOptions.spacing;
+    } else if (fileData.backgroundType) {
+      note.bgPattern = fileData.backgroundType;
+      note.bgSpacing = fileData.backgroundOptions.spacing;
     }
   }
 

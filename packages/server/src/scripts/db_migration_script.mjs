@@ -23,11 +23,28 @@ async function migratePremiumNotes(db) {
     }
 }
 
+async function migrateBackgroundOptions(db) {
+    const allNotes = await db.db("inck").collection("notes").find({isFreeNote: false}).toArray()
+    for (const noteData of allNotes) {
+        const bgt = noteData.backgroundType
+        const bgo = noteData.backgroundOptions
+        const fileId = noteData.id
+
+        await db.db("inck").collection("files").updateOne({
+            fileId: fileId,
+        }, {$set: {
+            backgroundType: bgt,
+            backgroundOptions: bgo,
+        }}
+        )
+    }
+}
+
 async function run() {
     MongoClient.connect(uri, async (err, db) => {
         if (err) throw err
         // migrate free notes
-        await migratePremiumNotes(db)
+        await migrateBackgroundOptions(db)
     })
 }
 

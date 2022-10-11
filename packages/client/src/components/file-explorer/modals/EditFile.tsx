@@ -1,10 +1,12 @@
 import { AccessTypes, FileTypes } from "@inck/common-types/Files";
 import { BackgroundTypes } from "@inck/common-types/Notes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HttpServer } from "../../../ServerConnector";
 import { getAuthToken } from "../../AuthToken";
 import { FileInfo, NoteInfo } from "../types";
 import { Modal, ModalButtons, ModalTitle } from "../../common/Modals";
+import { Dropdown } from "../../common/Input";
+import { BgSpacingSelector } from "../../common/BgSpacingSelector";
 
 type EditFileModalProps = {
   file: FileInfo;
@@ -12,18 +14,35 @@ type EditFileModalProps = {
   onSuccess: () => void;
 };
 
+function bgRatio(bg: BackgroundTypes) {
+  if (bg == BackgroundTypes.grid) {
+    return 2;
+  } else {
+    return 1;
+  }
+}
+
 export function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps) {
   const isNote = file.type == FileTypes.NOTE;
 
   const [newName, setNewName] = useState(file.name);
   const [newNoteAccess, setNewNoteAccess] = useState(isNote ? (file as NoteInfo).defaultAccess : AccessTypes.NONE);
+  const [newBackground, setNewBackground] = useState(
+    isNote ? (file as NoteInfo).backgroundType : BackgroundTypes.blank
+  );
+  const defaultSpacing =
+    isNote && newBackground != BackgroundTypes.blank ? (file as NoteInfo).backgroundOptions.spacing : 0;
+  const [newBgSpacing, setNewBgSpacing] = useState(defaultSpacing * screen.width * bgRatio(newBackground));
 
   const saveEdits = async () => {
     if (isNote) {
       await HttpServer.files.editNoteInfo(getAuthToken(), file._id, {
         name: newName,
         publicAccess: newNoteAccess,
-        backgroundType: BackgroundTypes.blank,
+        backgroundType: newBackground,
+        backgroundOptions: {
+          spacing: newBgSpacing / screen.width / bgRatio(newBackground),
+        },
       });
     } else {
       await HttpServer.files.editFolderInfo(getAuthToken(), file._id, {
@@ -60,6 +79,30 @@ export function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps)
             </select>
           </div>
         )}
+        {isNote && newBackground == BackgroundTypes.pdf && (
+          <div className="flex mt-8 italic text-sm">You cannot change the background of a PDF file</div>
+        )}
+        {isNote && newBackground != BackgroundTypes.pdf && (
+          <div className="flex gap-4 mt-4">
+            Background
+            <Dropdown
+              className="w-full"
+              value={newBackground}
+              onChange={(bg) => {
+                setNewBackground(bg);
+              }}
+            >
+              <option value={BackgroundTypes.blank}>None</option>
+              <option value={BackgroundTypes.grid}>Grid</option>
+              <option value={BackgroundTypes.lines}>Lines</option>
+            </Dropdown>
+          </div>
+        )}
+        {isNote &&
+          newBackground != BackgroundTypes.pdf &&
+          (newBackground == BackgroundTypes.grid || newBackground == BackgroundTypes.lines) && (
+            <BgSpacingSelector background={newBackground} spacing={newBgSpacing} setSpacing={setNewBgSpacing} />
+          )}
       </div>
       <ModalButtons onCancel={onCancel} onSubmit={saveEdits} submitText="Save" />
     </Modal>

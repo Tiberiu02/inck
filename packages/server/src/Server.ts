@@ -117,12 +117,12 @@ export class Server {
     } else {
       this.app.post(path, bodyParser.json(), async (req, res) => {
         try {
-          console.log(req.body);
+          //console.log(req.body);
           const params: any[] = req.body; //JSON.parse(req.body);
           const result = await handler(...params);
           res.status(200).send({ result });
         } catch (err) {
-          console.log(err);
+          console.error(err);
           res.status(400).send({ error: err.message });
         }
       });
