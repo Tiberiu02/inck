@@ -9,8 +9,8 @@ export function BgSpacingSelector({ background, spacing, setSpacing }) {
           <div className="absolute top-1/2 w-full h-full flex justify-between px-2">
             {Array(9)
               .fill(0)
-              .map((_) => (
-                <div className="w-[1px] h-1 mt-2 bg-gray-400"></div>
+              .map((idx) => (
+                <div key={idx} className="w-[1px] h-1 mt-2 bg-gray-400"></div>
               ))}
           </div>
           <input
