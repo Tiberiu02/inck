@@ -7,6 +7,7 @@ import { FileInfo, NoteInfo } from "../types";
 import { Modal, ModalButtons, ModalTitle } from "../../common/Modals";
 import { Dropdown } from "../../common/Input";
 import { BgSpacingSelector } from "../../common/BgSpacingSelector";
+import { LocalStorage } from "../../../LocalStorage";
 
 type EditFileModalProps = {
   file: FileInfo;
@@ -30,8 +31,9 @@ export function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps)
   const [newBackground, setNewBackground] = useState(
     isNote ? (file as NoteInfo).backgroundType : BackgroundTypes.blank
   );
+
   const defaultSpacing =
-    isNote && newBackground != BackgroundTypes.blank ? (file as NoteInfo).backgroundOptions.spacing : 0;
+    isNote && newBackground != BackgroundTypes.blank ? (file as NoteInfo).backgroundOptions.spacing : 80 / screen.width;
   const [newBgSpacing, setNewBgSpacing] = useState(defaultSpacing * screen.width * bgRatio(newBackground));
 
   const saveEdits = async () => {

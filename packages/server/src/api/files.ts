@@ -144,9 +144,6 @@ export async function editNoteInfo(authToken: string, noteFileId: string, newOpt
   note.backgroundType = newOptions.backgroundType;
   note.backgroundOptions = newOptions.backgroundOptions;
 
-  console.log(note.backgroundType);
-  console.log(note.backgroundOptions);
-
   await note.save();
 }
 
