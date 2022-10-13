@@ -196,7 +196,10 @@ async function requestDocumentFn(
         const fileHash = fileData.backgroundOptions.fileHash as string;
         const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
         note.pdfUrl = url;
-      } else if (fileData.backgroundType) {
+      } else if (
+        fileData.backgroundType != BackgroundTypes.blank &&
+        fileData.backgroundOptions != BackgroundTypes.pdf
+      ) {
         note.bgPattern = fileData.backgroundType;
         console.log("before bug");
         note.bgSpacing = fileData.backgroundOptions.spacing;
