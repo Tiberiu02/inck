@@ -11,24 +11,19 @@ import { twMerge } from "tailwind-merge";
 import { useDropzone } from "react-dropzone";
 import { Dropdown, TextField } from "../../common/Input";
 import { LocalStorage } from "../../../LocalStorage";
-import { BgSpacingSelector } from "../../common/BgSpacingSelector";
+import { BackgroundSelector } from "../../common/BgSpacingSelector";
 
 function CreateNoteSubmodal({ onSuccess, path }) {
   const [name, setName] = useState("");
   const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
   const [background, setBackground] = useState(BackgroundTypes.blank);
-  const [bgSpacing, setBgSpacing] = useState(50);
+  const [bgSpacing, setBgSpacing] = useState(null);
 
   const submit = async () => {
     let backgroundOptions: BackgroundOptions;
-    if (background == BackgroundTypes.lines) {
+    if (background == BackgroundTypes.lines || background == BackgroundTypes.grid) {
       backgroundOptions = {
         spacing: bgSpacing / screen.width,
-      };
-      LocalStorage.updateLastSpacing(background, bgSpacing);
-    } else if (background == BackgroundTypes.grid) {
-      backgroundOptions = {
-        spacing: bgSpacing / screen.width / 2,
       };
       LocalStorage.updateLastSpacing(background, bgSpacing);
     }
@@ -48,6 +43,7 @@ function CreateNoteSubmodal({ onSuccess, path }) {
         Name
         <TextField value={name} onChange={setName} />
       </div>
+
       <div className="flex gap-4">
         Public&nbsp;access
         <Dropdown className="w-full" value={publicAccess} onChange={setPublicAccess}>
@@ -56,24 +52,13 @@ function CreateNoteSubmodal({ onSuccess, path }) {
           <option value={AccessTypes.EDIT}>View &amp; edit</option>
         </Dropdown>
       </div>
-      <div className="flex gap-4">
-        Background
-        <Dropdown
-          className="w-full"
-          value={background}
-          onChange={(bg) => {
-            setBackground(bg);
-            setBgSpacing(LocalStorage.lastSpacing(bg));
-          }}
-        >
-          <option value={BackgroundTypes.blank}>None</option>
-          <option value={BackgroundTypes.grid}>Grid</option>
-          <option value={BackgroundTypes.lines}>Lines</option>
-        </Dropdown>
-      </div>
-      {(background == BackgroundTypes.grid || background == BackgroundTypes.lines) && (
-        <BgSpacingSelector background={background} spacing={bgSpacing} setSpacing={setBgSpacing} />
-      )}
+
+      <BackgroundSelector
+        background={background}
+        setBackground={setBackground}
+        spacing={bgSpacing}
+        setSpacing={setBgSpacing}
+      />
 
       <CreateFileButton className="mt-6" onClick={submit} text="Create note" />
     </div>
