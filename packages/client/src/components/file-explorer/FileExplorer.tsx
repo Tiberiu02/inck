@@ -204,6 +204,8 @@ function ProcessFilesData(rawFileList: FileData[]): FileTree {
         fileId: f.fileId,
         type: FileTypes.NOTE,
         defaultAccess: f.defaultAccess,
+        backgroundType: f.backgroundType,
+        backgroundOptions: f.backgroundOptions || {},
       };
       fileDict[f._id] = note;
     }
@@ -236,7 +238,6 @@ async function GetFiles(): Promise<FileTree> {
     throw new Error("not logged in");
   }
   const filesData = await HttpServer.files.getFiles(getAuthToken());
-  console.log(filesData);
   return ProcessFilesData(filesData);
 }
 

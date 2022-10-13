@@ -3,6 +3,7 @@ import { FileModel, NoteModel } from "./db/Models";
 import { Socket as WebSocket } from "socket.io";
 import {
   BackgroundTypes,
+  DBFile,
   DBNote,
   DrawingUser,
   DrawnDocument,
@@ -70,18 +71,14 @@ function UpdateNoteFormat(noteData: any) {
 
 async function EnsureLastNoteFormat(id: string) {
   const formatData = (await NoteModel.findOne({ id: id }, { format: 1 })) as any;
-  // console.log(id, formatData);
   if (formatData == null) return;
 
   const { format } = formatData;
-  // console.log("format", format);
   if (format != LAST_NOTE_FORMAT) {
     let noteData = await NoteModel.findOne({ id: id }, { _id: 0, __v: 0 });
     if (noteData == null) return;
     noteData = noteData.toObject();
-    // console.log("initial note data", noteData);
     noteData = UpdateNoteFormat(noteData);
-    // console.log("updated note data", noteData);
     await NoteModel.findOneAndReplace({ id: id }, noteData);
   }
 }
@@ -104,36 +101,7 @@ async function newStrokeFn(
       other.socket.emit("load strokes", [stroke]);
     }
   }
-
-  const timestampData = await NoteModel.findOne(
-    { id: user.docId },
-    { _id: 0, strokes: { [stroke.id]: { timestamp: 1 } } }
-  );
-  /*
-  const timestamp =
-    (timestampData &&
-      timestampData.strokes &&
-      timestampData.strokes[stroke.id] &&
-      timestampData.strokes[stroke.id].timestamp) ||
-    0;
-
-  if (stroke.timestamp > timestamp) {
-    */
   cache.putStroke(user.docId, stroke);
-  /*
-    if (stroke.deserializer == "stroke") {
-      cache.putStroke(user.docId, stroke);
-    } else if (stroke.deserializer == "removed") {
-      await cache.removeStroke(user.docId, stroke.id);
-    } else {
-      throw Error(`Unknown deserializer ${stroke.deserializer}`);
-    }
-    //await NoteModel.updateOne({ id: user.docId }, { $set: { [`strokes.${stroke.id}`]: stroke } });
-  } else {
-    console.log("user tried to add outdated strokes");
-  }
-    */
-
   logEvent("draw_new_stroke", {
     docId: user.docId,
     executionTime: timer.elapsed().toString(),
@@ -203,6 +171,8 @@ async function requestDocumentFn(
   const timer = new Timer();
   const noteData: DBNote = await NoteModel.findOne({ id: id });
 
+  const fileData: DBFile = await FileModel.findOne({ fileId: id });
+
   const noteExists = noteData !== null;
   let note: FrontEndNoteData = {
     id: id,
@@ -221,13 +191,15 @@ async function requestDocumentFn(
     const cacheStrokes = await cache.getAllStrokes(id);
     note.strokes = { ...note.strokes, ...cacheStrokes };
 
-    if (noteData.backgroundType == BackgroundTypes.pdf) {
-      const fileHash = noteData.backgroundOptions.fileHash as string;
-      const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
-      note.pdfUrl = url;
-    } else if (noteData.backgroundType) {
-      note.bgPattern = noteData.backgroundType;
-      note.bgSpacing = noteData.backgroundOptions.spacing;
+    if (fileData) {
+      if (fileData.backgroundType == BackgroundTypes.pdf) {
+        const fileHash = fileData.backgroundOptions.fileHash as string;
+        const url = `/api/pdf/get-pdf/${fileHash}.pdf`;
+        note.pdfUrl = url;
+      } else if (fileData.backgroundType) {
+        note.bgPattern = fileData.backgroundType;
+        note.bgSpacing = fileData.backgroundOptions.spacing;
+      }
     }
   }
 

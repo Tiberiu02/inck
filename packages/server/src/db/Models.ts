@@ -36,8 +36,6 @@ const noteSchema: Schema = new mongoose.Schema({
   strokes: { type: Object, default: {} },
   creationDate: { type: Date, default: Date.now() },
   isFreeNote: { type: Boolean, default: true },
-  backgroundType: { type: String, default: "blank" },
-  backgroundOptions: { type: Object, default: {} },
   /*
    * Options:
    * fileHash: hash of pdf file to request (used as url in frontend)
@@ -72,6 +70,8 @@ const fileSchema: Schema = new mongoose.Schema({
   defaultAccess: { type: String, default: "private" },
   specialAccesses: { type: Mixed, default: {} }, // Dictionary of user: accessRights
   removalReqTime: { type: Date, default: null },
+  backgroundType: { type: String, default: "blank" },
+  backgroundOptions: { type: Object, default: {} },
 });
 
 const passwordResetSchema: Schema = new mongoose.Schema({
