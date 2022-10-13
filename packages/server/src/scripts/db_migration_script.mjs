@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 
-const uri = "mongodb://127.0.0.1:27017/inck"
+const uri = "mongodb+srv://inck:A9kQMoe0xZHGVI1A@cluster0.zs8rq.mongodb.net/inck"
 
 async function migratePremiumNotes(db) {
     const allNotes = await db.db("inck").collection("notes").find().toArray()
@@ -25,6 +25,7 @@ async function migratePremiumNotes(db) {
 
 async function migrateBackgroundOptions(db) {
     const allNotes = await db.db("inck").collection("notes").find({isFreeNote: false}).toArray()
+    console.log(allNotes.length)
     for (const noteData of allNotes) {
         const bgt = noteData.backgroundType
         const bgo = noteData.backgroundOptions
@@ -38,9 +39,11 @@ async function migrateBackgroundOptions(db) {
         }}
         )
     }
+	console.log("Done")
 }
 
 async function run() {
+    console.log
     MongoClient.connect(uri, async (err, db) => {
         if (err) throw err
         // migrate free notes
@@ -49,5 +52,5 @@ async function run() {
 }
 
 run().then(() => {
-    console.log("Done")
+
 })
