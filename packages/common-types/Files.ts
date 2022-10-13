@@ -1,3 +1,5 @@
+import { BackgroundOptions, BackgroundTypes } from "./Notes";
+
 export enum FileTypes {
   NOTE = "note",
   FOLDER = "folder",
@@ -24,6 +26,8 @@ export type NoteData = {
   owner: string;
   fileId: string;
   defaultAccess: AccessTypes;
+  backgroundType: BackgroundTypes;
+  backgroundOptions?: BackgroundOptions;
 };
 
 export type FileData = FolderData & NoteData;

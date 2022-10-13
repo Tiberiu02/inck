@@ -114,13 +114,13 @@ export async function createNote(authToken: string, parentFolderId: string, opti
     owner: user.userId,
     fileId: noteId,
     defaultAccess: options.publicAccess,
+    backgroundType: options.backgroundType,
+    backgroundOptions: options.backgroundOptions,
   });
 
   const createNote = NoteModel.create({
     id: noteId,
     isFreeNote: false,
-    backgroundType: options.backgroundType,
-    backgroundOptions: options.backgroundOptions,
     strokes: {},
   });
 
@@ -129,7 +129,6 @@ export async function createNote(authToken: string, parentFolderId: string, opti
 
 export async function editNoteInfo(authToken: string, noteFileId: string, newOptions: NoteOptions) {
   const user = parseAuthToken(authToken);
-
   const note = await FileModel.findOne({ _id: noteFileId });
 
   if (!note) {
@@ -139,8 +138,6 @@ export async function editNoteInfo(authToken: string, noteFileId: string, newOpt
   if (note.owner != user.userId) {
     throw new Error("Unauthorized");
   }
-
-  //console.log(newOptions);
 
   note.name = newOptions.name;
   note.defaultAccess = newOptions.publicAccess;
