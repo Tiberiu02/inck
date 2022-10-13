@@ -198,7 +198,9 @@ async function requestDocumentFn(
         note.pdfUrl = url;
       } else if (fileData.backgroundType) {
         note.bgPattern = fileData.backgroundType;
+        console.log("before bug");
         note.bgSpacing = fileData.backgroundOptions.spacing;
+        console.log("after bug");
       }
     }
   }
