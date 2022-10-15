@@ -99,9 +99,10 @@ export class Toolbar implements FloatingMenu {
   private createToolbar() {
     const toolbar = document.createElement("div");
     toolbar.setAttribute("id", "toolbar");
-    toolbar.style.position = "absolute";
+    toolbar.style.position = "fixed";
     toolbar.style.overflow = "hidden";
     toolbar.style.display = "flex";
+    toolbar.style.zIndex = "10";
     toolbar.style.alignItems = "center";
     toolbar.style.paddingLeft = `${toolmenuHeight * 0.1}px`;
     toolbar.style.height = `${toolmenuHeight}px`;
@@ -181,7 +182,7 @@ export class Toolbar implements FloatingMenu {
     updateIndicators();
 
     const colorBar = document.createElement("div");
-    colorBar.style.position = "absolute";
+    colorBar.style.position = "fixed";
     colorBar.style.background = "#fff";
     colorBar.style.boxShadow = "0px 0px 30px rgba(0, 0, 0, 0.1)";
     colorBar.style.borderRadius = "9999px";
@@ -214,7 +215,7 @@ export class Toolbar implements FloatingMenu {
       widthBar.style.borderRadius = "9999px 0px 0px 9999px";
       widthBar.style.zIndex = "10";
       widthBar.style.display = "flex";
-      widthBar.style.position = "absolute";
+      widthBar.style.position = "fixed";
       widthBar.style.paddingTop = widthBar.style.paddingBottom = `${toolmenuHeight * PADDING}px`;
       widthBar.style.width = `${toolmenuHeight * (otherWidths.length + 0.5)}px`;
 
@@ -326,22 +327,27 @@ export class Toolbar implements FloatingMenu {
     const [btn, img] = this.createButton(icon);
     img.style.color = "#C2C2C2";
 
+    let isPressing = false;
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      // img.style.border = SELECTED_ICON_BORDER;
       img.style.backgroundColor = "#EAEAEA";
       img.style.color = "#fff";
+      isPressing = true;
     });
     btn.addEventListener("pointerup", () => {
       img.style.border = UNSELECTED_ICON_BORDER;
       img.style.backgroundColor = "#fff";
       img.style.color = "#C2C2C2";
-      onClick();
+      if (isPressing) {
+        onClick();
+        isPressing = false;
+      }
     });
     btn.addEventListener("pointerleave", () => {
       img.style.border = UNSELECTED_ICON_BORDER;
       img.style.backgroundColor = "#fff";
       img.style.color = "#C2C2C2";
+      isPressing = false;
     });
 
     return btn;

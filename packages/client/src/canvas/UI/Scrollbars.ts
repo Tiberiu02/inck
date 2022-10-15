@@ -64,7 +64,7 @@ export class ScrollBars {
     this.pointer = { x: e.x, y: e.y };
     this.pointerId = e.pointerId;
     this.vAnchor = View.getTop();
-    PointerTracker.pause();
+    PointerTracker.instance.pause();
   }
 
   private handlePointerMove(e: PointerEvent) {
@@ -91,7 +91,7 @@ export class ScrollBars {
         this.scrolling = false;
         this.vAnchor = null;
         this.updateBars();
-        PointerTracker.unpause();
+        PointerTracker.instance.unpause();
       }
     }
   }
