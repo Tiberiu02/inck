@@ -52,6 +52,10 @@ export class PointerTracker {
 
   private trackingSufrace: HTMLDivElement;
 
+  private isPaused: boolean;
+
+  public static instance: PointerTracker;
+
   constructor() {
     [this.onPenEvent, this.triggerPenEvent] = CreateEvent();
     [this.onFingerEvent, this.triggerFingerEvent] = CreateEvent();
@@ -79,13 +83,14 @@ export class PointerTracker {
       this.trackingSufrace.addEventListener("pointerleave", this.handlePointerEvent.bind(this));
       this.trackingSufrace.addEventListener("pointerout", this.handlePointerEvent.bind(this));
     }
+
+    PointerTracker.instance = this;
   }
 
-  private static isPaused: boolean;
-  static pause() {
+  pause() {
     this.isPaused = true;
   }
-  static unpause() {
+  unpause() {
     this.isPaused = false;
   }
 
@@ -101,7 +106,7 @@ export class PointerTracker {
       preventDefault: () => e.preventDefault(),
     };
 
-    if (!PointerTracker.isPaused) {
+    if (!this.isPaused) {
       this.triggerPenEvent(penEvent);
     }
   }
@@ -148,7 +153,7 @@ export class PointerTracker {
         preventDefault: () => e.preventDefault(),
       };
 
-      if (!PointerTracker.isPaused) {
+      if (!this.isPaused) {
         this.triggerFingerEvent(fingerEvent);
       }
     }
@@ -177,7 +182,7 @@ export class PointerTracker {
         preventDefault: () => e.preventDefault(),
       };
 
-      if (!PointerTracker.isPaused) {
+      if (!this.isPaused) {
         this.triggerPenEvent(penEvent);
       }
     } else {
@@ -202,7 +207,7 @@ export class PointerTracker {
         preventDefault: () => e.preventDefault(),
       };
 
-      if (!PointerTracker.isPaused) {
+      if (!this.isPaused) {
         this.triggerFingerEvent(fingerEvent);
       }
     }

@@ -4,7 +4,7 @@ import ToolWheel from "./UI/ToolWheel";
 import { NetworkStrokeContainer } from "./Network/NetworkStrokeContainer";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { LayeredStrokeContainer } from "./LayeredStrokeContainer";
-import { CaddieMenu } from "./UI/CaddieMenu";
+import { PenFollowingEngine } from "./UI/PenFollowing";
 import { PenEvent, PointerTracker } from "./UI/PointerTracker";
 import { ToolManager } from "./Tooling/ToolManager";
 import { BaseStrokeContainer } from "./Rendering/BaseStrokeContainer";
@@ -22,6 +22,7 @@ import { Background } from "./types";
 import { Display } from "./DeviceProps";
 import { GridBackground } from "./Backgrounds/GridBackground";
 import { BackgroundTypes } from "@inck/common-types/Notes";
+import { Toolbar } from "./UI/Toolbar";
 
 export const NUM_LAYERS = 2;
 export const HIGHLIGHTER_OPACITY = 0.35;
@@ -36,9 +37,8 @@ export default class App {
   private pointerTracker: PointerTracker;
 
   private scrollBars: ScrollBars;
-  private wheel: ToolWheel;
-  private caddie: CaddieMenu;
   private background: Background;
+  private toolbar: Toolbar;
 
   constructor() {
     Object.assign(document.body.style, {
@@ -88,23 +88,18 @@ export default class App {
 
     // Pointer tracker
     this.pointerTracker = new PointerTracker();
-    this.pointerTracker.onPenEvent.addListener((e) => this.handlePenEvent(e));
-    this.pointerTracker.onPenButton.addListener((buttonState) => {
-      buttonState ? this.toolManager.enableEraser() : this.toolManager.disableEraser();
-      this.caddie.refreshEraserButton();
-    });
+    this.pointerTracker.onPenEvent((e) => this.handlePenEvent(e));
 
     // Enable navigation
     this.pageNavigation = new PageNavigation();
-    this.pointerTracker.onFingerEvent.addListener((e) => this.pageNavigation.handleFingerEvent(e));
+    this.pointerTracker.onFingerEvent((e) => this.pageNavigation.handleFingerEvent(e));
     View.onUpdate(() => RenderLoop.scheduleRender());
 
     // Enable tooling
     this.toolManager = new ToolManager(this.strokeContainer, this.network);
 
     // Create UI
-    this.wheel = new ToolWheel(this.toolManager);
-    this.caddie = new CaddieMenu(this.toolManager, this.wheel);
+    this.toolbar = new Toolbar(this.toolManager);
 
     // Enable rendering
     RenderLoop.onRender(() => {
@@ -127,12 +122,8 @@ export default class App {
   async handlePenEvent(e: PenEvent) {
     e.preventDefault(); // hide touch callout on iOS
 
-    // Hide tool wheel if open
-    if (e.pressure && this.wheel.isVisible()) this.wheel.close();
-
     let [x, y] = View.getCanvasCoords(e.x, e.y);
 
     this.toolManager.update(x, y, e.pressure, e.timeStamp);
-    this.caddie.updatePointer(e.pressure ? new Vector2D(e.x, e.y) : null);
   }
 }

@@ -1,9 +1,5 @@
-import { ToolManager } from "../Tooling/ToolManager";
 import { V2, Vector2D } from "../Math/V2";
-import ToolWheel from "./ToolWheel";
-import { ToolMenu } from "./ToolMenu";
-import tailwind from "../../../tailwind.config";
-import type { Rectangle } from "../types";
+import { PenEvent, PointerTracker } from "./PointerTracker";
 
 enum STATES {
   IDLE,
@@ -18,7 +14,6 @@ const LEFT_PADDING = 60; //px
 const RIGHT_PADDING = 300; //px
 const CORNER_PADDING = 10; //px
 const TELEPORT_THRESHOLD = 200;
-const DRAG_START = 10;
 
 const MIN_OPACITY = 50; //%
 const MAX_OPACITY = 80; //%
@@ -31,10 +26,16 @@ const FADE_IN_DELAY = 200; // ms
 
 const FRAME_SIZE = 100; // in
 
-export class CaddieMenu {
-  private menu: ToolMenu;
-  private toolManager: ToolManager;
-  private wheel: ToolWheel;
+export interface FloatingMenu {
+  setPosition(pos: Vector2D): void;
+  setOpacity(opacity: number): void;
+  setInteractive(interactive: boolean): void;
+  width: number;
+  height: number;
+}
+
+export class PenFollowingEngine {
+  private menu: FloatingMenu;
   private lastUpdate: number;
 
   private pointer: Vector2D;
@@ -45,14 +46,9 @@ export class CaddieMenu {
   private opacity: number;
   private state: STATES;
   private enteredIdle: number;
-  private eraseBtn: HTMLDivElement;
 
-  constructor(toolManager: ToolManager, wheel: ToolWheel) {
-    this.toolManager = toolManager;
-    this.wheel = wheel;
-
-    this.menu = new ToolMenu(toolManager, this);
-
+  constructor(menu: FloatingMenu) {
+    this.menu = menu;
     this.state = STATES.IDLE;
 
     this.frame = new Vector2D(0, 0);
@@ -60,10 +56,14 @@ export class CaddieMenu {
     this.pos = this.target;
     this.opacity = MAX_OPACITY;
     this.lastUpdate = performance.now();
+
+    PointerTracker.instance.onPenEvent((e) => this.handlePenEvent(e));
     requestAnimationFrame(() => this.update());
   }
 
-  updatePointer(pointer: Vector2D) {
+  private handlePenEvent(e: PenEvent) {
+    let pointer = e.pressure ? new Vector2D(e.x, e.y) : null;
+
     this.pointer = pointer;
 
     if (pointer) {
@@ -155,18 +155,5 @@ export class CaddieMenu {
 
   translatePosition(d: Vector2D) {
     this.target = this.pos = V2.add(this.pos, d);
-  }
-
-  refreshEraserButton() {
-    const primary = tailwind.theme.extend.colors["primary"];
-    const primaryDark = tailwind.theme.extend.colors["primary-dark"];
-
-    if (this.toolManager.isErasing) {
-      this.eraseBtn.style.backgroundColor = primaryDark;
-      this.eraseBtn.style.color = "rgba(255, 255, 255, 0.6)";
-    } else {
-      this.eraseBtn.style.backgroundColor = primary;
-      this.eraseBtn.style.color = "rgba(255, 255, 255, 1)";
-    }
   }
 }

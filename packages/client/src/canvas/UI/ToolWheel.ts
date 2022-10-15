@@ -100,7 +100,7 @@ export default class ToolWheel {
     } else if (this.tool == "highlighter") {
       this.toolManager.selectPen(color, H_WIDTHS[this.width.highlighter], 0);
     } else if (this.tool == "eraser") {
-      this.toolManager.enableEraser();
+      this.toolManager.selectEraser();
     } else if (this.tool == "selection") {
       this.toolManager.selectSelection();
     }
@@ -342,7 +342,7 @@ export default class ToolWheel {
 
       let eraser = createElement("g", { class: "tool_button" });
       eraser.addEventListener("pointerdown", () => {
-        this.toolManager.enableEraser();
+        this.toolManager.selectEraser();
         this.hide();
         this.registerClose();
       });
