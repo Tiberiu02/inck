@@ -7,6 +7,8 @@ import { MyPen } from "./Pen/MyPen";
 import { MyTool } from "./Tool";
 import { MySelection } from "./Selection/MySelection";
 import { DeserializeGraphic, SerializedGraphic, TranslatePersistentGraphic } from "../Drawing/Graphic";
+import { PenEvent, PointerTracker } from "../UI/PointerTracker";
+import { View } from "../View/View";
 
 export class ToolManager {
   tool: MyTool;
@@ -34,11 +36,15 @@ export class ToolManager {
         this.actionStack.redo();
       }
     });
+
+    PointerTracker.instance.onPenEvent(this.update.bind(this));
   }
 
-  update(x: number, y: number, pressure: number, timestamp: number) {
+  update(e: PenEvent) {
+    let [x, y] = View.getCanvasCoords(e.x, e.y);
+
     if (this.tool) {
-      this.tool.update(x, y, pressure, timestamp);
+      this.tool.update(x, y, e.pressure, e.timeStamp);
     }
   }
 

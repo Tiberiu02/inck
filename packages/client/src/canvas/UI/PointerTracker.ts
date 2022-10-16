@@ -12,7 +12,6 @@ export interface PenEvent {
   timeStamp: number;
   target: EventTarget;
   pointerType: PenTypes;
-  preventDefault: () => void;
 }
 
 export interface Finger {
@@ -27,7 +26,6 @@ export interface FingerEvent {
   timeStamp: number;
   fingers: Finger[];
   changedFingers: Finger[];
-  preventDefault: () => void;
 }
 
 export interface iosTouch extends Touch {
@@ -57,6 +55,23 @@ export class PointerTracker {
   public static instance: PointerTracker;
 
   constructor() {
+    Object.assign(document.body.style, {
+      width: "100vw",
+      height: "100vh",
+      "touch-action": "none",
+
+      "-webkit-user-select": "none" /* Chrome all / Safari all */,
+      "-moz-user-select": "none" /* Firefox all */,
+      "-ms-user-select": "none" /* IE 10+ */,
+      "user-select": "none" /* Likely future */,
+
+      "-webkit-touch-callout": "none",
+      "-webkit-tap-highlight-color": "transparent",
+
+      overflow: "hidden",
+    });
+    window.addEventListener("contextmenu", (e) => e.preventDefault());
+
     [this.onPenEvent, this.triggerPenEvent] = CreateEvent();
     [this.onFingerEvent, this.triggerFingerEvent] = CreateEvent();
     [this.onPenButton, this.triggerPenButton] = CreateEvent();
@@ -89,6 +104,17 @@ export class PointerTracker {
 
   pause() {
     this.isPaused = true;
+
+    if (Object.values(this.fingers).length) {
+      const fingerEvent: FingerEvent = {
+        timeStamp: Date.now(),
+        fingers: [],
+        changedFingers: Object.values(this.fingers),
+      };
+
+      this.triggerFingerEvent(fingerEvent);
+      this.fingers = {};
+    }
   }
   unpause() {
     this.isPaused = false;
@@ -96,6 +122,10 @@ export class PointerTracker {
 
   // iOS
   private handleMouseEvent(e: MouseEvent) {
+    if (this.isPaused) return;
+
+    e.preventDefault();
+
     let penEvent: PenEvent = {
       x: e.x,
       y: e.y,
@@ -103,16 +133,17 @@ export class PointerTracker {
       timeStamp: performance.now(),
       target: e.target,
       pointerType: PenTypes.MOUSE,
-      preventDefault: () => e.preventDefault(),
     };
 
-    if (!this.isPaused) {
-      this.triggerPenEvent(penEvent);
-    }
+    this.triggerPenEvent(penEvent);
   }
 
   // iOS
   private handleTouchEvent(e: TouchEvent) {
+    if (this.isPaused) return;
+
+    e.preventDefault();
+
     if ((e.changedTouches[0] as iosTouch).touchType == "stylus") {
       const t = e.changedTouches[0] as iosTouch;
 
@@ -123,7 +154,6 @@ export class PointerTracker {
         timeStamp: e.timeStamp,
         target: t.target,
         pointerType: PenTypes.MOUSE,
-        preventDefault: () => e.preventDefault(),
       };
 
       this.triggerPenEvent(pointerEvent);
@@ -150,18 +180,19 @@ export class PointerTracker {
         timeStamp: e.timeStamp,
         fingers: [...e.touches].map(touchToFinger),
         changedFingers: [...e.changedTouches].map(touchToFinger),
-        preventDefault: () => e.preventDefault(),
       };
 
-      if (!this.isPaused) {
-        this.triggerFingerEvent(fingerEvent);
-      }
+      this.triggerFingerEvent(fingerEvent);
     }
   }
 
   static penButton: boolean = false;
   // non iOS
   private handlePointerEvent(e: PointerEvent) {
+    if (this.isPaused) return;
+
+    e.preventDefault();
+
     if (e.pointerType == "mouse" || e.pointerType == "pen") {
       const oldPenButton = PointerTracker.penButton;
       PointerTracker.penButton = PointerTracker.penButton
@@ -179,12 +210,9 @@ export class PointerTracker {
         timeStamp: e.timeStamp,
         target: e.target,
         pointerType: e.pointerType == "mouse" ? PenTypes.MOUSE : PenTypes.STYLUS,
-        preventDefault: () => e.preventDefault(),
       };
 
-      if (!this.isPaused) {
-        this.triggerPenEvent(penEvent);
-      }
+      this.triggerPenEvent(penEvent);
     } else {
       const finger: Finger = {
         id: e.pointerId,
@@ -204,12 +232,9 @@ export class PointerTracker {
         timeStamp: e.timeStamp,
         fingers: Object.values(this.fingers).map(Clone),
         changedFingers: [Clone(finger)],
-        preventDefault: () => e.preventDefault(),
       };
 
-      if (!this.isPaused) {
-        this.triggerFingerEvent(fingerEvent);
-      }
+      this.triggerFingerEvent(fingerEvent);
     }
   }
 
