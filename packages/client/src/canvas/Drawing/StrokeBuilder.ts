@@ -56,7 +56,7 @@ export class StrokeBuilder {
       timestamp: this.timestamp,
       zIndex: this.zIndex,
       serializer: Serializers.STROKE,
-      geometry: new PolyLine(this.points.map((p) => new Vector3D(p.x, p.y, GetPointRadius(this.width, p.pressure)))),
+      geometry: new PolyLine(this.points.map((p) => new Vector3D(p.x, p.y, GetPointRadius(this.width, 0.5)))),
       graphic: this.getGraphic(),
     };
   }
@@ -65,9 +65,21 @@ export class StrokeBuilder {
     return this.vectorizer.getGraphic(this.zIndex, this.extendToLastPoint());
   }
 
+  private getLastPoint(): StrokePoint {
+    const p = this.points[this.points.length - 1];
+    if (this.zIndex == 1) {
+      return p;
+    } else {
+      return {
+        ...p,
+        pressure: 0.5,
+      };
+    }
+  }
+
   private extendToLastPoint(): StrokePoint[] {
     const dt = 1;
-    const p0 = this.points[this.points.length - 1];
+    const p0 = this.getLastPoint();
 
     if (this.points.length == 1) {
       return [p0];
@@ -107,14 +119,14 @@ export class StrokeBuilder {
       this.mass = {
         x: p.x,
         y: p.y,
-        p: p.pressure,
+        p: this.zIndex ? p.pressure : 0.5,
         t: p.timestamp,
         vx: 0,
         vy: 0,
         vp: 0,
       };
     } else {
-      const p0 = this.points[this.points.length - 1];
+      const p0 = this.getLastPoint();
 
       while (this.mass.t < p.timestamp) {
         this.vectorizer.push(this.getMassStrokePoint());
@@ -143,11 +155,10 @@ export class StrokeBuilder {
 
   private getMassStrokePoint(mass?: MassPoint): StrokePoint {
     mass = mass ?? this.mass;
-    let pressure = this.zIndex ? mass.p : 0.5;
     return {
       x: mass.x,
       y: mass.y,
-      pressure: pressure,
+      pressure: mass.p,
       timestamp: mass.t,
     };
   }

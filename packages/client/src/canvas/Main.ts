@@ -1,11 +1,9 @@
 import { PageNavigation } from "./View/PageNavigation";
 import { ScrollBars as ScrollHandle } from "./UI/Scrollbars";
-import ToolWheel from "./UI/ToolWheel";
 import { NetworkStrokeContainer } from "./Network/NetworkStrokeContainer";
 import { NetworkConnection } from "./Network/NetworkConnection";
 import { LayeredStrokeContainer } from "./LayeredStrokeContainer";
-import { PenFollowingEngine } from "./UI/PenFollowing";
-import { PenEvent, PointerTracker } from "./UI/PointerTracker";
+import { PointerTracker } from "./UI/PointerTracker";
 import { ToolManager } from "./Tooling/ToolManager";
 import { BaseStrokeContainer } from "./Rendering/BaseStrokeContainer";
 import { View } from "./View/View";
@@ -13,13 +11,10 @@ import { MutableObservableProperty, ObservableProperty } from "./DesignPatterns/
 import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
 import { PdfBackground } from "./PDF/PdfBackground";
-import { Vector2D } from "./Math/V2";
 import GetApiPath from "../components/GetApiPath";
 import { GL } from "./Rendering/GL";
-import { NoteToPdf } from "./PDF/PdfExport";
 import { LinesBackground } from "./Backgrounds/LinesBackground";
 import { Background } from "./types";
-import { Display } from "./DeviceProps";
 import { GridBackground } from "./Backgrounds/GridBackground";
 import { BackgroundTypes } from "@inck/common-types/Notes";
 import { Toolbar } from "./UI/Toolbar";
