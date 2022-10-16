@@ -81,12 +81,12 @@ export function CreateOptionsMenu(toolManager: ToolManager) {
 
   function showMenu() {
     const bBox = menu.getBoundingClientRect();
-    let x = startingPos.y - bBox.height - MENU_DIST_FROM_FINGER;
-    let y = startingPos.x - bBox.width / 2;
-    x = Math.max(0, Math.min(innerWidth, x));
-    y = Math.max(0, Math.min(innerHeight, y));
-    menu.style.top = `${x}px`;
-    menu.style.left = `${y}px`;
+    let x = startingPos.x - bBox.width / 2;
+    let y = startingPos.y - bBox.height - MENU_DIST_FROM_FINGER;
+    x = Math.max(0, Math.min(innerWidth - bBox.width, x));
+    y = Math.max(0, Math.min(innerHeight - bBox.height, y));
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
     menu.style.visibility = "visible";
   }
 
