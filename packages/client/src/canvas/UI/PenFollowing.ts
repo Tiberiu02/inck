@@ -13,18 +13,20 @@ const TOP_PADDING = 10; //px
 const LEFT_PADDING = 60; //px
 const RIGHT_PADDING = 300; //px
 const CORNER_PADDING = 10; //px
-const TELEPORT_THRESHOLD = 200;
+const TELEPORT_THRESHOLD = 300; // px
 
 const MIN_OPACITY = 50; //%
 const MAX_OPACITY = 80; //%
 
-const PULL_FORCE = 5;
+const PULL_FORCE = new Vector2D(10, 10);
 
 const OPACITY_SPEED = 500; // % / s
 const OPACITY_SPEED_SLOW = 100; // % / s
 const FADE_IN_DELAY = 200; // ms
 
-const FRAME_SIZE = 100; // in
+const STABILIZATION_RADIUS = 50; // px
+const MENU_OFFSET = new Vector2D(-150, -200);
+const MENU_OFFSET_2 = new Vector2D(-350, 210);
 
 export interface FloatingMenu {
   setPosition(pos: Vector2D): void;
@@ -41,17 +43,19 @@ export class PenFollowingEngine {
   private pointer: Vector2D;
   private pos: Vector2D;
 
-  private frame: Vector2D;
+  private penPos: Vector2D;
   private target: Vector2D;
   private opacity: number;
   private state: STATES;
   private enteredIdle: number;
 
+  menuIsBelowPen: boolean;
+
   constructor(menu: FloatingMenu) {
     this.menu = menu;
     this.state = STATES.IDLE;
 
-    this.frame = new Vector2D(0, 0);
+    this.penPos = new Vector2D(0, 0);
     this.target = new Vector2D(LEFT_PADDING, CORNER_PADDING);
     this.pos = this.target;
     this.opacity = MAX_OPACITY;
@@ -71,24 +75,26 @@ export class PenFollowingEngine {
 
       const offset = new Vector2D(this.menu.width, this.menu.height);
 
-      pointer = V2.sub(pointer, offset);
-
-      // Frame = Stabilization algorithm
-      this.frame = new Vector2D(
-        Math.min(Math.max(this.frame.x, pointer.x - FRAME_SIZE), pointer.x),
-        Math.min(Math.max(this.frame.y, pointer.y - FRAME_SIZE), pointer.y)
+      // Stabilized using a square frame
+      this.penPos = new Vector2D(
+        Math.min(Math.max(this.penPos.x, pointer.x - STABILIZATION_RADIUS), pointer.x + STABILIZATION_RADIUS),
+        Math.min(Math.max(this.penPos.y, pointer.y - STABILIZATION_RADIUS), pointer.y + STABILIZATION_RADIUS)
       );
 
-      const frameCenter = V2.add(this.frame, V2.mul(new Vector2D(1, 1), FRAME_SIZE / 2));
+      this.target = V2.add(this.penPos, MENU_OFFSET);
 
-      let angle = Math.PI * 1.45;
-      if (V2.add(frameCenter, V2.rot(displacement, angle)).x < LEFT_PADDING) {
-        angle = Math.PI + Math.acos((frameCenter.x - LEFT_PADDING) / DIST_FROM_CURSOR);
+      if (this.target.y < TOP_PADDING) {
+        this.target = V2.add(this.penPos, MENU_OFFSET_2);
+        this.menuIsBelowPen = true;
+      } else {
+        this.menuIsBelowPen = false;
       }
-      this.target = V2.add(frameCenter, V2.rot(displacement, angle));
 
       if (this.target.x > innerWidth - RIGHT_PADDING) {
         this.target = { x: innerWidth - RIGHT_PADDING, y: this.target.y };
+      }
+      if (this.target.x < LEFT_PADDING) {
+        this.target = { x: LEFT_PADDING, y: this.target.y };
       }
     }
   }
@@ -98,16 +104,11 @@ export class PenFollowingEngine {
     const dt = (t - this.lastUpdate) / MS_PER_TIME_UNIT;
 
     const target_pull = () => {
-      this.pos = V2.add(this.pos, V2.mul(V2.sub(this.target, this.pos), Math.min(1, PULL_FORCE * dt)));
+      const delta = V2.sub(this.target, this.pos);
+      const pullX = Math.min(1, PULL_FORCE.x * dt);
+      const pullY = Math.min(1, PULL_FORCE.y * dt);
+      this.pos = new Vector2D(this.pos.x + delta.x * pullX, this.pos.y + delta.y * pullY);
     };
-
-    if (!this.pointer && this.target.y < TOP_PADDING) {
-      if (this.target.x > LEFT_PADDING) {
-        this.target = new Vector2D(this.target.x - this.menu.width, TOP_PADDING);
-      } else {
-        this.target = new Vector2D(LEFT_PADDING + 2 * this.menu.width, TOP_PADDING);
-      }
-    }
 
     if (this.state == STATES.IDLE) {
       if (this.pointer) {
@@ -124,18 +125,22 @@ export class PenFollowingEngine {
         target_pull();
       }
     } else if (this.state == STATES.FOLLOWING) {
-      target_pull();
+      if (V2.dist(this.pos, this.target) < TELEPORT_THRESHOLD) {
+        target_pull();
 
-      if (this.opacity < MIN_OPACITY) {
-        this.opacity = Math.min(MIN_OPACITY, this.opacity + dt * OPACITY_SPEED_SLOW);
+        if (this.opacity < MIN_OPACITY) {
+          this.opacity = Math.min(MIN_OPACITY, this.opacity + dt * OPACITY_SPEED_SLOW);
+        } else {
+          this.opacity = Math.max(MIN_OPACITY, this.opacity - dt * OPACITY_SPEED_SLOW);
+        }
+
+        if (!this.pointer) {
+          this.menu.setInteractive(true);
+          this.state = STATES.IDLE;
+          this.enteredIdle = performance.now();
+        }
       } else {
-        this.opacity = Math.max(MIN_OPACITY, this.opacity - dt * OPACITY_SPEED_SLOW);
-      }
-
-      if (!this.pointer) {
-        this.menu.setInteractive(true);
-        this.state = STATES.IDLE;
-        this.enteredIdle = performance.now();
+        this.state = STATES.FADE_OUT;
       }
     } else if (this.state == STATES.FADE_OUT) {
       if (this.opacity > 0) {

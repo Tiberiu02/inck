@@ -219,9 +219,7 @@ export class Toolbar implements FloatingMenu {
       widthBar.style.paddingTop = widthBar.style.paddingBottom = `${toolmenuHeight * PADDING}px`;
       widthBar.style.width = `${toolmenuHeight * (otherWidths.length + 0.5)}px`;
 
-      widthIcons = otherWidths.map((width) => {
-        return this.generatePenColorWidthDot(color, width, widths);
-      });
+      widthIcons = otherWidths.map((width) => this.generatePenColorWidthDot(color, width, widths));
       widthBar.append(...widthIcons.map(([icon, outline]) => icon));
 
       const bBox = colorIcon.getBoundingClientRect();
@@ -230,7 +228,7 @@ export class Toolbar implements FloatingMenu {
       this.container.appendChild(widthBar);
     };
 
-    let colorIcons, colorsList;
+    let colorIcons, colorsList: string[];
     const handlePointer = (e: PointerEvent) => {
       // Remove outline on previous combination
       [...colorIcons, ...widthIcons].forEach(([icon, outline]) => (outline.style.visibility = "hidden"));
@@ -262,18 +260,23 @@ export class Toolbar implements FloatingMenu {
       // Hide toolbar
       this.toolbar.style.visibility = "hidden";
 
+      // Update color icons in color bar
+      colorsList = [getColor(), ...colors.filter((c) => c != getColor())];
+      if (this.penFollowingEngine.menuIsBelowPen) {
+        colorsList.reverse();
+      }
+      colorIcons = colorsList.map((color) => this.generatePenColorWidthDot(color, getWidth(), widths));
+      colorBar.replaceChildren(...colorIcons.map(([icon]) => icon));
+
       // Position & Show color bar
       const bBox = penBtn.getBoundingClientRect();
-      colorBar.style.top = `${bBox.top}px`;
-      colorBar.style.left = `${bBox.left + bBox.width / 2 - toolmenuHeight / 2}px`;
       colorBar.style.visibility = "visible";
-
-      // Update color icons in color bar (order & size)
-      colorsList = [getColor(), ...colors.filter((c) => c != getColor())];
-      colorIcons = colorsList.map((color, ix) => {
-        return this.generatePenColorWidthDot(color, getWidth(), widths);
-      });
-      colorBar.replaceChildren(...colorIcons.map(([icon]) => icon));
+      colorBar.style.left = `${bBox.left + bBox.width / 2 - toolmenuHeight / 2}px`;
+      if (this.penFollowingEngine.menuIsBelowPen) {
+        colorBar.style.top = `${bBox.top + bBox.height - colorBar.getBoundingClientRect().height}px`;
+      } else {
+        colorBar.style.top = `${bBox.top}px`;
+      }
 
       // Show widths bar
       showWidthBar(colorIcons[0][0], colorsList[0]);
@@ -392,7 +395,11 @@ export class Toolbar implements FloatingMenu {
     this.buttonImgs[this.currentTool].style.border = SELECTED_ICON_BORDER;
   }
 
-  private generatePenColorWidthDot(color: string, width: number, widths: number[]) {
+  private generatePenColorWidthDot(
+    color: string,
+    width: number,
+    widths: number[]
+  ): [HTMLElement, HTMLElement, (s: number) => void] {
     const icon = document.createElement("div");
     icon.style.position = "absolute";
     icon.style.top = icon.style.left = "50%";
