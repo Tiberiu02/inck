@@ -16,7 +16,7 @@ import { RemovedGraphic } from "../../Drawing/Graphic";
 
 const LONG_PRESS_TIME = 500; // (ms)
 const INTERVAL_TIME = 100; //   (ms)
-const LONG_PRESS_DIST = 0.05; // (in)
+const LONG_PRESS_DIST = 5; // (px)
 
 export class MyPen implements MyTool {
   private color: RGB;
@@ -62,7 +62,7 @@ export class MyPen implements MyTool {
 
     if (pressure) {
       if (!this.drawing) {
-        const width = View.getCanvasCoords(Display.DPI * this.width, 0, true)[0];
+        const width = View.getCanvasCoords(this.width, 0, true)[0];
         this.timestamp = timestamp;
         this.remoteController.setWidth(width);
         this.strokeBuilder = new StrokeBuilder(timestamp, this.zIndex, this.color, width);
@@ -105,8 +105,6 @@ export class MyPen implements MyTool {
       let dx = Math.max(...xs) - Math.min(...xs);
       let dy = Math.max(...ys) - Math.min(...ys);
       [dx, dy] = View.getScreenCoords(dx, dy, true);
-      dx /= Display.DPI;
-      dy /= Display.DPI;
 
       if (dx < LONG_PRESS_DIST && dy < LONG_PRESS_DIST) {
         this.detectedLongPress = true;
@@ -124,7 +122,7 @@ export class MyPen implements MyTool {
     this.remoteController.loadPoints(newPoints);
     this.points = newPoints;
 
-    const width = View.getCanvasCoords(Display.DPI * this.width, 0, true)[0];
+    const width = View.getCanvasCoords(this.width, 0, true)[0];
     this.remoteController.setWidth(width);
     this.strokeBuilder = new StrokeBuilder(this.timestamp, this.zIndex, this.color, width);
 

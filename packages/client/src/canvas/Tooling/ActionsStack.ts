@@ -1,3 +1,4 @@
+import { CreateEvent, EventCore, EventTrigger } from "../DesignPatterns/EventDriven";
 import { RenderLoop } from "../Rendering/RenderLoop";
 
 export interface Action {
@@ -9,9 +10,14 @@ export class ActionStack {
   private actions: Action[];
   private indexOfLastActionDone: number;
 
+  public onUpdate: EventCore;
+  private triggerUpdate: EventTrigger;
+
   constructor() {
     this.actions = [];
     this.indexOfLastActionDone = -1;
+
+    [this.onUpdate, this.triggerUpdate] = CreateEvent();
   }
 
   push(action: Action) {
@@ -22,6 +28,7 @@ export class ActionStack {
 
     this.indexOfLastActionDone = this.actions.length;
     this.actions.push(action);
+    this.triggerUpdate();
   }
 
   undo() {
@@ -35,6 +42,7 @@ export class ActionStack {
         this.actions.splice(this.indexOfLastActionDone, 1);
         this.indexOfLastActionDone--;
       }
+      this.triggerUpdate();
     }
   }
 
@@ -42,6 +50,11 @@ export class ActionStack {
     if (this.indexOfLastActionDone + 1 < this.actions.length) {
       this.indexOfLastActionDone++;
       this.actions[this.indexOfLastActionDone].redo();
+      this.triggerUpdate();
     }
+  }
+
+  canRedo() {
+    return this.indexOfLastActionDone + 1 < this.actions.length;
   }
 }

@@ -317,7 +317,7 @@ export class MySelection extends SelectionBase implements MyTool {
     container.addEventListener("pointerdown", (e) => {
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
-      PointerTracker.pause();
+      PointerTracker.instance.pause();
     });
     window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
@@ -329,7 +329,7 @@ export class MySelection extends SelectionBase implements MyTool {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyTranslation();
-        PointerTracker.unpause();
+        PointerTracker.instance.unpause();
       }
     });
     document.body.appendChild(container);
@@ -430,7 +430,7 @@ export class MySelection extends SelectionBase implements MyTool {
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
       this.menu.style.visibility = "hidden";
-      PointerTracker.pause();
+      PointerTracker.instance.pause();
     });
     window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
@@ -444,7 +444,7 @@ export class MySelection extends SelectionBase implements MyTool {
         pointer = null;
         this.applyRotation();
         this.menu.style.visibility = "";
-        PointerTracker.unpause();
+        PointerTracker.instance.unpause();
       }
     });
 
@@ -475,7 +475,7 @@ export class MySelection extends SelectionBase implements MyTool {
       e.stopPropagation();
       pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
       pointerId = e.pointerId;
-      PointerTracker.pause();
+      PointerTracker.instance.pause();
     });
     window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
@@ -488,7 +488,7 @@ export class MySelection extends SelectionBase implements MyTool {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyScaling();
-        PointerTracker.unpause();
+        PointerTracker.instance.unpause();
       }
     });
 

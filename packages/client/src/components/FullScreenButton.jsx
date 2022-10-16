@@ -35,16 +35,16 @@ export function FullScreenButton() {
 
   return (
     <div
-      className={`cursor-pointer opacity-80 z-10 duration-200 hover:scale-125 hover:translate-x-[12.5%]
-    hover:translate-y-[12.5%] absolute top-0 left-0 w-14 h-14 rounded-br-xl drop-shadow-md bg-primary ${
+      className={`cursor-pointer opacity-80 z-10 duration-200 hover:scale-125 hover:translate-x-[-12.5%] flex justify-end pt-2 pr-2
+    hover:translate-y-[12.5%] absolute top-0 right-0 w-14 h-14 rounded-bl-xl drop-shadow-md bg-primary ${
       !showing ? "hidden" : ""
     }`}
       onClick={() => setMode(toggleFullscreen(mode))}
     >
       {mode ? (
-        <FaCompress color="#FFF" className="text-4xl mx-2 my-2" />
+        <FaCompress color="#FFF" className="text-4xl" />
       ) : (
-        <FaExpand color="#FFF" className="text-4xl mx-2 my-2" />
+        <FaExpand color="#FFF" className="text-4xl" />
       )}
     </div>
   );

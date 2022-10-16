@@ -19,8 +19,8 @@ export class PageNavigation {
 
     this.disableWindowOverscrolling();
 
-    window.addEventListener("wheel", e => this.handleWheelEvent(e), { passive: false });
-    window.addEventListener("mousemove", e => this.handleMouseEvent(e));
+    window.addEventListener("wheel", (e) => this.handleWheelEvent(e), { passive: false });
+    window.addEventListener("mousemove", (e) => this.handleMouseEvent(e));
   }
 
   private disableWindowOverscrolling() {
@@ -58,10 +58,8 @@ export class PageNavigation {
   }
 
   handleFingerEvent(e: FingerEvent) {
-    e.preventDefault();
-
     const { fingers, timeStamp } = e;
-    const pointers = fingers.map(f => new Vector2D(f.x, f.y));
+    const pointers = fingers.map((f) => new Vector2D(f.x, f.y));
 
     if (pointers.length == this.pointers.length && pointers.length > 0) {
       const [x0, y0, r0] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];

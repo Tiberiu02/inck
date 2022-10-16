@@ -1,85 +1,82 @@
 import { MutableView, View } from "../View/View";
 import { ObservableProperty } from "../DesignPatterns/Observable";
-import { Display } from "../DeviceProps";
 import { PointerTracker } from "./PointerTracker";
 
-enum Direction {
-  HORIZONTAL,
-  VERTICAL,
-}
+const MARGIN = 40;
+const HANDLE_SIZE = 60;
+const HANDLE_TIME_VISIBLE = 1000;
+const FADE_DURATION = "0.3s";
 
 export class ScrollBars {
-  private width: any;
-  private margin: any;
-  private vertical: HTMLDivElement;
-  private horizontal: HTMLDivElement;
+  private handle: HTMLDivElement;
   private yMax: ObservableProperty<number>;
-  private vAnchor: number;
-  private vBarHeight: number;
+  private pageSize: number;
+  private hideHandleTimeout: number;
 
-  private scrollDirection: Direction;
   private pointer: { x: number; y: number };
   private pointerId: number;
   private scrolling: boolean;
 
   constructor(yMax: ObservableProperty<number>) {
     this.yMax = yMax;
-    this.width = 10;
-    this.margin = 0;
     this.scrolling = false;
 
-    const style = {
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      position: "fixed",
-      width: "0px",
-      height: "0px",
-      borderRadius: `${this.width / 2}px`,
-      zIndex: "100",
-    };
+    this.handle = document.createElement("div");
+    this.handle.style.backgroundColor = "#fff";
+    this.handle.style.height = `${HANDLE_SIZE}px`;
+    this.handle.style.width = `${HANDLE_SIZE}px`;
+    this.handle.style.left = `${-HANDLE_SIZE / 6}px`;
+    this.handle.style.position = "absolute";
+    this.handle.style.zIndex = "100";
+    this.handle.style.borderRadius = "9999px";
+    this.handle.style.cursor = "pointer";
+    this.handle.style.boxShadow = "0px 0px 10px rgba(0, 0, 0, 0.25), 0px 10px 30px rgba(0, 0, 0, 0.05)";
+    this.handle.style.display = "flex";
+    this.handle.style.alignItems = "center";
+    this.handle.style.justifyContent = "center";
+    this.handle.style.paddingLeft = `${-HANDLE_SIZE / 10}px`;
+    this.handle.style.opacity = "0%";
+    this.handle.style.transition = `visibility ${FADE_DURATION} linear, opacity ${FADE_DURATION} linear`;
+    this.handle.style.transform = "translate(0, -50%)";
+    this.handle.style.visibility = "hidden";
+    this.handle.innerHTML = `
+      <span class="material-symbols-outlined" style="font-size: ${Math.floor(HANDLE_SIZE * 0.6)}px; color: #ddd">
+      drag_indicator
+      </span>
+    `;
+    document.body.appendChild(this.handle);
 
-    this.vertical = document.createElement("div");
-    Object.assign(this.vertical.style, style);
-    document.body.appendChild(this.vertical);
+    View.onUpdate(() => this.showHandle());
+    View.onUpdate(() => this.updateHandle());
+    yMax.onUpdate(() => this.updateHandle());
 
-    this.horizontal = document.createElement("div");
-    Object.assign(this.horizontal.style, style);
-    document.body.appendChild(this.horizontal);
+    window.addEventListener("resize", () => this.updateHandle());
 
-    View.onUpdate(() => this.updateBars());
-    yMax.onUpdate(() => this.updateBars());
-
-    window.addEventListener("resize", () => this.updateBars());
-
-    this.vertical.addEventListener("pointerdown", (e) => this.handlePointerDown(Direction.VERTICAL, e));
-    this.horizontal.addEventListener("pointerdown", (e) => this.handlePointerDown(Direction.HORIZONTAL, e));
+    this.handle.addEventListener("pointerdown", (e) => this.handlePointerDown(e));
     window.addEventListener("pointermove", (e) => this.handlePointerMove(e));
     window.addEventListener("pointerup", (e) => this.handlePointerUp(e));
   }
 
-  private handlePointerDown(direction: Direction, e: PointerEvent) {
+  private handlePointerDown(e: PointerEvent) {
     if (this.scrolling) return;
 
     this.scrolling = true;
-    this.scrollDirection = direction;
     this.pointer = { x: e.x, y: e.y };
     this.pointerId = e.pointerId;
-    this.vAnchor = View.getTop();
-    PointerTracker.pause();
+    this.pageSize = View.getTop();
+    PointerTracker.instance.pause();
   }
 
   private handlePointerMove(e: PointerEvent) {
     if (this.scrolling) {
       if (this.pointerId == e.pointerId) {
-        const { x: px, y: py } = this.pointer;
-        if (this.scrollDirection == Direction.VERTICAL) {
-          const pageHeight = Math.max(this.yMax.get() - View.getHeight(), this.vAnchor);
-          let dy = ((e.y - py) / (innerHeight - 3 * this.margin - this.width - this.vBarHeight)) * pageHeight;
-          dy = Math.min(dy, pageHeight - View.getTop());
-          MutableView.applyTranslation(0, dy);
-        } else {
-          const dx = (e.x - px) / (innerWidth - 3 * this.margin - this.width);
-          MutableView.applyTranslation(dx, 0);
-        }
+        const pageHeight = Math.max(this.yMax.get() - View.getHeight(), this.pageSize);
+
+        let dy = e.y - this.pointer.y;
+        dy = (dy / (innerHeight - 2 * MARGIN)) * pageHeight;
+        dy = Math.min(dy, pageHeight - View.getTop());
+        MutableView.applyTranslation(0, dy);
+
         this.pointer = { x: e.x, y: e.y };
       }
     }
@@ -89,43 +86,39 @@ export class ScrollBars {
     if (this.scrolling) {
       if (this.pointerId == e.pointerId) {
         this.scrolling = false;
-        this.vAnchor = null;
-        this.updateBars();
-        PointerTracker.unpause();
+        this.pageSize = null;
+        this.updateHandle();
+        PointerTracker.instance.unpause();
       }
     }
   }
 
-  private updateBars() {
-    const hLen = View.getWidth();
-    const hStart = View.getLeft();
-    const hFullLen = Display.Width - 3 * this.margin - this.width;
+  private updateHandle() {
+    const pageSize = Math.max(this.yMax.get() - View.getHeight(), this.pageSize ?? View.getTop());
+    const barPos = View.getTop() / pageSize;
+    const barRange = innerHeight - 2 * MARGIN;
 
-    Object.assign(this.horizontal.style, {
-      display: hLen == 1 || MutableView.maxWidth ? "none" : "",
-      bottom: `${this.margin}px`,
-      height: `${this.width}px`,
-      left: `${this.margin + hStart * hFullLen}px`,
-      width: `${hLen * hFullLen}px`,
-    });
+    this.handle.style.top = `${MARGIN + barPos * barRange}px`;
+  }
 
-    const vSize = Math.max(this.yMax.get(), (this.vAnchor ?? View.getTop()) + View.getHeight());
-    const vLen = hLen / Display.AspectRatio / vSize;
-    const vStart = View.getTop() / vSize;
-    let vFullLen = Display.Height - 2 * this.margin - this.margin - this.width;
+  private showHandle() {
+    this.handle.style.visibility = "visible";
+    this.handle.style.opacity = "80%";
 
-    this.vBarHeight = vLen * vFullLen;
-    if (this.vBarHeight < this.width) {
-      vFullLen -= this.width - this.vBarHeight;
-      this.vBarHeight = this.width;
+    if (this.hideHandleTimeout) {
+      window.clearTimeout(this.hideHandleTimeout);
     }
 
-    Object.assign(this.vertical.style, {
-      display: vLen == 1 ? "none" : "",
-      right: `${this.margin}px`,
-      width: `${this.width}px`,
-      top: `${this.margin + vStart * vFullLen}px`,
-      height: `${this.vBarHeight}px`,
-    });
+    const handleTimeout = () => {
+      if (!this.scrolling) {
+        this.handle.style.visibility = "hidden";
+        this.handle.style.opacity = "0%";
+        this.hideHandleTimeout = null;
+      } else {
+        this.hideHandleTimeout = window.setTimeout(handleTimeout, HANDLE_TIME_VISIBLE);
+      }
+    };
+
+    this.hideHandleTimeout = window.setTimeout(handleTimeout, HANDLE_TIME_VISIBLE);
   }
 }
