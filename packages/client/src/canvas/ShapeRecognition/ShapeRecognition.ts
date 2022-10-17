@@ -38,6 +38,9 @@ The function should be able to detect the following shapes (in order of priority
 export function DetectShape(inputs: StrokePoint[]): StrokePoint[] {
   if (inputs.length == 1) return inputs;
 
+  // equalize width
+  inputs = inputs.map((p) => ({ ...p, pressure: 0.5 }));
+
   const polyline = DetectPolyline3(inputs);
   const sides = polyline.length - 1;
 
