@@ -24,8 +24,8 @@ const OPACITY_SPEED = 500; // % / s
 const OPACITY_SPEED_SLOW = 100; // % / s
 const FADE_IN_DELAY = 200; // ms
 
-const STABILIZATION_RADIUS = 50; // px
-const MENU_OFFSET = new Vector2D(-150, -150);
+const STABILIZATION_RADIUS = 30; // px
+const MENU_OFFSET = new Vector2D(-150, -100);
 const MENU_OFFSET_2 = new Vector2D(-250, 150);
 
 export interface FloatingMenu {
