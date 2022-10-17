@@ -20,7 +20,6 @@ function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, 
   if (!user.docId) {
     return;
   }
-  const timer = new Timer();
   for (let other of docs[user.docId].users) {
     if (other != user) {
       other.socket.emit(`collaborator remove ${user.id}`);
@@ -32,12 +31,6 @@ function disconnectFn(user: DrawingUser, docs: { [id: string]: DrawnDocument }, 
       docs[user.docId].users.length
     } users remaining`
   );
-  logEvent("disconnect_user_wsocket", {
-    userIp: user.ip.toString(),
-    usersLeftCount: Object.keys(docs).length.toString(),
-    docId: user.docId,
-    executionTime: timer.elapsed().toString(),
-  });
 }
 
 enum NoteFormats {
@@ -201,9 +194,7 @@ async function requestDocumentFn(
         fileData.backgroundOptions != BackgroundTypes.pdf
       ) {
         note.bgPattern = fileData.backgroundType;
-        console.log("before bug");
         note.bgSpacing = fileData.backgroundOptions.spacing;
-        console.log("after bug");
       }
     }
   }
@@ -247,17 +238,11 @@ function remoteControlFn(args: any, user: DrawingUser, docs: { [id: string]: Dra
   if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
     return;
   }
-  const timer = new Timer();
   for (let other of docs[user.docId].users) {
     if (other != user) {
       other.socket.emit(`collaborator update ${user.id}`, ...args);
     }
   }
-  logEvent("remote_control_fn", {
-    docId: user.docId,
-    connectedUsersCount: docs[user.docId].users.length.toString(),
-    executionTime: timer.elapsed().toString(),
-  });
 }
 
 function directedRemoteControlFn(
@@ -270,17 +255,11 @@ function directedRemoteControlFn(
   if (!user.docId || !docs[user.docId] /* || (socket.isAuthSocket && !user.canWrite) */) {
     return;
   }
-  const timer = new Timer();
   for (let other of docs[user.docId].users) {
     if (other.id == targetId) {
       other.socket.emit(`collaborator update ${user.id}`, ...args);
     }
   }
-  logEvent("directed_remote_control_fn", {
-    docId: user.docId,
-    connectedUsersCount: docs[user.docId].users.length.toString(),
-    executionTime: timer.elapsed().toString(),
-  });
 }
 
 export function remoteControl(user: DrawingUser, docs: { [id: string]: DrawnDocument }, socket: WebSocket) {

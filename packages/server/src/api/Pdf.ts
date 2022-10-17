@@ -29,7 +29,7 @@ export async function receivePDF(req: Request, res: Response) {
     const pdfPath = path.resolve(PDF_LOCATION, pdfFileName);
     fs.writeFileSync(pdfPath, pdfData);
 
-    logEvent("pdf-upload", { user: user.email, hash: pdfDataHash });
+    logEvent("pdf_upload", { user: user.email, hash: pdfDataHash });
 
     return res.status(201).send({
       status: "success",

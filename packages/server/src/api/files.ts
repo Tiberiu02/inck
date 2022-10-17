@@ -103,6 +103,7 @@ type NoteOptions = {
 };
 
 export async function createNote(authToken: string, parentFolderId: string, options: NoteOptions): Promise<void> {
+  const timer = new Timer();
   const user = parseAuthToken(authToken);
 
   const noteId = await generateNoteId();
@@ -125,6 +126,7 @@ export async function createNote(authToken: string, parentFolderId: string, opti
   });
 
   await Promise.all([createFile, createNote]);
+  logEvent("create_new_note", { name: options.name });
 }
 
 export async function editNoteInfo(authToken: string, noteFileId: string, newOptions: NoteOptions) {
