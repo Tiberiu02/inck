@@ -379,6 +379,9 @@ export class MySelection extends SelectionBase implements MyTool {
       return btn;
     };
 
+    const duplicate = createBtn(() => this.duplicateSelection());
+    duplicate.innerHTML = `${Icons.Duplicate("#388e3c")}`;
+
     const copyBtn = createBtn(() => this.copySelection());
     copyBtn.innerHTML = `${Icons.Copy("#0288d1")}`;
 
@@ -387,9 +390,6 @@ export class MySelection extends SelectionBase implements MyTool {
 
     const deleteBtn = createBtn(() => this.deleteSelection());
     deleteBtn.innerHTML = `${Icons.Delete("#d32f2f")}`;
-
-    const duplicate = createBtn(() => this.duplicateSelection());
-    duplicate.innerHTML = `${Icons.Duplicate("#388e3c")}`;
 
     const separator = document.createElement("div");
     separator.style.width = "2px";
