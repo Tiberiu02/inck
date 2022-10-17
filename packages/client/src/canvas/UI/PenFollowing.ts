@@ -55,7 +55,7 @@ export class PenFollowingEngine {
     this.menu = menu;
     this.state = STATES.IDLE;
 
-    this.penPos = new Vector2D(0, 0);
+    this.penPos = new Vector2D(Infinity, Infinity);
     this.target = new Vector2D(LEFT_PADDING, CORNER_PADDING);
     this.pos = this.target;
     this.opacity = MAX_OPACITY;
