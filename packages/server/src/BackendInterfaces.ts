@@ -4,7 +4,8 @@ import { NoteAccess } from "./api/FileExplorer";
 
 export interface DrawingUser {
   ip: string;
-  id: string;
+  id: string; // simple value to broadcast events
+  userId?: string; // database value
   docId?: string;
   canWrite: boolean;
   authToken: string;

@@ -141,6 +141,7 @@ export class Server {
       const user: DrawingUser = {
         ip,
         id,
+        userId: undefined,
         docId: undefined,
         canWrite: false,
         authToken: authToken as string,

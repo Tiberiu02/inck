@@ -97,6 +97,7 @@ async function newStrokeFn(
   cache.putStroke(user.docId, stroke);
   logEvent("draw_new_stroke", {
     docId: user.docId,
+    userId: user.userId ? user.userId : "None",
     executionTime: timer.elapsed().toString(),
   });
 }
@@ -106,7 +107,7 @@ async function docRights(docId: string, user: DrawingUser) {
   const noteData = await NoteModel.findOne({ id: docId }, { isFreeNote: 1 });
 
   if (noteData?.isFreeNote) {
-    return [true, true];
+    return [undefined, true, true];
   }
 
   const fileData = await FileModel.findOne({
@@ -116,7 +117,7 @@ async function docRights(docId: string, user: DrawingUser) {
 
   if (fileData == null) {
     console.log("Unexpected case: this should never happen");
-    return [false, false];
+    return [undefined, false, false];
   }
 
   let token: JwtPayload = {
@@ -131,12 +132,13 @@ async function docRights(docId: string, user: DrawingUser) {
   }
 
   const access = fileData.defaultAccess;
-  const isOwner = token.userId == fileData.owner;
+  const owner = fileData.owner;
+  const isOwner = token.userId == owner;
 
   const readAccess = access == AccessTypes.EDIT || access == AccessTypes.VIEW || isOwner;
   const writeAccess = access == AccessTypes.EDIT || isOwner;
 
-  return [readAccess, writeAccess];
+  return [owner, readAccess, writeAccess];
 }
 
 function checkSpecialPriviledges(user: DrawingUser) {
@@ -200,7 +202,8 @@ async function requestDocumentFn(
   }
 
   // Check authentication here
-  const [canRead, canWrite] = await docRights(id, user);
+  const [owner, canRead, canWrite] = await docRights(id, user);
+  user.userId = owner;
   if (!canRead) {
     socket.emit("unauthorized");
     return;
@@ -229,6 +232,7 @@ async function requestDocumentFn(
   socket.emit("load note", note);
   logEvent("request_document_strokes", {
     docId: id,
+    userId: owner ? owner : "None",
     userIp: user.ip,
     executionTime: timer.elapsed().toString(),
   });
