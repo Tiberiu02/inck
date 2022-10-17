@@ -13,7 +13,7 @@ const TOP_PADDING = 10; //px
 const LEFT_PADDING = 60; //px
 const RIGHT_PADDING = 300; //px
 const CORNER_PADDING = 10; //px
-const TELEPORT_THRESHOLD = 300; // px
+const TELEPORT_THRESHOLD = 200; // px
 
 const MIN_OPACITY = 50; //%
 const MAX_OPACITY = 80; //%
@@ -25,8 +25,8 @@ const OPACITY_SPEED_SLOW = 100; // % / s
 const FADE_IN_DELAY = 200; // ms
 
 const STABILIZATION_RADIUS = 50; // px
-const MENU_OFFSET = new Vector2D(-150, -200);
-const MENU_OFFSET_2 = new Vector2D(-350, 210);
+const MENU_OFFSET = new Vector2D(-150, -150);
+const MENU_OFFSET_2 = new Vector2D(-250, 150);
 
 export interface FloatingMenu {
   setPosition(pos: Vector2D): void;
