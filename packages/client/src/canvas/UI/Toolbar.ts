@@ -31,7 +31,7 @@ const highlighterColors = [
   "#f982e5", // pink
 ];
 
-const penWidths = [6, 4, 3];
+const penWidths = [6, 4, 2.7];
 const highlighterWidths = [150, 100, 50];
 
 const dotSizes = [1, 0.7, 0.4];
