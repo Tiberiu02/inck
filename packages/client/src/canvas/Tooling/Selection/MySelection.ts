@@ -349,7 +349,7 @@ export class MySelection extends SelectionBase implements MyTool {
     menu.style.left = "50%";
     menu.style.transform = "translate(-50%, 100%)";
     menu.style.borderRadius = "9999em";
-    menu.style.filter = "drop-shadow(0 2px 13px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 5px rgb(0 0 0 / 0.25))";
+    menu.style.boxShadow = "0 2px 13px rgba(0, 0, 0, 0.1), 0 1px 5px rgb(0, 0, 0, 0.25)";
     menu.style.alignItems = "center";
 
     const createBtn = (cb: Function) => {
