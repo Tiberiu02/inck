@@ -1,4 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * BENCHMARK RESULTS:
+ * - Lenovo laptop (tiberiu): 0.06ms +- 0.004ms
+ * - Samsung S22 Ultra: 0.17ms +- 0.01ms
+ */
 
 const vertexSource = `
 
@@ -22,6 +28,7 @@ void main() {
 
 export default function HighPerformanceCanvas() {
   const canvasRef = useRef();
+  const [message, setMessage] = useState("write something");
 
   useEffect(() => {
     const canvas = canvasRef.current as HTMLCanvasElement;
@@ -89,6 +96,9 @@ export default function HighPerformanceCanvas() {
     let y0: number;
     let nx0: number;
     let ny0: number;
+    let sum = 0,
+      sum2 = 0,
+      cnt = 0;
 
     const handlePointerDown = (e: PointerEvent) => {
       pointerDown = true;
@@ -102,8 +112,7 @@ export default function HighPerformanceCanvas() {
     };
     const handlePointerMove = (e: PointerEvent) => {
       if (pointerDown) {
-        // Clear the canvas.
-        // gl.clear(gl.COLOR_BUFFER_BIT);
+        const start = performance.now();
 
         const dx = e.x - x0;
         const dy = e.y - y0;
@@ -127,6 +136,14 @@ export default function HighPerformanceCanvas() {
 
         [x0, y0] = [e.x, e.y];
         [nx0, ny0] = [nx, ny];
+
+        const end = performance.now();
+        const time = end - start;
+        sum += time;
+        sum2 += time * time;
+        cnt += 1;
+
+        setMessage(`${(sum / cnt).toPrecision(2)}ms +/- ${(sum2 / cnt - (sum / cnt) ** 2).toPrecision(2)}ms`);
       }
     };
 
@@ -154,5 +171,10 @@ export default function HighPerformanceCanvas() {
     return () => removeHandlers.forEach((f) => f());
   }, []);
 
-  return <canvas ref={canvasRef} className="touch-none inset-0 bg-black" />;
+  return (
+    <>
+      <canvas ref={canvasRef} className="touch-none inset-0 bg-black" />
+      <p className="fixed inset-0 font-mono text-yellow-300 pointer-events-none">{message}</p>
+    </>
+  );
 }
