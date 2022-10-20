@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
  * - Lenovo laptop (tiberiu): 0.06ms +- 0.004ms
  * - Samsung S22 Ultra: 0.2ms +- 0.02ms
  *        (a lot higher at the begining: 0.6ms +- 0.1ms)
+ * - Samsung Tablet (dorian): 0.6ms +- 0.1ms
+ *        (higher at the begining)
  */
 
 const vertexSource = `
@@ -29,6 +31,7 @@ void main() {
 
 export default function HighPerformanceCanvas() {
   const canvasRef = useRef();
+  const clearBtnRef = useRef();
   const [message, setMessage] = useState("write something");
 
   useEffect(() => {
@@ -106,7 +109,6 @@ export default function HighPerformanceCanvas() {
       x0 = e.x;
       y0 = e.y;
       nx0 = ny0 = 0;
-      gl.clear(gl.COLOR_BUFFER_BIT);
     };
     const handlePointerUp = () => {
       pointerDown = false;
@@ -158,6 +160,8 @@ export default function HighPerformanceCanvas() {
 
     const removeHandlers: Function[] = [];
 
+    (clearBtnRef.current as HTMLButtonElement).addEventListener("click", () => gl.clear(gl.COLOR_BUFFER_BIT));
+
     window.addEventListener("pointerdown", handlePointerDown);
     removeHandlers.push(() => window.removeEventListener("pointerdown", handlePointerDown));
     window.addEventListener("pointerup", handlePointerUp);
@@ -174,8 +178,11 @@ export default function HighPerformanceCanvas() {
 
   return (
     <>
-      <canvas ref={canvasRef} className="touch-none inset-0 bg-black" />
+      <canvas title="" ref={canvasRef} className="touch-none inset-0 bg-black" />
       <p className="fixed inset-0 font-mono text-yellow-300 pointer-events-none">{message}</p>
+      <button ref={clearBtnRef} className="fixed top-0 right-0 bg-white px-2 py-1">
+        Clear
+      </button>
     </>
   );
 }
