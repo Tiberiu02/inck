@@ -88,7 +88,7 @@ export async function register(req: Request, res: Response) {
     user.token = token;
     sendRegistrationEmail(email, firstName, lastName);
     const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress)?.toString() || "undefined";
-    logEvent("user_registration", { email, ip });
+    logEvent("user_registration", { email, ip, userId: user._id });
     return res.status(201).send({ email, token });
   } catch (err) {
     console.log(err);
@@ -115,7 +115,7 @@ export async function login(req: Request, res: Response) {
         process.env.JWT_TOKEN as string
       );
       const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress)?.toString() || "undefined";
-      logEvent("user_login", { email, ip });
+      logEvent("user_login", { email, ip, userId: user._id });
       return res.status(200).send({ email, token });
     }
 
@@ -209,7 +209,7 @@ export async function changePasswordEndpoint(req: Request, res: Response) {
     res.status(201).send({ status: "success" });
     await sendPasswordConfirmationEmail(userEntry.email, userEntry.firstName, userEntry.lastName);
     const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress)?.toString() || "undefined";
-    logEvent("change_password", { email, ip });
+    logEvent("change_password", { email, ip, userId: entry.userId });
   } catch (err) {
     console.log("Error while setting new password");
     console.log(err);
