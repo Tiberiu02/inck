@@ -126,7 +126,7 @@ export async function createNote(authToken: string, parentFolderId: string, opti
   });
 
   await Promise.all([createFile, createNote]);
-  logEvent("create_new_note", { name: options.name });
+  logEvent("create_new_note", { name: options.name, userId: user.userId });
 }
 
 export async function editNoteInfo(authToken: string, noteFileId: string, newOptions: NoteOptions) {
