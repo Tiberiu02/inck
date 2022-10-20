@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 /**
  * BENCHMARK RESULTS:
  * - Lenovo laptop (tiberiu): 0.06ms +- 0.004ms
- * - Samsung S22 Ultra: 0.17ms +- 0.01ms
+ * - Samsung S22 Ultra: 0.2ms +- 0.02ms
+ *        (a lot higher at the begining: 0.6ms +- 0.1ms)
  */
 
 const vertexSource = `
