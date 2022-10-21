@@ -456,6 +456,8 @@ export class Toolbar implements FloatingMenu {
       x = e.x;
       y = e.y;
       dragging = true;
+
+      this.penFollowingEngine.menuIsBelowPen = false;
     });
     handle.addEventListener("pointermove", (e) => {
       if (dragging) {
