@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
  *        (a lot higher at the begining: 0.6ms +- 0.1ms)
  * - Samsung Tablet (dorian): 0.6ms +- 0.1ms
  *        (higher at the begining)
+ * - iPad (justin): 0.17ms +- 0.15ms
  */
 
 const vertexSource = `
