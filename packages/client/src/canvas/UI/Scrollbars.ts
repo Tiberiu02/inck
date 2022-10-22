@@ -1,17 +1,18 @@
 import { MutableView, View } from "../View/View";
 import { ObservableProperty } from "../DesignPatterns/Observable";
 import { PointerTracker } from "./PointerTracker";
+import { RenderLoop } from "../Rendering/RenderLoop";
 
 const MARGIN = 40;
 const HANDLE_SIZE = 60;
 const HANDLE_TIME_VISIBLE = 1000;
-const FADE_DURATION = "0.3s";
+const FADE_DURATION = 300;
 
 export class ScrollBars {
   private handle: HTMLDivElement;
   private yMax: ObservableProperty<number>;
   private pageSize: number;
-  private hideHandleTimeout: number;
+  private lastUpdate: number;
 
   private pointer: { x: number; y: number };
   private pointerId: number;
@@ -20,6 +21,7 @@ export class ScrollBars {
   constructor(yMax: ObservableProperty<number>) {
     this.yMax = yMax;
     this.scrolling = false;
+    this.lastUpdate = 0;
 
     this.handle = document.createElement("div");
     this.handle.style.backgroundColor = "#fff";
@@ -47,8 +49,8 @@ export class ScrollBars {
     document.body.appendChild(this.handle);
 
     View.onUpdate(() => this.showHandle());
-    View.onUpdate(() => this.updateHandle());
     yMax.onUpdate(() => this.updateHandle());
+    RenderLoop.onRender(() => this.updateHandle());
 
     window.addEventListener("resize", () => this.updateHandle());
 
@@ -99,26 +101,18 @@ export class ScrollBars {
     const barRange = innerHeight - 2 * MARGIN;
 
     this.handle.style.top = `${MARGIN + barPos * barRange}px`;
+
+    const opacity = 1 - (Date.now() - this.lastUpdate - HANDLE_TIME_VISIBLE) / FADE_DURATION;
+    if (opacity > 0) {
+      this.handle.style.visibility = "visible";
+      this.handle.style.opacity = `${Math.min(1, opacity) * 80}%`;
+      window.requestAnimationFrame(this.updateHandle.bind(this));
+    } else {
+      this.handle.style.visibility = "hidden";
+    }
   }
 
   private showHandle() {
-    this.handle.style.visibility = "visible";
-    this.handle.style.opacity = "80%";
-
-    if (this.hideHandleTimeout) {
-      window.clearTimeout(this.hideHandleTimeout);
-    }
-
-    const handleTimeout = () => {
-      if (!this.scrolling) {
-        this.handle.style.visibility = "hidden";
-        this.handle.style.opacity = "0%";
-        this.hideHandleTimeout = null;
-      } else {
-        this.hideHandleTimeout = window.setTimeout(handleTimeout, HANDLE_TIME_VISIBLE);
-      }
-    };
-
-    this.hideHandleTimeout = window.setTimeout(handleTimeout, HANDLE_TIME_VISIBLE);
+    this.lastUpdate = Date.now();
   }
 }

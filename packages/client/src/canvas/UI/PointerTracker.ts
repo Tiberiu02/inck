@@ -25,7 +25,6 @@ export interface Finger {
 export interface FingerEvent {
   timeStamp: number;
   fingers: Finger[];
-  changedFingers: Finger[];
 }
 
 export interface iosTouch extends Touch {
@@ -109,7 +108,6 @@ export class PointerTracker {
       const fingerEvent: FingerEvent = {
         timeStamp: Date.now(),
         fingers: [],
-        changedFingers: Object.values(this.fingers),
       };
 
       this.triggerFingerEvent(fingerEvent);
@@ -179,7 +177,6 @@ export class PointerTracker {
       const fingerEvent: FingerEvent = {
         timeStamp: e.timeStamp,
         fingers: [...e.touches].map(touchToFinger),
-        changedFingers: [...e.changedTouches].map(touchToFinger),
       };
 
       this.triggerFingerEvent(fingerEvent);
@@ -214,24 +211,27 @@ export class PointerTracker {
 
       this.triggerPenEvent(penEvent);
     } else {
-      const finger: Finger = {
-        id: e.pointerId,
-        x: e.clientX,
-        y: e.clientY,
-        pressure: e.pressure,
-        target: e.target,
-      };
-
-      if (e.type == "pointerdown" || e.type == "pointermove") {
-        this.fingers[finger.id] = finger;
+      if (e.type == "pointerdown") {
+        this.fingers[e.pointerId] = {
+          id: e.pointerId,
+          x: e.clientX,
+          y: e.clientY,
+          pressure: e.pressure,
+          target: e.target,
+        };
+      } else if (e.type == "pointermove") {
+        const finger = this.fingers[e.pointerId];
+        finger.x = e.clientX;
+        finger.y = e.clientY;
+        finger.pressure = e.pressure;
+        finger.target = e.target;
       } else {
-        delete this.fingers[finger.id];
+        delete this.fingers[e.pointerId];
       }
 
       const fingerEvent: FingerEvent = {
         timeStamp: e.timeStamp,
-        fingers: Object.values(this.fingers).map(Clone),
-        changedFingers: [Clone(finger)],
+        fingers: Object.values(this.fingers),
       };
 
       this.triggerFingerEvent(fingerEvent);
