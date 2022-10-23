@@ -50,8 +50,7 @@ export class PdfBackground {
 
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
     console.log(this.url);
-    this.url =
-      "https://d2bq6ozq8i17u6.cloudfront.net/f8e3c41a5fa4a6b1487ba435428805f12c04b75e8a702d0c16bd6ea28f54046e.pdf";
+    console.log(this.url.split("/"));
     this.pdf = await PDFJS.getDocument(this.url).promise;
 
     this.skeletonVector = [];
