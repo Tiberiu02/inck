@@ -35,6 +35,8 @@ export class PdfBackground {
 
   constructor(url: string, yMax: MutableObservableProperty<number>) {
     this.url = url;
+    console.log("PDF url:");
+    console.log(url);
     this.yMax = yMax;
     this.pages = [];
 
