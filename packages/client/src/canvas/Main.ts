@@ -46,7 +46,7 @@ export default class App {
       // PDF import
       if (!background) {
         if (data.pdfUrl) {
-          background = new PdfBackground(GetApiPath(data.pdfUrl), yMax);
+          background = new PdfBackground(data.pdfUrl, yMax);
         } else if (data.bgPattern == BackgroundTypes.grid) {
           background = new GridBackground(data.bgSpacing || 0.015);
         } else if (data.bgPattern == BackgroundTypes.lines) {

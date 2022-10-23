@@ -7,6 +7,7 @@
     "start": "ts-node src/index"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.194.0",
     "@inck/common-types": "^1.0.0",
     "avsc": "^5.7.6",
     "bcryptjs": "^2.4.3",

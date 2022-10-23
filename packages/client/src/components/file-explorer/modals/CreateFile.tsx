@@ -134,10 +134,12 @@ function ImportPdfSubmodal({ onSuccess, path }) {
   const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
   const [fileSize, setFileSize] = useState(0);
   const [pdfConent, setPdfContent] = useState<File>(null);
+  const [disableSubmitButton, setDisableSubmitButton] = useState(false);
 
   const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
 
   const submit = async () => {
+    setDisableSubmitButton(true);
     const formData = new FormData();
     formData.append("file", pdfConent);
     formData.append("token", getAuthToken());
@@ -189,16 +191,24 @@ function ImportPdfSubmodal({ onSuccess, path }) {
           File size: {fileSizeFormat} MB
         </p>
       </div>
-      <CreateFileButton onClick={submit} text="Import PDF" />
+      <CreateFileButton
+        disabled={disableSubmitButton}
+        onClick={submit}
+        text={disableSubmitButton ? "Submitting PDF..." : "Import PDF"}
+      />
     </div>
   );
 }
 
-function CreateFileButton({ onClick, text, className = "" }) {
+function CreateFileButton({ onClick, text, className = "", disabled = false }) {
   return (
     <button
       onClick={onClick}
-      className={twMerge("bg-slate-800 hover:bg-slate-900 text-white px-4 py-1 rounded-md", className)}
+      disabled={disabled}
+      className={twMerge(
+        `disabled:bg-slate-300 bg-slate-800 hover:bg-slate-900 text-white px-4 py-1 rounded-md`,
+        className
+      )}
     >
       {text}
     </button>
