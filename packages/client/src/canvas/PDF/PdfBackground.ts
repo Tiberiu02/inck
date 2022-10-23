@@ -49,8 +49,6 @@ export class PdfBackground {
     document.getElementById("pdf-spinner").style.display = "flex";
 
     PDFJS.GlobalWorkerOptions.workerSrc = `/api/pdf.worker.js`;
-    console.log(this.url);
-    console.log(this.url.split("/"));
     this.pdf = await PDFJS.getDocument(this.url).promise;
 
     this.skeletonVector = [];

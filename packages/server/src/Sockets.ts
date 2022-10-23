@@ -15,7 +15,6 @@ import { Timer } from "./Timer";
 import { logEvent } from "./logging/AppendAnalytics";
 import { AccessTypes } from "@inck/common-types/Files";
 import { RedisCache } from "./RedisCache";
-import path from "path";
 
 const PDF_BASE_URI = "https://d2bq6ozq8i17u6.cloudfront.net";
 
@@ -119,7 +118,7 @@ async function docRights(docId: string, user: DrawingUser) {
   });
 
   if (fileData == null) {
-    console.log("Unexpected case: this should never happen");
+    console.error("Unexpected case: this should never happen");
     return [undefined, false, false];
   }
 
@@ -192,7 +191,8 @@ async function requestDocumentFn(
     if (fileData) {
       if (fileData.backgroundType == BackgroundTypes.pdf) {
         const fileHash = fileData.backgroundOptions.fileHash as string;
-        note.pdfUrl = path.join(PDF_BASE_URI, `${fileHash}.pdf`);
+        // WARNING: DO NOT USE path.join here, it breaks with urls !!!
+        note.pdfUrl = `${PDF_BASE_URI}/${fileHash}.pdf`;
       } else if (
         fileData.backgroundType != BackgroundTypes.blank &&
         fileData.backgroundOptions != BackgroundTypes.pdf
