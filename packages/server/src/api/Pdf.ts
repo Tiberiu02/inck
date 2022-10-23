@@ -64,10 +64,8 @@ export async function receivePDF(req: Request, res: Response) {
     const pdfDataHash = hashFile(pdfData);
     const fileExists = await PDFExists(pdfDataHash);
     if (!fileExists) {
-      console.log("upload pdf:");
       await uploadPDF(pdfData, pdfDataHash);
     } else {
-      console.log("pdf already exists");
     }
 
     res.status(201).send({
