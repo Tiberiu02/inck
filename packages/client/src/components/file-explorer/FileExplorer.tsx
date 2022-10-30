@@ -17,6 +17,7 @@ import { MaterialSymbol } from "../MaterialSymbol";
 import { resolve } from "path";
 import { LocalStorage } from "../../LocalStorage";
 import { SyncNote } from "./SyncNote";
+import { AlertManager } from "./AlertManager";
 
 type DirListingProps = {
   Symbol: IconType;
@@ -409,35 +410,37 @@ function Explorer({ files, refreshFiles, openSettings }) {
       </Head>
 
       <main className="font-round bg-white">
-        <div className="relative flex flex-col w-[100vw] h-[100vh]">
-          {/** Top bar */}
-          <NavBar openSettings={openSettings}>
-            <NoteCacheSync />
-            <SelectionOptionsWidget
+        <AlertManager>
+          <div className="relative flex flex-col w-[100vw] h-[100vh]">
+            {/** Top bar */}
+            <NavBar openSettings={openSettings}>
+              <NoteCacheSync />
+              <SelectionOptionsWidget
+                selectedFiles={selectedFiles}
+                setSelectedFiles={setSelectedFiles}
+                setModal={setModal}
+              />
+            </NavBar>
+
+            <FileExplorer
+              files={files}
+              path={path}
               selectedFiles={selectedFiles}
+              setPath={setPath}
               setSelectedFiles={setSelectedFiles}
               setModal={setModal}
             />
-          </NavBar>
+          </div>
 
-          <FileExplorer
-            files={files}
+          <DisplayModal
+            modal={modal}
             path={path}
+            files={files}
             selectedFiles={selectedFiles}
-            setPath={setPath}
-            setSelectedFiles={setSelectedFiles}
-            setModal={setModal}
+            closeModal={() => setModal(ModalTypes.NONE)}
+            reloadFiles={reload}
           />
-        </div>
-
-        <DisplayModal
-          modal={modal}
-          path={path}
-          files={files}
-          selectedFiles={selectedFiles}
-          closeModal={() => setModal(ModalTypes.NONE)}
-          reloadFiles={reload}
-        />
+        </AlertManager>
       </main>
     </div>
   );

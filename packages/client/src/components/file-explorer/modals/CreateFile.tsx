@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { MaterialSymbol } from "../../MaterialSymbol";
 import { AccessTypes } from "@inck/common-types/Files";
 import { HttpServer } from "../../../ServerConnector";
@@ -12,6 +12,7 @@ import { useDropzone } from "react-dropzone";
 import { Dropdown, TextField } from "../../common/Input";
 import { LocalStorage } from "../../../LocalStorage";
 import { BackgroundSelector } from "../../common/BgSpacingSelector";
+import { ErrorContext } from "../AlertManager";
 
 function CreateNoteSubmodal({ onSuccess, path }) {
   const [name, setName] = useState("");
@@ -136,11 +137,17 @@ function ImportPdfSubmodal({ onSuccess, path }) {
   const [pdfConent, setPdfContent] = useState<File>(null);
   const [disableSubmitButton, setDisableSubmitButton] = useState(false);
   const [buttonText, setButtonText] = useState("Import PDF");
-  const [errorMessage, setErrorMessage] = useState("");
 
   const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
+  const pushError = useContext(ErrorContext);
 
   const submit = async () => {
+    const trimmedName: string = name.trim();
+    if (trimmedName == "") {
+      pushError("Please provide a file name");
+      return;
+    }
+
     setDisableSubmitButton(true);
     setButtonText("Uploading PDF...");
     const formData = new FormData();
@@ -155,19 +162,18 @@ function ImportPdfSubmodal({ onSuccess, path }) {
     const jsonReply = await response.json();
 
     if (!response.ok) {
-      setErrorMessage("Invalid file format");
+      pushError("Invalid file format");
       setButtonText("Import PDF");
       setDisableSubmitButton(false);
       setPdfContent(null);
       setFileSize(0);
-      setTimeout(() => setErrorMessage(""), 5_000);
       return;
     }
 
     const { fileHash } = jsonReply;
 
     await HttpServer.files.createNote(getAuthToken(), path.at(-1), {
-      name,
+      trimmedName,
       publicAccess,
       backgroundType: BackgroundTypes.pdf,
       backgroundOptions: {
@@ -201,11 +207,6 @@ function ImportPdfSubmodal({ onSuccess, path }) {
         </p>
       </div>
       <CreateFileButton disabled={disableSubmitButton} onClick={submit} text={buttonText} />
-      {errorMessage && (
-        <div className="bg-red-500 rounded-md py-1 -mt-3 text-white flex items-center justify-center">
-          {errorMessage}
-        </div>
-      )}
     </div>
   );
 }
