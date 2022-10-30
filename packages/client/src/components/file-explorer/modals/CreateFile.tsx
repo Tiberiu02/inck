@@ -142,7 +142,7 @@ function ImportPdfSubmodal({ onSuccess, path }) {
   const pushError = useContext(ErrorContext);
 
   const submit = async () => {
-    const trimmedName: string = name.trim();
+    const trimmedName = name.trim();
     if (trimmedName == "") {
       pushError("Please provide a file name");
       return;
@@ -173,7 +173,7 @@ function ImportPdfSubmodal({ onSuccess, path }) {
     const { fileHash } = jsonReply;
 
     await HttpServer.files.createNote(getAuthToken(), path.at(-1), {
-      trimmedName,
+      name,
       publicAccess,
       backgroundType: BackgroundTypes.pdf,
       backgroundOptions: {
