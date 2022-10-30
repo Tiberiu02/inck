@@ -5,7 +5,6 @@ import { DeserializeGraphic, GraphicTypes, PersistentGraphic } from "../Drawing/
 import { VectorGraphic } from "../Drawing/VectorGraphic";
 import { ELEMENTS_PER_VERTEX } from "../Rendering/GL";
 import { HIGHLIGHTER_OPACITY, NUM_LAYERS } from "../Main";
-import GetApiPath from "../../components/GetApiPath";
 import { LoadNoteData } from "../Network/LoadNoteData";
 
 const PAGE_WIDTH = 1000;
@@ -35,7 +34,7 @@ export async function NoteToPdf(noteId) {
   page.moveTo(x, PAGE_WIDTH * yMax + PADDING_BOTTOM);
 
   if (pdfBgUrl) {
-    const bytes = await fetch(GetApiPath(pdfBgUrl)).then((res) => res.arrayBuffer());
+    const bytes = await fetch(pdfBgUrl).then((res) => res.arrayBuffer());
     const bgPdf = await PDFDocument.load(bytes);
 
     let y = 0;
