@@ -14,7 +14,7 @@ const S3 = new AWS.S3();
 const PDF_LOCATION = "../user-data/pdfs";
 const PDF_BUCKET = "inck-pdfs";
 
-function hashFile(buffer) {
+function hashFile(buffer: Buffer) {
   const hashSum = crypto.createHash("sha256");
   hashSum.update(buffer);
   return hashSum.digest("hex");
@@ -62,6 +62,10 @@ export async function receivePDF(req: Request, res: Response) {
     }
 
     const pdfDataHash = hashFile(pdfData);
+    if (!pdfDataHash) {
+      // Should never happen
+      return res.status(409).send({ status: "error", message: "Invalid file content" });
+    }
     const fileExists = await PDFExists(pdfDataHash);
     if (!fileExists) {
       await uploadPDF(pdfData, pdfDataHash);

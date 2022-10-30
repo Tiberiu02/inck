@@ -135,11 +135,14 @@ function ImportPdfSubmodal({ onSuccess, path }) {
   const [fileSize, setFileSize] = useState(0);
   const [pdfConent, setPdfContent] = useState<File>(null);
   const [disableSubmitButton, setDisableSubmitButton] = useState(false);
+  const [buttonText, setButtonText] = useState("Import PDF");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const fileSizeFormat = (Math.round(fileSize * 1e-4) * 1e-2).toFixed(2);
 
   const submit = async () => {
     setDisableSubmitButton(true);
+    setButtonText("Uploading PDF...");
     const formData = new FormData();
     formData.append("file", pdfConent);
     formData.append("token", getAuthToken());
@@ -152,7 +155,13 @@ function ImportPdfSubmodal({ onSuccess, path }) {
     const jsonReply = await response.json();
 
     if (!response.ok) {
-      throw new Error("Failed to upload PDF. " + jsonReply.error);
+      setErrorMessage("Invalid file format");
+      setButtonText("Import PDF");
+      setDisableSubmitButton(false);
+      setPdfContent(null);
+      setFileSize(0);
+      setTimeout(() => setErrorMessage(""), 5_000);
+      return;
     }
 
     const { fileHash } = jsonReply;
@@ -191,11 +200,12 @@ function ImportPdfSubmodal({ onSuccess, path }) {
           File size: {fileSizeFormat} MB
         </p>
       </div>
-      <CreateFileButton
-        disabled={disableSubmitButton}
-        onClick={submit}
-        text={disableSubmitButton ? "Submitting PDF..." : "Import PDF"}
-      />
+      <CreateFileButton disabled={disableSubmitButton} onClick={submit} text={buttonText} />
+      {errorMessage && (
+        <div className="bg-red-500 rounded-md py-1 -mt-3 text-white flex items-center justify-center">
+          {errorMessage}
+        </div>
+      )}
     </div>
   );
 }
