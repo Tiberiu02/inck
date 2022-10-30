@@ -147,6 +147,10 @@ function ImportPdfSubmodal({ onSuccess, path }) {
       pushError("Please provide a file name");
       return;
     }
+    if (pdfConent == null) {
+      pushError("Please provide a PDF file");
+      return;
+    }
 
     setDisableSubmitButton(true);
     setButtonText("Uploading PDF...");
