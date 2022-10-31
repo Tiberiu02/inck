@@ -1,5 +1,7 @@
 import { BackgroundTypes } from "@inck/common-types/Notes";
 
+// test
+
 export class LocalStorage {
   static lastSpacing(pattern: BackgroundTypes): number {
     if (window.localStorage) {
