@@ -20,9 +20,14 @@ Node.js, MongoDB, as well as a few Node.js packages.
 
 1. Install [MongoDB](https://www.mongodb.com/try/download/community)
 2. Install [Node.js & NPM](https://nodejs.org/en/download/)
-3. Open the project in command-line
-4. Install server and client dependencies using `npm install`
-5. Start project in development mode using `npm run dev-all`
+3. Install and start [redis](https://redis.io/)
+```
+brew install redis
+redis-server
+```
+4. Open the project in command-line
+5. Install server and client dependencies using `npm install`
+6. Start project in development mode using `npm run dev-all`
 
 # Usage
 
