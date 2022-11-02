@@ -19,6 +19,12 @@ Node.js, MongoDB, as well as a few Node.js packages.
 # Installation
 
 1. Install [MongoDB](https://www.mongodb.com/try/download/community)
+```
+brew install mongodb
+mkdir -p /data/db
+sudo chown -R `id -un` /data/db
+mongod
+```
 2. Install [Node.js & NPM](https://nodejs.org/en/download/)
 3. Install and start [redis](https://redis.io/)
 ```
