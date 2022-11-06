@@ -41,8 +41,8 @@ export class GridBackground {
 
   render() {
     const transform = m4.multiply(
-      View.getTransformMatrix(),
-      m4.translation(0, this.spacing * Math.max(0, Math.floor(View.getTop() / this.spacing) - 1), 0)
+      View.instance.getTransformMatrix(),
+      m4.translation(0, this.spacing * Math.max(0, Math.floor(View.instance.getTop() / this.spacing) - 1), 0)
     );
     GL.renderVector(this.array, transform, this.buffer);
   }

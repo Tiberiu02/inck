@@ -12,29 +12,54 @@ function ComputeDPI() {
 
 export class Display {
   private static _DPI: number;
-  static get DPI(): number {
-    if (!this._DPI) {
-      this._DPI = ComputeDPI();
-    }
+  private static _Width: number;
+  private static _Height: number;
+  private static _DevicePixelRatio: number;
+  private static _InitDone: boolean;
 
+  static get DPI(): number {
     return this._DPI;
   }
 
   static get Width(): number {
-    return document.documentElement.clientWidth;
+    return this._Width;
   }
 
   static get Height(): number {
-    return document.documentElement.clientHeight;
+    return this._Height;
   }
 
   static get AspectRatio(): number {
-    return document.documentElement.clientWidth / document.documentElement.clientHeight;
+    return this._Width / this._Height;
   }
+
+  static get DevicePixelRatio(): number {
+    return this._DevicePixelRatio;
+  }
+
+  private static ComputeScreenSize() {
+    this._Width = window.innerWidth;
+    this._Height = window.innerHeight;
+  }
+
+  static Init() {
+    if (this._InitDone) return;
+    this._InitDone = true;
+
+    this.ComputeScreenSize();
+    this._DPI = ComputeDPI();
+    this._DevicePixelRatio = window.devicePixelRatio;
+    window.addEventListener("resize", () => this.ComputeScreenSize());
+  }
+}
+
+if (typeof window !== "undefined") {
+  Display.Init();
 }
 
 export function TestFastRenderingSupport(): boolean {
   if (typeof navigator == "undefined") return false;
+  return false;
   const ua = navigator.userAgent;
   return (
     navigator.vendor != "Apple Computer, Inc." &&

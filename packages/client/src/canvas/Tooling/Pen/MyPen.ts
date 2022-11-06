@@ -5,7 +5,6 @@ import { StrokeBuilder } from "../../Drawing/StrokeBuilder";
 import { RGB, StrokePoint } from "../../types";
 import { MyTool } from "../Tool";
 import { View } from "../../View/View";
-import { Display } from "../../DeviceProps";
 import { NetworkConnection } from "../../Network/NetworkConnection";
 import { RenderLoop } from "../../Rendering/RenderLoop";
 import { EmitterPen, PenController, SerializedPen } from "./TheirPen";
@@ -13,6 +12,7 @@ import { DetectShape } from "../../ShapeRecognition/ShapeRecognition";
 import { GL } from "../../Rendering/GL";
 import { GenerateRandomString } from "../../Math/RandomString";
 import { RemovedGraphic } from "../../Drawing/Graphic";
+import Profiler from "../../Profiler";
 
 const LONG_PRESS_TIME = 500; // (ms)
 const INTERVAL_TIME = 100; //   (ms)
@@ -29,49 +29,48 @@ export class MyPen implements MyTool {
   private network: NetworkConnection;
 
   private drawing: boolean;
-  private points: StrokePoint[];
   private strokeBuilder: StrokeBuilder;
   private remoteController: PenController;
 
-  private interval: number;
+  private lastTestForLongPress: number;
   private detectedLongPress: boolean;
 
-  constructor(
-    color: RGB,
-    width: number,
-    zIndex: number,
-    strokeContainer: LayeredStrokeContainer,
-    actionStack: ActionStack,
-    network: NetworkConnection
-  ) {
-    this.color = color;
-    this.width = width;
-    this.zIndex = zIndex;
-
+  constructor(strokeContainer: LayeredStrokeContainer, actionStack: ActionStack, network: NetworkConnection) {
     this.strokeContainer = strokeContainer;
     this.actionStack = actionStack;
     this.network = network;
 
-    this.points = [];
     this.network.setTool(this.serialize());
     this.remoteController = new EmitterPen(network);
+    this.strokeBuilder = new StrokeBuilder();
+  }
+
+  options(color: RGB, width: number, zIndex: number) {
+    this.color = color;
+    this.width = width;
+    this.zIndex = zIndex;
   }
 
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (pressure && this.detectedLongPress) return;
 
     if (pressure) {
+      const now = performance.now();
       if (!this.drawing) {
-        const width = View.getCanvasCoords(this.width, 0, true)[0];
+        const width = View.instance.getCanvasDist(this.width);
         this.timestamp = timestamp;
         this.remoteController.setWidth(width);
-        this.strokeBuilder = new StrokeBuilder(timestamp, this.zIndex, this.color, width);
+        this.strokeBuilder.newStroke(timestamp, this.zIndex, this.color, width);
         this.drawing = true;
-        this.interval = window.setInterval(() => this.testLongPress(), INTERVAL_TIME);
+        this.lastTestForLongPress = now;
       }
 
-      this.strokeBuilder.push({ x, y, pressure, timestamp });
-      this.points.push({ x, y, pressure, timestamp });
+      this.strokeBuilder.push(x, y, pressure, timestamp);
+
+      if (this.drawing && now - this.lastTestForLongPress > INTERVAL_TIME) {
+        this.testLongPress();
+        this.lastTestForLongPress = now;
+      }
     } else {
       if (this.drawing) {
         this.release();
@@ -81,32 +80,45 @@ export class MyPen implements MyTool {
     this.remoteController.update(x, y, pressure, timestamp);
 
     // Render
-    RenderLoop.supportsFastRender ? RenderLoop.render() : RenderLoop.scheduleRender();
+    RenderLoop.render();
   }
 
   render(layerRendered: number): void {
-    if (this.strokeBuilder && layerRendered == this.zIndex) {
-      const vector = this.strokeBuilder.getGraphic().vector;
-      GL.renderVector(vector, View.getTransformMatrix());
+    if (this.drawing && layerRendered == this.zIndex) {
+      Profiler.start("vectorize");
+      const vector = this.strokeBuilder.getVector();
+      Profiler.stop("vectorize");
+      Profiler.start("draw");
+      GL.renderVector(vector, View.instance.getTransformMatrix());
+      Profiler.stop("draw");
     }
   }
 
   private testLongPress() {
     const currentTime = performance.now();
-    if (this.drawing && !this.detectedLongPress && this.points[0].timestamp < currentTime - LONG_PRESS_TIME) {
-      let i = this.points.length - 1;
-      const [xs, ys] = [[], []];
-      while (i >= 0 && this.points[i].timestamp > currentTime - LONG_PRESS_TIME) {
-        xs.push(this.points[i].x);
-        ys.push(this.points[i].y);
+    const points = this.strokeBuilder.getPoints();
+    if (this.drawing && !this.detectedLongPress && points[0].timestamp < currentTime - LONG_PRESS_TIME) {
+      const dist = View.instance.getCanvasDist(LONG_PRESS_DIST);
+
+      let i = points.length - 1;
+      let xMax = -Infinity;
+      let yMax = -Infinity;
+      let xMin = Infinity;
+      let yMin = Infinity;
+      while (
+        i >= 0 &&
+        points[i].timestamp > currentTime - LONG_PRESS_TIME &&
+        xMax - xMin < dist &&
+        yMax - yMin < dist
+      ) {
+        xMax = Math.max(xMax, points[i].x);
+        xMin = Math.min(xMin, points[i].x);
+        yMax = Math.max(yMax, points[i].y);
+        yMin = Math.min(yMin, points[i].y);
         i--;
       }
 
-      let dx = Math.max(...xs) - Math.min(...xs);
-      let dy = Math.max(...ys) - Math.min(...ys);
-      [dx, dy] = View.getScreenCoords(dx, dy, true);
-
-      if (dx < LONG_PRESS_DIST && dy < LONG_PRESS_DIST) {
+      if (xMax - xMin < dist && yMax - yMin < dist) {
         this.detectedLongPress = true;
         this.convertShape();
       }
@@ -114,21 +126,22 @@ export class MyPen implements MyTool {
   }
 
   private convertShape() {
-    const shapePoints = DetectShape(this.points);
-    this.loadPoints(shapePoints);
+    const shapePoints = DetectShape(this.strokeBuilder.getPoints());
+    this.loadPoints(shapePoints.slice());
   }
 
   private loadPoints(newPoints: StrokePoint[]) {
     this.remoteController.loadPoints(newPoints);
-    this.points = newPoints;
 
-    const width = View.getCanvasCoords(this.width, 0, true)[0];
+    const width = View.instance.getCanvasDist(this.width);
     this.remoteController.setWidth(width);
-    this.strokeBuilder = new StrokeBuilder(this.timestamp, this.zIndex, this.color, width);
+    this.strokeBuilder.newStroke(this.timestamp, this.zIndex, this.color, width);
 
-    newPoints.forEach((p) => this.strokeBuilder.push(p));
+    for (const p of newPoints) {
+      this.strokeBuilder.push(p.x, p.y, p.pressure, p.timestamp);
+    }
 
-    RenderLoop.scheduleRender();
+    RenderLoop.render();
   }
 
   serialize(): SerializedPen {
@@ -158,12 +171,8 @@ export class MyPen implements MyTool {
       });
 
       // Reset pen
-      this.strokeBuilder = null;
-      this.points = [];
       this.drawing = false;
       this.detectedLongPress = false;
     }
-
-    clearInterval(this.interval);
   }
 }

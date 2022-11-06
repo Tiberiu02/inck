@@ -5,6 +5,7 @@ import { MutableObservableProperty } from "../DesignPatterns/Observable";
 import { GL } from "../Rendering/GL";
 import { RGB } from "../types";
 import { CreateRectangleVector } from "../Rendering/Utils";
+import { Display } from "../DeviceProps";
 
 export const BG_COLOR: RGB = [0.9, 0.9, 0.9];
 export const PAGE_GAP = 0.01; // %w
@@ -38,8 +39,8 @@ export class PdfBackground {
     this.yMax = yMax;
     this.pages = [];
 
-    MutableView.maxWidth = PDF_FULL_WIDTH;
-    MutableView.documentTop = -PDF_PADDING_TOP;
+    MutableView.instance.maxWidth = PDF_FULL_WIDTH;
+    MutableView.instance.documentTop = -PDF_PADDING_TOP;
 
     RenderLoop.scheduleRender();
     this.init();
@@ -82,16 +83,24 @@ export class PdfBackground {
   }
 
   render(): void {
-    const bgVector = CreateRectangleVector(View.getLeft(), View.getTop(), View.getWidth(), View.getHeight(), BG_COLOR);
+    const bgVector = CreateRectangleVector(
+      View.instance.getLeft(),
+      View.instance.getTop(),
+      View.instance.getWidth(),
+      View.instance.getHeight(),
+      BG_COLOR
+    );
 
-    GL.renderVector(bgVector, View.getTransformMatrix());
+    GL.renderVector(bgVector, View.instance.getTransformMatrix());
 
     if (this.skeletonBuffer) {
-      GL.renderVector(this.skeletonVector, View.getTransformMatrix(), this.skeletonBuffer);
+      GL.renderVector(this.skeletonVector, View.instance.getTransformMatrix(), this.skeletonBuffer);
     }
 
     const pageIsVisible = (page: PdfPage) =>
-      page && page.top + page.height > View.getTop() && page.top < View.getTop() + View.getHeight();
+      page &&
+      page.top + page.height > View.instance.getTop() &&
+      page.top < View.instance.getTop() + View.instance.getHeight();
 
     let pageToLoad = null;
 
@@ -102,9 +111,11 @@ export class PdfBackground {
 
       if (show) {
         if (page.status == PdfPageStatus.LOADED) {
-          const [x, y] = View.getScreenCoords(0, page.top);
-          const [w, h] = View.getScreenCoords(1, page.height, true);
-          const r = window.devicePixelRatio;
+          const x = View.instance.getScreenX(0);
+          const y = View.instance.getScreenY(page.top);
+          const w = View.instance.getScreenDist(1);
+          const h = View.instance.getScreenDist(page.height);
+          const r = Display.DevicePixelRatio;
           GL.renderTexture(page.texture, w * r, h * r, x * r, y * r);
         } else if (pageToLoad == null) {
           pageToLoad = page;

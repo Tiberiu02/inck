@@ -1,9 +1,11 @@
+#version 300 es
+
 precision highp float;
 
-attribute vec2 a_Position;
-attribute vec4 a_Color;
+in vec2 a_Position;
+in vec4 a_Color;
 
-varying vec4 f_Color;
+out vec4 f_Color;
 
 uniform mat4 u_Matrix;
 

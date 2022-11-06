@@ -1,8 +1,10 @@
+#version 300 es
+
 precision highp float;
 
-attribute vec2 a_Position;
+in vec2 a_Position;
  
-varying vec2 v_TexCoord;
+out vec2 v_TexCoord;
  
 void main() {
    // WebGL 2 required

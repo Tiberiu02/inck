@@ -537,12 +537,12 @@ export class Toolbar implements FloatingMenu {
   }
 
   setPosition({ x, y }: Vector2D) {
-    this.toolbar.style.left = `${x}px`;
-    this.toolbar.style.top = `${y}px`;
+    // this.toolbar.style.left = `${x}px`;
+    // this.toolbar.style.top = `${y}px`;
   }
 
   setOpacity(opacity: number) {
-    this.toolbar.style.opacity = `${opacity}%`;
+    // this.toolbar.style.opacity = `${opacity}%`;
   }
 
   selectPen(color: string, width: number) {

@@ -62,11 +62,16 @@ export class PageNavigation {
     const pointers = fingers.map((f) => new Vector2D(f.x, f.y));
 
     if (pointers.length == this.pointers.length && pointers.length > 0) {
-      const [x0, y0, r0] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
+      const x0 = this.averagePointerPos.x;
+      const y0 = this.averagePointerPos.y;
+      const r0 = this.averagePointerDist;
       this.updatePointers(pointers);
-      const [x1, y1, r1] = [this.averagePointerPos.x, this.averagePointerPos.y, this.averagePointerDist];
+      const x1 = this.averagePointerPos.x;
+      const y1 = this.averagePointerPos.y;
+      const r1 = this.averagePointerDist;
 
-      let [dx, dy] = View.getCanvasCoords(x0 - x1, y0 - y1, true);
+      let dx = View.instance.getCanvasDist(x0 - x1);
+      let dy = View.instance.getCanvasDist(y0 - y1);
 
       // Forced vertical scroll
       if (fingers.length == 1) {
@@ -76,8 +81,8 @@ export class PageNavigation {
         }
       }
 
-      MutableView.applyTranslation(dx, dy); // scroll
-      MutableView.applyZoom(x1, y1, r1 / r0); // zoom
+      MutableView.instance.applyTranslation(dx, dy); // scroll
+      MutableView.instance.applyZoom(x1, y1, r1 / r0); // zoom
 
       this.inertia.update(dx, dy, timeStamp);
     } else {
@@ -100,7 +105,8 @@ export class PageNavigation {
     let { deltaX, deltaY, deltaMode } = e;
 
     if (deltaMode == WheelEvent.DOM_DELTA_PIXEL) {
-      [deltaX, deltaY] = View.getCanvasCoords(deltaX, deltaY, true);
+      deltaX = View.instance.getCanvasDist(deltaX);
+      deltaY = View.instance.getCanvasDist(deltaY);
     }
 
     if (e.ctrlKey) {
@@ -110,13 +116,13 @@ export class PageNavigation {
         OUT: 45,
       };
       const zoomFactor = 1 - deltaY * (deltaY < 0 ? ZOOM_SPEED.IN : ZOOM_SPEED.OUT);
-      MutableView.applyZoom(this.mouse.x, this.mouse.y, zoomFactor);
+      MutableView.instance.applyZoom(this.mouse.x, this.mouse.y, zoomFactor);
     } else {
       // scroll
       if (e.shiftKey && !deltaX) {
-        MutableView.applyTranslation(deltaY, 0);
+        MutableView.instance.applyTranslation(deltaY, 0);
       } else {
-        MutableView.applyTranslation(deltaX, deltaY);
+        MutableView.instance.applyTranslation(deltaX, deltaY);
       }
     }
   }
@@ -174,9 +180,10 @@ class ScrollInertia {
     const dt = t - this.t;
 
     if (this.velocity) {
-      const [vx, vy] = View.getScreenCoords(this.velocity.x, this.velocity.y, true);
+      const vx = View.instance.getScreenDist(this.velocity.x);
+      const vy = View.instance.getScreenDist(this.velocity.y);
       if (Math.sqrt(vx ** 2 + vy ** 2) > MINIMUM_VELOCITY) {
-        MutableView.applyTranslation(this.velocity.x * dt, this.velocity.y * dt);
+        MutableView.instance.applyTranslation(this.velocity.x * dt, this.velocity.y * dt);
 
         this.velocity = V2.mul(this.velocity, 1 - Math.min(1, dt * INERTIA_DECAY_PER_MS));
 

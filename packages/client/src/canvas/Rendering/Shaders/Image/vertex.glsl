@@ -1,10 +1,12 @@
+#version 300 es
+
 precision highp float;
 
-attribute vec2 a_Position;
+in vec2 a_Position;
  
 uniform mat4 u_Matrix;
  
-varying vec2 v_TexCoord;
+out vec2 v_TexCoord;
  
 void main() {
    gl_Position = u_Matrix * vec4(a_Position, 0.0, 1.0);

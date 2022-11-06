@@ -29,7 +29,7 @@ export class DottedStrokeBuilder {
     if (!this.lastPoint) {
       this.lastPoint = this.lastKeyPoint = p;
       this.isDotting = true;
-      this.currentStroke = new StrokeVectorizer(this.color, this.width);
+      // this.currentStroke = new StrokeVectorizer(this.color, this.width);
       this.currentStroke.push(p);
       return;
     }
@@ -47,13 +47,13 @@ export class DottedStrokeBuilder {
       if (V2.dist(p, this.lastKeyPoint) > DOT_LEN * this.width) {
         this.currentStroke.push({ ...this.lastPoint, timestamp: this.lastPoint.timestamp + 10 });
 
-        this.strokes = OptimizeDrawables(this.strokes.concat([this.currentStroke.getGraphic(this.zIndex)]));
+        // this.strokes = OptimizeDrawables(this.strokes.concat([this.currentStroke.getGraphic(this.zIndex)]));
         this.lastKeyPoint = this.lastPoint;
         this.isDotting = false;
       }
     } else {
       if (V2.dist(p, this.lastKeyPoint) > BREAK_LEN * this.width) {
-        this.currentStroke = new StrokeVectorizer(this.color, this.width);
+        // this.currentStroke = new StrokeVectorizer(this.color, this.width);
         this.currentStroke.push(p);
         this.lastKeyPoint = p;
         this.isDotting = true;
@@ -64,6 +64,7 @@ export class DottedStrokeBuilder {
   }
 
   getStrokes(): Graphic[] {
-    return this.strokes.concat(this.isDotting ? [this.currentStroke.getGraphic(this.zIndex)] : []);
+    // return this.strokes.concat(this.isDotting ? [this.currentStroke.getGraphic(this.zIndex)] : []);
+    return [];
   }
 }

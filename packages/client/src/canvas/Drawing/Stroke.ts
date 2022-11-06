@@ -43,15 +43,16 @@ export function SerializeStroke(stroke: Stroke): SerializedStroke {
 }
 
 export function DeserializeStroke(stroke: SerializedStroke): Stroke {
-  const builder = new StrokeBuilder(stroke.timestamp, stroke.zIndex, stroke.color, stroke.width);
+  const builder = new StrokeBuilder();
+  builder.newStroke(stroke.timestamp, stroke.zIndex, stroke.color, stroke.width);
 
   for (let i = 0; i < stroke.data.length; i += ELEMENTS_PER_INPUT)
-    builder.push({
-      x: stroke.data[i + OFFSET_INPUT.X],
-      y: stroke.data[i + OFFSET_INPUT.Y],
-      pressure: stroke.data[i + OFFSET_INPUT.P],
-      timestamp: stroke.data[i + OFFSET_INPUT.T],
-    });
+    builder.push(
+      stroke.data[i + OFFSET_INPUT.X],
+      stroke.data[i + OFFSET_INPUT.Y],
+      stroke.data[i + OFFSET_INPUT.P],
+      stroke.data[i + OFFSET_INPUT.T]
+    );
 
   return builder.getStroke(stroke.id);
 }
@@ -61,14 +62,15 @@ export function DeserializeStrokeLegacy(data: any): Stroke {
   const zIndex = data.type == "h" ? 0 : data.zIndex ?? 1;
   const { width, timestamp, path, id } = data;
 
-  const builder = new StrokeBuilder(timestamp, zIndex, color, width);
+  const builder = new StrokeBuilder();
+  builder.newStroke(timestamp, zIndex, color, width);
   for (let i = 0; i < path.length; i += ELEMENTS_PER_INPUT)
-    builder.push({
-      x: path[i + OFFSET_INPUT.X],
-      y: path[i + OFFSET_INPUT.Y],
-      pressure: path[i + OFFSET_INPUT.P],
-      timestamp: path[i + OFFSET_INPUT.T],
-    });
+    builder.push(
+      path[i + OFFSET_INPUT.X],
+      path[i + OFFSET_INPUT.Y],
+      path[i + OFFSET_INPUT.P],
+      path[i + OFFSET_INPUT.T]
+    );
 
   return builder.getStroke(id);
 }
