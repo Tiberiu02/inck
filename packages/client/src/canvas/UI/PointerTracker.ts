@@ -53,6 +53,9 @@ export class PointerTracker {
 
   public static instance: PointerTracker;
 
+  private penEvent: PenEvent;
+  private fingerEvent: FingerEvent;
+
   constructor() {
     Object.assign(document.body.style, {
       width: "100vw",
@@ -99,6 +102,8 @@ export class PointerTracker {
     }
 
     PointerTracker.instance = this;
+    this.penEvent = {} as PenEvent;
+    this.fingerEvent = {} as FingerEvent;
   }
 
   pause() {
@@ -124,16 +129,14 @@ export class PointerTracker {
 
     e.preventDefault();
 
-    let penEvent: PenEvent = {
-      x: e.x,
-      y: e.y,
-      pressure: e.buttons ? 0.5 : 0,
-      timeStamp: performance.now(),
-      target: e.target,
-      pointerType: PenTypes.MOUSE,
-    };
+    this.penEvent.x = e.x;
+    this.penEvent.y = e.y;
+    this.penEvent.pressure = e.buttons ? 0.5 : 0;
+    this.penEvent.timeStamp = e.timeStamp;
+    this.penEvent.target = e.target;
+    this.penEvent.pointerType = PenTypes.MOUSE;
 
-    this.triggerPenEvent(penEvent);
+    this.triggerPenEvent(this.penEvent);
   }
 
   // iOS
@@ -200,16 +203,14 @@ export class PointerTracker {
         this.triggerPenButton(PointerTracker.penButton);
       }
 
-      const penEvent: PenEvent = {
-        x: e.clientX,
-        y: e.clientY,
-        pressure: PointerTracker.penButton ? 0.5 : e.pressure,
-        timeStamp: e.timeStamp,
-        target: e.target,
-        pointerType: e.pointerType == "mouse" ? PenTypes.MOUSE : PenTypes.STYLUS,
-      };
+      this.penEvent.x = e.x;
+      this.penEvent.y = e.y;
+      this.penEvent.pressure = PointerTracker.penButton ? 0.5 : e.pressure;
+      this.penEvent.timeStamp = e.timeStamp;
+      this.penEvent.target = e.target;
+      this.penEvent.pointerType = e.pointerType == "mouse" ? PenTypes.MOUSE : PenTypes.STYLUS;
 
-      this.triggerPenEvent(penEvent);
+      this.triggerPenEvent(this.penEvent);
     } else {
       if (e.type == "pointerdown") {
         this.fingers[e.pointerId] = {

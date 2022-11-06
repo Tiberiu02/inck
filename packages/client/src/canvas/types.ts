@@ -35,10 +35,10 @@ export interface LineSegment {
 }
 
 export interface StrokePoint {
-  readonly x: number;
-  readonly y: number;
-  readonly pressure: number;
-  readonly timestamp: number;
+  x: number;
+  y: number;
+  pressure: number;
+  timestamp: number;
 }
 
 export type Background = {

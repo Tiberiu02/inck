@@ -32,7 +32,6 @@ export class MySelection extends SelectionBase implements MyTool {
   private keyHandler: (e: KeyboardEvent) => void;
   private menu: HTMLElement;
   private padding: number;
-  private inUse: boolean;
 
   constructor(strokeContainer: LayeredStrokeContainer, actionStack: ActionStack, network: NetworkConnection) {
     super(strokeContainer);
@@ -42,17 +41,18 @@ export class MySelection extends SelectionBase implements MyTool {
     this.network = network;
     this.ui = this.createUI();
     this.padding = PADDING_SIZE;
-    this.inUse = true;
 
     this.network.setTool(this.serialize());
     this.remoteController = new EmitterSelection(network);
 
     this.keyHandler = (e: KeyboardEvent) => {
       console.log(e.code, e);
-      if (e.code == "KeyC" && e.ctrlKey) {
-        this.copySelection();
-      } else if (e.code == "KeyX" && e.ctrlKey) {
-        this.cutSelection();
+      if (this.selected.length) {
+        if (e.code == "KeyC" && e.ctrlKey) {
+          this.copySelection();
+        } else if (e.code == "KeyX" && e.ctrlKey) {
+          this.cutSelection();
+        }
       }
     };
     window.addEventListener("keydown", this.keyHandler);
@@ -167,8 +167,10 @@ export class MySelection extends SelectionBase implements MyTool {
         const [cx, cy] = [box.xMin + sw, box.yMin + sh];
         const { x, y } = this.toTranslateBy;
 
-        const [x1, y1] = View.getScreenCoords(cx - sw * this.toScaleBy + x, cy - sh * this.toScaleBy + y);
-        const [x2, y2] = View.getScreenCoords(cx + sw * this.toScaleBy + x, cy + sh * this.toScaleBy + y);
+        const x1 = View.instance.getScreenX(cx - sw * this.toScaleBy + x);
+        const y1 = View.instance.getScreenY(cy - sh * this.toScaleBy + y);
+        const x2 = View.instance.getScreenX(cx + sw * this.toScaleBy + x);
+        const y2 = View.instance.getScreenY(cy + sh * this.toScaleBy + y);
         const w = this.padding * Display.DPI * this.toScaleBy;
 
         this.ui.style.left = `${x1 - w}px`;
@@ -185,9 +187,6 @@ export class MySelection extends SelectionBase implements MyTool {
 
   release(): void {
     this.deselect();
-    window.removeEventListener("keydown", this.keyHandler);
-    this.ui.remove();
-    this.inUse = false;
   }
 
   clearSelection(): void {
@@ -235,7 +234,7 @@ export class MySelection extends SelectionBase implements MyTool {
   }
 
   translateToCenter() {
-    this.setTranslation(V2.sub(View.center, this.selectionCenter));
+    this.setTranslation(V2.sub(View.instance.center, this.selectionCenter));
     this.applyTranslation();
   }
 
@@ -255,7 +254,7 @@ export class MySelection extends SelectionBase implements MyTool {
     this.selected = selection;
     this.computeSelectionCenter();
 
-    const d = V2.sub(View.center, this.selectionCenter);
+    const d = V2.sub(View.instance.center, this.selectionCenter);
     selection = selection.map((s) => TranslatePersistentGraphic(s, d.x, d.y));
 
     this.updateSelection(selection);
@@ -315,13 +314,17 @@ export class MySelection extends SelectionBase implements MyTool {
     let pointer: Vector2D;
     let pointerId: number;
     container.addEventListener("pointerdown", (e) => {
-      pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
+      const x = View.instance.getCanvasX(e.x);
+      const y = View.instance.getCanvasY(e.y);
+      pointer = new Vector2D(x, y);
       pointerId = e.pointerId;
       PointerTracker.instance.pause();
     });
     window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
-        const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
+        const x = View.instance.getCanvasX(e.x);
+        const y = View.instance.getCanvasY(e.y);
+        const newPointer = new Vector2D(x, y);
         this.setTranslation(V2.sub(newPointer, pointer));
       }
     });
@@ -427,14 +430,18 @@ export class MySelection extends SelectionBase implements MyTool {
 
     btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
-      pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
+      const x = View.instance.getCanvasX(e.x);
+      const y = View.instance.getCanvasY(e.y);
+      pointer = new Vector2D(x, y);
       pointerId = e.pointerId;
       this.menu.style.visibility = "hidden";
       PointerTracker.instance.pause();
     });
     window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
-        const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
+        const x = View.instance.getCanvasX(e.x);
+        const y = View.instance.getCanvasY(e.y);
+        const newPointer = new Vector2D(x, y);
         const angle = V2.angle(V2.sub(newPointer, this.selectionCenter), V2.sub(pointer, this.selectionCenter));
         this.setRotation(angle);
       }
@@ -473,13 +480,17 @@ export class MySelection extends SelectionBase implements MyTool {
 
     btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
-      pointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
+      const x = View.instance.getCanvasX(e.x);
+      const y = View.instance.getCanvasY(e.y);
+      pointer = new Vector2D(x, y);
       pointerId = e.pointerId;
       PointerTracker.instance.pause();
     });
     window.addEventListener("pointermove", (e) => {
       if (pointer && e.pointerId == pointerId) {
-        const newPointer = new Vector2D(...View.getCanvasCoords(e.x, e.y));
+        const x = View.instance.getCanvasX(e.x);
+        const y = View.instance.getCanvasY(e.y);
+        const newPointer = new Vector2D(x, y);
         const factor = V2.dist(newPointer, this.selectionCenter) / V2.dist(pointer, this.selectionCenter);
         this.setScaling(factor);
       }

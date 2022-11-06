@@ -8,7 +8,7 @@ export function CreateEmitterClass<InterfaceType>(InterfaceClass: new () => Inte
   };
 
   const prototype = Object.getPrototypeOf(new InterfaceClass());
-  const methods = Object.getOwnPropertyNames(prototype).filter(x => x != "constructor");
+  const methods = Object.getOwnPropertyNames(prototype).filter((x) => x != "constructor");
 
   for (const method of methods) {
     Emitter.prototype[method] = function (...args: any[]) {
@@ -23,7 +23,7 @@ export function ProtectInstance<Type>(instance: Type, InterfaceClass: new () => 
   const receiver: any = {};
 
   const prototype = Object.getPrototypeOf(new InterfaceClass());
-  const methods = Object.getOwnPropertyNames(prototype).filter(x => x != "constructor");
+  const methods = Object.getOwnPropertyNames(prototype).filter((x) => x != "constructor");
 
   for (const method of methods) {
     receiver[method] = (...args: any[]) => instance[method](...args);

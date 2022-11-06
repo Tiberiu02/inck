@@ -1,4 +1,6 @@
+import { Display } from "../DeviceProps";
 import { V2, Vector2D } from "../Math/V2";
+import { RenderLoop } from "../Rendering/RenderLoop";
 import { PenEvent, PointerTracker } from "./PointerTracker";
 
 enum STATES {
@@ -62,7 +64,7 @@ export class PenFollowingEngine {
     this.lastUpdate = performance.now();
 
     PointerTracker.instance.onPenEvent((e) => this.handlePenEvent(e));
-    requestAnimationFrame(() => this.update());
+    // RenderLoop.onRender(this.updatePenFollower.bind(this));
   }
 
   private handlePenEvent(e: PenEvent) {
@@ -71,10 +73,6 @@ export class PenFollowingEngine {
     this.pointer = pointer;
 
     if (pointer) {
-      const displacement = new Vector2D(DIST_FROM_CURSOR, 0);
-
-      const offset = new Vector2D(this.menu.width, this.menu.height);
-
       // Stabilized using a square frame
       this.penPos = new Vector2D(
         Math.min(Math.max(this.penPos.x, pointer.x - STABILIZATION_RADIUS), pointer.x + STABILIZATION_RADIUS),
@@ -90,8 +88,8 @@ export class PenFollowingEngine {
         this.menuIsBelowPen = false;
       }
 
-      if (this.target.x > innerWidth - RIGHT_PADDING) {
-        this.target = { x: innerWidth - RIGHT_PADDING, y: this.target.y };
+      if (this.target.x > Display.Width - RIGHT_PADDING) {
+        this.target = { x: Display.Width - RIGHT_PADDING, y: this.target.y };
       }
       if (this.target.x < LEFT_PADDING) {
         this.target = { x: LEFT_PADDING, y: this.target.y };
@@ -99,7 +97,7 @@ export class PenFollowingEngine {
     }
   }
 
-  private update() {
+  private updatePenFollower() {
     const t = performance.now();
     const dt = (t - this.lastUpdate) / MS_PER_TIME_UNIT;
 
@@ -155,7 +153,6 @@ export class PenFollowingEngine {
     this.menu.setOpacity(this.opacity);
 
     this.lastUpdate = t;
-    requestAnimationFrame(() => this.update());
   }
 
   translatePosition(d: Vector2D) {

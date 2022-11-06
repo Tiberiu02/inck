@@ -1,9 +1,13 @@
+import { Display } from "../DeviceProps";
 import { m4, Matrix4 } from "../Math/M4";
+import Profiler from "../Profiler";
 import {
   MainFragmentShaderSource,
   MainVertexShaderSource,
   ImageFragmentShaderSource,
   ImageVertexShaderSource,
+  LayerVertexShaderSource,
+  LayerFragmentShaderSource,
 } from "./Shaders";
 
 export const ELEMENTS_PER_VERTEX = 6;
@@ -18,13 +22,140 @@ export function desynchronizedHintAvailable() {
   return version >= 85 || (android && version >= 75);
 }
 
+class VectorProgram {
+  ctx: WebGL2RenderingContext;
+  program: WebGLProgram;
+  buffer: WebGLBuffer;
+  matrixLoc: WebGLUniformLocation;
+  positionLoc: number;
+  colorLoc: number;
+  vao: WebGLVertexArrayObject;
+
+  constructor(gl: WebGL2RenderingContext) {
+    this.ctx = gl;
+
+    this.program = GL.createProgram(MainVertexShaderSource, MainFragmentShaderSource);
+    this.ctx.useProgram(this.program);
+    GL.currentProgram = this.program;
+
+    this.vao = this.ctx.createVertexArray();
+
+    this.buffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
+
+    const stride = ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT;
+
+    // Position attribute
+    this.positionLoc = this.ctx.getAttribLocation(this.program, "a_Position");
+    this.ctx.enableVertexAttribArray(this.positionLoc);
+    this.ctx.vertexAttribPointer(this.positionLoc, 2, this.ctx.FLOAT, false, stride, 0);
+
+    // Color attribute
+    this.colorLoc = this.ctx.getAttribLocation(this.program, "a_Color");
+    this.ctx.enableVertexAttribArray(this.colorLoc);
+    this.ctx.vertexAttribPointer(this.colorLoc, 4, this.ctx.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+
+    // Matrix uniform
+    this.matrixLoc = this.ctx.getUniformLocation(this.program, "u_Matrix");
+  }
+
+  createBuffer() {
+    const buffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, buffer);
+
+    this.ctx.useProgram(this.program);
+    GL.currentProgram = this.program;
+
+    const stride = ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT;
+
+    // Position attribute
+    this.ctx.enableVertexAttribArray(this.positionLoc);
+    this.ctx.vertexAttribPointer(this.positionLoc, 2, this.ctx.FLOAT, false, stride, 0);
+
+    // Color attribute
+    this.ctx.enableVertexAttribArray(this.colorLoc);
+    this.ctx.vertexAttribPointer(this.colorLoc, 4, this.ctx.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+
+    return buffer;
+  }
+
+  drawVector(array: number[], transformMatrix: Matrix4, buffer?: WebGLBuffer) {
+    if (GL.currentProgram != this.program) {
+      this.ctx.useProgram(this.program);
+      GL.currentProgram = this.program;
+    }
+
+    if (!buffer) {
+      this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
+      this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
+    }
+
+    // Set attributes & uniforms
+    const stride = ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT;
+    this.ctx.vertexAttribPointer(this.positionLoc, 2, this.ctx.FLOAT, false, stride, 0);
+    this.ctx.vertexAttribPointer(this.colorLoc, 4, this.ctx.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+    this.ctx.uniformMatrix4fv(this.matrixLoc, false, transformMatrix);
+
+    this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
+  }
+}
+
+class TransparentLayerProgram {
+  private ctx: WebGL2RenderingContext;
+  private program: WebGLProgram;
+  private buffer: WebGLBuffer;
+  private textureLoc: WebGLUniformLocation;
+  private positionLoc: number;
+
+  constructor(ctx: WebGL2RenderingContext) {
+    this.ctx = ctx;
+
+    // Create a buffer.
+    this.buffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
+
+    // Put a unit quad in the buffer
+    const positions = [0, 0, 0, +1, +1, 0, +1, +1];
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
+
+    this.program = GL.createProgram(LayerVertexShaderSource, LayerFragmentShaderSource);
+
+    this.ctx.useProgram(this.program);
+    GL.currentProgram = this.program;
+
+    this.textureLoc = this.ctx.getUniformLocation(this.program, "u_Texture");
+    this.positionLoc = this.ctx.getAttribLocation(this.program, "a_Position");
+  }
+
+  renderLayer(tex: WebGLTexture) {
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
+
+    // Set program
+    this.ctx.useProgram(this.program);
+    GL.currentProgram = this.program;
+
+    // Set position attribute
+    this.ctx.vertexAttribPointer(this.positionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
+    this.ctx.enableVertexAttribArray(this.positionLoc);
+
+    // Tell the shader to get the texture from texture unit 0
+    this.ctx.uniform1i(this.textureLoc, 0);
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, tex);
+
+    // draw the quad (2 triangles, 4 vertices)
+    this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, 4);
+  }
+}
+
 export class GL {
-  static ctx: WebGLRenderingContext;
+  static ctx: WebGL2RenderingContext;
+  static currentProgram: WebGLProgram;
 
   static mainProgram: WebGLProgram;
   static imageProgram: WebGLProgram;
+  static vectorProgram: VectorProgram;
+  static layerProgram: TransparentLayerProgram;
 
-  private static mainBuffer: WebGLBuffer;
   private static texBuffer: WebGLBuffer;
 
   private static layerTex: WebGLTexture;
@@ -37,11 +168,11 @@ export class GL {
     document.body.appendChild(canvas);
 
     // Init context
-    this.ctx = canvas.getContext("webgl", { desynchronized: true, alpha: false });
+    this.ctx = canvas.getContext("webgl2", { desynchronized: true, alpha: false, antialias: true });
 
     if (!this.ctx) {
       console.warn("WebGL not supported, falling back on experimental");
-      this.ctx = canvas.getContext("experimental-webgl") as WebGLRenderingContext;
+      this.ctx = canvas.getContext("experimental-webgl") as WebGL2RenderingContext;
     }
 
     if (!this.ctx) alert("Your browser does not support WebGL");
@@ -54,23 +185,23 @@ export class GL {
     this.ctx.depthFunc(this.ctx.ALWAYS);
 
     // Create programs
-    this.mainProgram = this.createProgram(MainVertexShaderSource, MainFragmentShaderSource);
     this.imageProgram = this.createProgram(ImageVertexShaderSource, ImageFragmentShaderSource);
+    this.vectorProgram = new VectorProgram(this.ctx);
+    this.layerProgram = new TransparentLayerProgram(this.ctx);
 
     // Init buffers
-    this.mainBuffer = this.ctx.createBuffer();
     this.initTexBuffers();
   }
 
   public static ensureCanvasSize() {
-    const width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
-    const height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
+    const width = Math.round(Display.Width * Display.DevicePixelRatio);
+    const height = Math.round(Display.Height * Display.DevicePixelRatio);
 
     if (this.ctx.canvas.width != width || this.ctx.canvas.height != height) {
-      this.ctx.canvas.style.width = document.documentElement.clientWidth + "px";
-      this.ctx.canvas.style.height = document.documentElement.clientHeight + "px";
-      this.ctx.canvas.width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
-      this.ctx.canvas.height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
+      this.ctx.canvas.style.width = Display.Width + "px";
+      this.ctx.canvas.style.height = Display.Height + "px";
+      this.ctx.canvas.width = width;
+      this.ctx.canvas.height = height;
       GL.viewport(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }
   }
@@ -131,7 +262,6 @@ export class GL {
   static beginLayer() {
     // render to our targetTexture by binding the framebuffer
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.layerFb);
-    //this.ctx.disable(this.ctx.DEPTH_TEST);
 
     // Clear the attachment(s).
     this.ctx.clearColor(0, 0, 0, 0); // clear to transparent
@@ -139,11 +269,14 @@ export class GL {
   }
 
   static finishLayer(opacity: number = 1) {
+    // WebGL 1 does not support framebuffer multi-sampling,
+    // thus highlighter strokes will not me anti-aliased
+    // see: https://stackoverflow.com/questions/47934444/webgl-framebuffer-multisampling
+
     // render to the canvas
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
-    //this.ctx.disable(this.ctx.DEPTH_TEST);
 
-    this.renderTexture(this.layerTex, this.width, -this.height, 0, this.height, opacity);
+    this.layerProgram.renderLayer(this.layerTex);
   }
 
   static createProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
@@ -186,7 +319,7 @@ export class GL {
     return program;
   }
 
-  static setAttribute(gl: WebGLRenderingContext, program: WebGLProgram, name: string, size: number, offset: number) {
+  static setAttribute(gl: WebGL2RenderingContext, program: WebGLProgram, name: string, size: number, offset: number) {
     let location = gl.getAttribLocation(program, name);
     gl.vertexAttribPointer(
       location, // Attribute location
@@ -199,32 +332,14 @@ export class GL {
     gl.enableVertexAttribArray(location);
   }
 
-  static setUniform1f(gl: WebGLRenderingContext, program: WebGLProgram, name: string, val: number) {
+  static setUniform1f(gl: WebGL2RenderingContext, program: WebGLProgram, name: string, val: number) {
     let location = gl.getUniformLocation(program, name);
     gl.uniform1f(location, val);
   }
 
-  static setUniformMatrix4fv(gl: WebGLRenderingContext, program: WebGLProgram, name: string, val: Matrix4) {
+  static setUniformMatrix4fv(gl: WebGL2RenderingContext, program: WebGLProgram, name: string, val: Matrix4) {
     let location = gl.getUniformLocation(program, name);
     gl.uniformMatrix4fv(location, false, val);
-  }
-
-  static setProgram(program: WebGLProgram, uniforms: object) {
-    this.ctx.useProgram(program);
-
-    GL.setAttribute(this.ctx, program, "a_Position", 2, 0);
-    GL.setAttribute(this.ctx, program, "a_Color", 4, 2);
-
-    for (let name in uniforms) {
-      const u = uniforms[name];
-      if (typeof u == "number") {
-        GL.setUniform1f(this.ctx, program, name, u);
-      } else if (u.length == 16) {
-        GL.setUniformMatrix4fv(this.ctx, program, name, u);
-      } else {
-        throw new Error(`Unknown uniform: ${u}`);
-      }
-    }
   }
 
   // creates a texture info { width: w, height: h, texture: tex }
@@ -248,32 +363,7 @@ export class GL {
   }
 
   static renderVector(array: number[], transformMatrix: Matrix4, buffer?: WebGLBuffer): void {
-    if (!buffer) {
-      this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.mainBuffer);
-      this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
-    } else {
-      this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, buffer);
-    }
-
-    this.ctx.useProgram(this.mainProgram);
-
-    const stride = ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT;
-
-    // Set position attribute
-    const positionLocation = this.ctx.getAttribLocation(this.mainProgram, "a_Position");
-    this.ctx.vertexAttribPointer(positionLocation, 2, this.ctx.FLOAT, false, stride, 0);
-    this.ctx.enableVertexAttribArray(positionLocation);
-
-    // Set color attribute
-    const colorLocation = this.ctx.getAttribLocation(this.mainProgram, "a_Color");
-    this.ctx.vertexAttribPointer(colorLocation, 4, this.ctx.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
-    this.ctx.enableVertexAttribArray(colorLocation);
-
-    // Set matrix uniform
-    const matrixLocation = this.ctx.getUniformLocation(this.mainProgram, "u_Matrix");
-    this.ctx.uniformMatrix4fv(matrixLocation, false, transformMatrix);
-
-    this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, array.length / ELEMENTS_PER_VERTEX);
+    this.vectorProgram.drawVector(array, transformMatrix, buffer);
   }
 
   static renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number, opacity: number = 1) {
@@ -283,6 +373,7 @@ export class GL {
 
     // Set program
     this.ctx.useProgram(this.imageProgram);
+    GL.currentProgram = this.imageProgram;
 
     // Set position attribute
     const positionLocation = this.ctx.getAttribLocation(this.imageProgram, "a_Position");
@@ -296,11 +387,11 @@ export class GL {
       let matrix = m4.orthographic(0, this.ctx.canvas.width, this.ctx.canvas.height, 0, -1, 1);
 
       // this matrix will translate our quad to x, y
-      matrix = m4.translate(matrix, x, y, 0);
+      m4.translate(matrix, x, y, 0, matrix);
 
       // this matrix will scale our 1 unit quad
       // from 1 unit to width, height units
-      matrix = m4.scale(matrix, width, height, 1);
+      m4.scale(matrix, width, height, 1, matrix);
 
       // Set the matrix.
       this.ctx.uniformMatrix4fv(matrixLocation, false, matrix);

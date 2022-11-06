@@ -38,63 +38,62 @@ import { m4, Matrix4 } from "../Math/M4";
 import { Vector2D } from "../Math/V2";
 
 export class View {
-  protected static top: number;
-  protected static left: number;
-  protected static zoom: number;
-  private static listeners: (() => void)[];
+  public static instance: View;
 
-  protected static ensureInstance() {
-    if (!this.listeners) {
-      this.top = 0;
-      this.left = 0;
-      this.zoom = 1;
-      this.listeners = [];
-    }
+  protected top: number;
+  protected left: number;
+  protected zoom: number;
+  private listeners: (() => void)[];
+  private mat: Matrix4;
+  private matIsUpToDate: boolean;
+
+  constructor() {
+    this.top = 0;
+    this.left = 0;
+    this.zoom = 1;
+    this.listeners = [];
+
+    window.addEventListener("resize", this.registerUpdate.bind(this));
   }
 
-  static onUpdate(listener: () => void) {
-    this.ensureInstance();
+  onUpdate(listener: () => void) {
     this.listeners.push(listener);
   }
 
-  protected static registerUpdate() {
-    this.ensureInstance();
+  protected registerUpdate() {
+    this.matIsUpToDate = false;
     for (const listener of this.listeners) {
       listener();
     }
   }
 
-  static getTransformMatrix(): Matrix4 {
-    const transforms = [
-      m4.translation(-this.left, -this.top, 0),
-      m4.scaling(this.zoom, this.zoom * Display.AspectRatio, 0),
-      m4.translation(-0.5, -0.5, 0),
-      m4.scaling(2, -2, 0),
-    ];
-    return transforms.reduce((a, b) => m4.multiply(b, a));
+  getTransformMatrix(): Matrix4 {
+    if (!this.matIsUpToDate) {
+      this.mat = m4.scaling(2, -2, 0, this.mat);
+      m4.translate(this.mat, -0.5, -0.5, 0, this.mat);
+      m4.scale(this.mat, this.zoom, this.zoom * Display.AspectRatio, 0, this.mat);
+      m4.translate(this.mat, -this.left, -this.top, 0, this.mat);
+      this.matIsUpToDate = true;
+    }
+    return this.mat;
   }
 
-  static getTop() {
-    this.ensureInstance();
+  getTop() {
     return this.top;
   }
-  static getLeft() {
-    this.ensureInstance();
+  getLeft() {
     return this.left;
   }
-  static getZoom() {
-    this.ensureInstance();
+  getZoom() {
     return this.zoom;
   }
-  static getWidth() {
-    this.ensureInstance();
+  getWidth() {
     return 1 / this.zoom;
   }
-  static getHeight() {
-    this.ensureInstance();
+  getHeight() {
     return 1 / this.zoom / Display.AspectRatio;
   }
-  static get center(): Vector2D {
+  get center(): Vector2D {
     return {
       x: this.left + 0.5 / this.zoom,
       y: this.top + 0.5 / this.zoom / Display.AspectRatio,
@@ -102,64 +101,62 @@ export class View {
   }
 
   // Map screen coordinates to canvas coordinates
-  static getCanvasCoords(x: number, y: number, isDistance: boolean = false): [number, number] {
-    this.ensureInstance();
-
-    x /= Display.Width * this.zoom;
-    y /= Display.Width * this.zoom;
-    if (!isDistance) {
-      x += this.left;
-      y += this.top;
-    }
-    return [x, y];
+  getCanvasX(x: number): number {
+    return x / (Display.Width * this.zoom) + this.left;
   }
-
-  static getScreenCoords(x: number, y: number, isDistance: boolean = false): [number, number] {
-    this.ensureInstance();
-
-    if (!isDistance) {
-      x -= this.left;
-      y -= this.top;
-    }
-    x *= Display.Width * this.zoom;
-    y *= Display.Width * this.zoom;
-    return [x, y];
+  getCanvasY(y: number): number {
+    return y / (Display.Width * this.zoom) + this.top;
+  }
+  getScreenX(x: number): number {
+    return (x - this.left) * (Display.Width * this.zoom);
+  }
+  getScreenY(y: number): number {
+    return (y - this.top) * (Display.Width * this.zoom);
+  }
+  getCanvasDist(d: number): number {
+    return d / (Display.Width * this.zoom);
+  }
+  getScreenDist(d: number): number {
+    return d * Display.Width * this.zoom;
   }
 }
 
 export class MutableView extends View {
-  static maxWidth: number;
-  static documentTop: number;
+  static instance: MutableView;
+  maxWidth: number;
+  documentTop: number;
 
-  private static clip() {
-    View.top = Math.max(this.documentTop || 0, View.top);
+  private clip() {
+    this.top = Math.max(this.documentTop || 0, this.top);
     const W = this.maxWidth || 1;
-    View.left = Math.max(0.5 - W / 2, Math.min(0.5 + W / 2 - 1 / View.zoom, View.left));
-    View.zoom = Math.max(1 / W, Math.min(10, View.zoom));
+    this.left = Math.max(0.5 - W / 2, Math.min(0.5 + W / 2 - 1 / this.zoom, this.left));
+    this.zoom = Math.max(1 / W, Math.min(10, this.zoom));
   }
 
-  static applyZoom(centerX: number, centerY: number, zoomFactor: number) {
-    View.ensureInstance();
-
-    const [x0, y0] = View.getCanvasCoords(centerX, centerY);
-    View.zoom *= zoomFactor;
+  applyZoom(centerX: number, centerY: number, zoomFactor: number) {
+    const x0 = this.getCanvasX(centerX);
+    const y0 = this.getCanvasY(centerY);
+    this.zoom *= zoomFactor;
     this.clip();
 
-    const [x1, y1] = View.getCanvasCoords(centerX, centerY);
-    View.left -= x1 - x0;
-    View.top -= y1 - y0;
+    const x1 = this.getCanvasX(centerX);
+    const y1 = this.getCanvasY(centerY);
+    this.left -= x1 - x0;
+    this.top -= y1 - y0;
     this.clip();
 
-    View.registerUpdate();
+    this.registerUpdate();
   }
 
-  static applyTranslation(deltaX: number, deltaY: number) {
-    View.ensureInstance();
-
-    View.top += deltaY;
-    View.left += deltaX;
+  applyTranslation(deltaX: number, deltaY: number) {
+    this.top += deltaY;
+    this.left += deltaX;
     this.clip();
 
-    View.registerUpdate();
+    this.registerUpdate();
   }
+}
+
+if (typeof window !== "undefined" && !View.instance) {
+  View.instance = MutableView.instance = new MutableView();
 }

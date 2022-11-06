@@ -1,3 +1,5 @@
+const PRODUCTION = false;
+
 export default class Profiler {
   measures: { [name: string]: { startTime?: number; sum: number; cnt: number } };
 
@@ -10,6 +12,8 @@ export default class Profiler {
   }
 
   static start(name: string): void {
+    if (PRODUCTION) return;
+
     if (!(name in Profiler.getProfiler().measures)) {
       Profiler.getProfiler().measures[name] = {
         sum: 0,
@@ -23,6 +27,8 @@ export default class Profiler {
   }
 
   static stop(name: string) {
+    if (PRODUCTION) return;
+
     const t = performance.now() - Profiler.getProfiler().measures[name].startTime;
 
     if (!Profiler.getProfiler().measures[name].startTime) throw new Error("Measurement not started: " + name);
@@ -47,5 +53,11 @@ export default class Profiler {
 
   static reset(name: string) {
     delete Profiler.getProfiler().measures[name];
+  }
+
+  results() {
+    return Object.entries(this.measures)
+      .map(([name, data]) => `${name}: ${data.sum / data.cnt}ms`)
+      .join("\n");
   }
 }

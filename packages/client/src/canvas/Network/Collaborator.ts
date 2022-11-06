@@ -54,8 +54,8 @@ export class Collaborator implements CollaboratorInterface {
     return el;
   }
 
-  setPointer(pointer: Vector2D) {
-    this.pointer = pointer;
+  setPointer(x: number, y: number) {
+    this.pointer = new Vector2D(x, y);
     RenderLoop.scheduleRender();
   }
 
@@ -83,7 +83,8 @@ export class Collaborator implements CollaboratorInterface {
     this.el.style.display = "none";
 
     if (this.pointer) {
-      const [x, y] = View.getScreenCoords(this.pointer.x, this.pointer.y);
+      const x = View.instance.getScreenX(this.pointer.x);
+      const y = View.instance.getScreenY(this.pointer.y);
 
       if (x >= 0 && x < innerWidth - 15 && y >= 0 && y < innerHeight - 21) {
         Object.assign(this.el.style, {

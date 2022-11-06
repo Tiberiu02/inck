@@ -9,12 +9,17 @@ import { MySelection } from "./Selection/MySelection";
 import { DeserializeGraphic, SerializedGraphic, TranslatePersistentGraphic } from "../Drawing/Graphic";
 import { PenEvent, PointerTracker } from "../UI/PointerTracker";
 import { View } from "../View/View";
+import { RenderLoop } from "../Rendering/RenderLoop";
 
 export class ToolManager {
   tool: MyTool;
   strokeContainer: LayeredStrokeContainer;
   actionStack: ActionStack;
   network: NetworkConnection;
+
+  pen: MyPen;
+  eraser: StrokeEraser;
+  selection: MySelection;
 
   constructor(strokeContainer: LayeredStrokeContainer, network: NetworkConnection) {
     this.strokeContainer = strokeContainer;
@@ -37,11 +42,16 @@ export class ToolManager {
       }
     });
 
+    this.pen = new MyPen(this.strokeContainer, this.actionStack, this.network);
+    this.eraser = new StrokeEraser(this.strokeContainer, this.actionStack, this.network);
+    this.selection = new MySelection(this.strokeContainer, this.actionStack, this.network);
+
     PointerTracker.instance.onPenEvent(this.update.bind(this));
   }
 
   update(e: PenEvent) {
-    let [x, y] = View.getCanvasCoords(e.x, e.y);
+    const x = View.instance.getCanvasX(e.x);
+    const y = View.instance.getCanvasY(e.y);
 
     if (this.tool) {
       this.tool.update(x, y, e.pressure, e.timeStamp);
@@ -63,19 +73,20 @@ export class ToolManager {
 
   selectPen(color: RGB, width: number, zIndex: number) {
     if (this.tool) this.tool.release();
-    this.tool = new MyPen(color, width, zIndex, this.strokeContainer, this.actionStack, this.network);
+    this.pen.options(color, width, zIndex);
+    this.tool = this.pen;
     this.network.setTool(this.tool.serialize());
   }
 
   selectSelection() {
     if (this.tool) this.tool.release();
-    this.tool = new MySelection(this.strokeContainer, this.actionStack, this.network);
+    this.tool = this.selection;
     this.network.setTool(this.tool.serialize());
   }
 
   selectEraser() {
     if (this.tool) this.tool.release();
-    this.tool = new StrokeEraser(this.strokeContainer, this.actionStack, this.network);
+    this.tool = this.eraser;
     this.network.setTool(this.tool.serialize());
   }
 

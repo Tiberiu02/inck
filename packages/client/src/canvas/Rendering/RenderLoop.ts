@@ -1,11 +1,12 @@
 import { TestFastRenderingSupport } from "../DeviceProps";
+import Profiler from "../Profiler";
 import { GL } from "./GL";
 
 export class RenderLoop {
-  private static renderFn: Function[];
+  private static renderFns: Function[];
   private static rerender: boolean;
+  private static frameRendered: boolean;
   private static rendering: boolean;
-  private static nextRender: number;
   private static fastRender: boolean;
 
   public static get supportsFastRender() {
@@ -20,40 +21,42 @@ export class RenderLoop {
   }
 
   static render() {
-    if (RenderLoop.rendering || (RenderLoop.nextRender && performance.now() < RenderLoop.nextRender)) {
+    if (RenderLoop.rendering) {
       RenderLoop.scheduleRender();
       return;
     }
 
+    Profiler.start("rendering");
+
     RenderLoop.rendering = true;
-    const renderStart = performance.now();
 
     GL.ensureCanvasSize();
-    GL.clear();
 
-    for (const fn of RenderLoop.renderFn) {
+    for (const fn of RenderLoop.renderFns) {
       fn();
     }
 
-    RenderLoop.nextRender = performance.now() + (performance.now() - renderStart) * 3;
     RenderLoop.rendering = false;
+    RenderLoop.frameRendered = true;
+    Profiler.stop("rendering");
   }
 
   static onRender(fn: () => void) {
-    if (!RenderLoop.renderFn) {
-      RenderLoop.renderFn = [];
+    if (!RenderLoop.renderFns) {
+      RenderLoop.renderFns = [];
       requestAnimationFrame(() => RenderLoop.renderLoop());
     }
 
-    RenderLoop.renderFn.push(fn);
+    RenderLoop.renderFns.push(fn);
   }
 
   private static renderLoop() {
-    if (RenderLoop.rerender) {
-      delete RenderLoop.rerender;
+    if (RenderLoop.rerender && !RenderLoop.frameRendered) {
       RenderLoop.render();
+      RenderLoop.rerender = false;
     }
 
+    RenderLoop.frameRendered = false;
     requestAnimationFrame(() => RenderLoop.renderLoop());
   }
 }

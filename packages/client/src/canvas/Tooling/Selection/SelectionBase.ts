@@ -71,7 +71,7 @@ export class SelectionBase {
   }
 
   updateLasso(x: number, y: number, pressure: number, timestamp: number) {
-    const width = View.getCanvasCoords(Display.DPI * LASSO_WIDTH, 0, true)[0];
+    const width = View.instance.getCanvasDist(Display.DPI * LASSO_WIDTH);
 
     if (!this.selecting) {
       this.clearSelection();
@@ -84,11 +84,11 @@ export class SelectionBase {
     this.lasso.push({ x, y, pressure, timestamp });
     this.points.push({ x, y, pressure, timestamp });
 
-    const connector = new StrokeVectorizer(this.lassoConnectorColor, width / 3);
-    connector.push(this.points[0]);
-    connector.push({ x, y, pressure, timestamp });
+    // const connector = new StrokeVectorizer(this.lassoConnectorColor, width / 3);
+    // connector.push(this.points[0]);
+    // connector.push({ x, y, pressure, timestamp });
 
-    this.active = this.lasso.getStrokes().concat([connector.getGraphic(LASSO_ZINDEX)]);
+    // this.active = this.lasso.getStrokes().concat([connector.getGraphic(LASSO_ZINDEX)]);
     RenderLoop.scheduleRender();
   }
 
@@ -98,8 +98,8 @@ export class SelectionBase {
     this.active = [];
 
     // Compute selection
-    const polygon = new PolyLine(this.points.map(p => new Vector3D(p.x, p.y, 0)));
-    const newSelection = this.strokeContainer.getAll().filter(d => d.geometry.overlapsPoly(polygon));
+    const polygon = new PolyLine(this.points.map((p) => new Vector3D(p.x, p.y, 0)));
+    const newSelection = this.strokeContainer.getAll().filter((d) => d.geometry.overlapsPoly(polygon));
 
     this.updateSelection(newSelection);
 
@@ -130,8 +130,8 @@ export class SelectionBase {
 
   applyTranslation() {
     const { x, y } = this.toTranslateBy;
-    this.selected = this.selected.map(d => TranslatePersistentGraphic(d, x, y));
-    this.active = this.active.map(d => TranslateGraphic(d, x, y));
+    this.selected = this.selected.map((d) => TranslatePersistentGraphic(d, x, y));
+    this.active = this.active.map((d) => TranslateGraphic(d, x, y));
     this.selectionCenter = V2.add(this.selectionCenter, { x, y });
     this.toTranslateBy = new Vector2D(0, 0);
   }
@@ -142,8 +142,8 @@ export class SelectionBase {
   }
 
   applyRotation() {
-    this.selected = this.selected.map(d => RotatePersistentGraphic(d, this.toRotateBy, this.selectionCenter));
-    this.active = this.active.map(d => RotateGraphic(d, this.toRotateBy, this.selectionCenter));
+    this.selected = this.selected.map((d) => RotatePersistentGraphic(d, this.toRotateBy, this.selectionCenter));
+    this.active = this.active.map((d) => RotateGraphic(d, this.toRotateBy, this.selectionCenter));
     this.toRotateBy = 0;
     this.computeSelectionCenter();
     RenderLoop.scheduleRender();
@@ -155,16 +155,16 @@ export class SelectionBase {
   }
 
   applyScaling() {
-    this.selected = this.selected.map(d => ScalePersistentGraphic(d, this.toScaleBy, this.selectionCenter));
-    this.active = this.active.map(d => ScaleGraphic(d, this.toScaleBy, this.selectionCenter));
+    this.selected = this.selected.map((d) => ScalePersistentGraphic(d, this.toScaleBy, this.selectionCenter));
+    this.active = this.active.map((d) => ScaleGraphic(d, this.toScaleBy, this.selectionCenter));
     this.toScaleBy = 1;
     RenderLoop.scheduleRender();
   }
 
   render(layerRendered: number) {
-    const transformMatrix = this.selecting ? View.getTransformMatrix() : this.GetTransformMatrix();
+    const transformMatrix = this.selecting ? View.instance.getTransformMatrix() : this.GetTransformMatrix();
 
-    this.active.forEach(s => {
+    this.active.forEach((s) => {
       if (s.type == GraphicTypes.VECTOR && s.zIndex == layerRendered) {
         GL.renderVector((s as VectorGraphic).vector, transformMatrix);
       }
@@ -172,12 +172,12 @@ export class SelectionBase {
   }
 
   protected computeShadows() {
-    const shadows: Graphic[] = this.selected.map(d => GetShadow(d, this.shadowColor));
-    this.active = OptimizeDrawables(shadows.concat(this.selected.map(s => s.graphic)));
+    const shadows: Graphic[] = this.selected.map((d) => GetShadow(d, this.shadowColor));
+    this.active = OptimizeDrawables(shadows.concat(this.selected.map((s) => s.graphic)));
   }
 
   protected computeSelectionCenter() {
-    const bBox = this.selected.map(s => s.geometry.boundingBox).reduce(UniteRectangles);
+    const bBox = this.selected.map((s) => s.geometry.boundingBox).reduce(UniteRectangles);
     this.selectionCenter = new Vector2D((bBox.xMin + bBox.xMax) / 2, (bBox.yMin + bBox.yMax) / 2);
   }
 
@@ -191,7 +191,7 @@ export class SelectionBase {
       m4.scaling(this.toScaleBy, this.toScaleBy, 1),
       m4.translation(cx, cy, 0),
       m4.translation(x, y, 0),
-      View.getTransformMatrix(),
+      View.instance.getTransformMatrix(),
     ];
 
     return m.reduce((a, b) => m4.multiply(b, a));
@@ -201,15 +201,14 @@ export class SelectionBase {
 function GetShadow(drawable: PersistentGraphic, shadowColor: RGB): VectorGraphic {
   if (drawable.serializer == Serializers.STROKE) {
     const s = drawable as Stroke;
-    const shadowWidth = View.getCanvasCoords(Display.DPI * SHADOW_SIZE, 0, true)[0];
-    const builder = new StrokeBuilder(
-      s.timestamp,
-      s.zIndex,
-      shadowColor,
-      s.width + shadowWidth / (1 + s.zIndex),
-      s.points
-    );
-    return builder.getGraphic();
+    const shadowWidth = View.instance.getCanvasDist(Display.DPI * SHADOW_SIZE);
+    const builder = new StrokeBuilder();
+    builder.newStroke(s.timestamp, s.zIndex, shadowColor, s.width + shadowWidth / (1 + s.zIndex));
+    for (const p of s.points) {
+      builder.push(p.x, p.y, p.pressure, p.timestamp);
+    }
+    return null;
+    // return builder.getGraphic();
   }
   return null;
 }

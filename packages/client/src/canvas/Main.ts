@@ -19,6 +19,7 @@ import { GridBackground } from "./Backgrounds/GridBackground";
 import { BackgroundTypes } from "@inck/common-types/Notes";
 import { Toolbar } from "./UI/Toolbar";
 import { CreateOptionsMenu } from "./UI/ContextMenu";
+import Profiler from "./Profiler";
 
 export const NUM_LAYERS = 2;
 export const HIGHLIGHTER_OPACITY = 0.35;
@@ -58,7 +59,7 @@ export default class App {
     // Enable navigation
     const pageNavigation = new PageNavigation();
     pointerTracker.onFingerEvent((e) => pageNavigation.handleFingerEvent(e));
-    View.onUpdate(() => RenderLoop.scheduleRender());
+    View.instance.onUpdate(() => RenderLoop.scheduleRender());
 
     // Enable tooling
     const toolManager = new ToolManager(strokeContainer, network);
@@ -74,15 +75,20 @@ export default class App {
         background.render();
       }
 
+      Profiler.start("layer-0");
+      GL.clear();
       GL.beginLayer();
       strokeContainer.render(0);
       toolManager.render(0);
+      Profiler.start("finish-layer-0");
       GL.finishLayer(HIGHLIGHTER_OPACITY);
+      Profiler.stop("finish-layer-0");
+      Profiler.stop("layer-0");
 
+      Profiler.start("layer-1");
       strokeContainer.render(1);
       toolManager.render(1);
+      Profiler.stop("layer-1");
     });
-
-    window.addEventListener("resize", () => RenderLoop.scheduleRender());
   }
 }

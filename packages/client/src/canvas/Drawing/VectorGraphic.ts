@@ -3,8 +3,8 @@ import { ELEMENTS_PER_VERTEX } from "../Rendering/GL";
 import { Graphic, PersistentGraphic, SerializedGraphic } from "./Graphic";
 
 export interface VectorGraphic extends Graphic {
-  readonly vector: number[];
-  readonly glUniforms?: any;
+  vector: number[];
+  glUniforms?: any;
 }
 
 export interface PersistentVectorGraphic extends PersistentGraphic {

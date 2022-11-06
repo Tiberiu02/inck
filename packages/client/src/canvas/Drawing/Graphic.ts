@@ -26,7 +26,7 @@ export enum Serializers {
 
 export interface Graphic {
   readonly type: GraphicTypes;
-  readonly zIndex: number;
+  zIndex: number;
 }
 
 export interface PersistentGraphic {

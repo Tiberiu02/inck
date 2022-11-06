@@ -147,7 +147,7 @@ export default function HighPerformanceCanvas() {
         sum2 += time * time;
         cnt += 1;
 
-        setMessage(`${(sum / cnt).toPrecision(2)}ms +/- ${(sum2 / cnt - (sum / cnt) ** 2).toPrecision(2)}ms`);
+        // setMessage(`${(sum / cnt).toPrecision(2)}ms +/- ${(sum2 / cnt - (sum / cnt) ** 2).toPrecision(2)}ms`);
       }
     };
 

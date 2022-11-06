@@ -2,17 +2,26 @@ import { MutableView, View } from "../View/View";
 import { ObservableProperty } from "../DesignPatterns/Observable";
 import { PointerTracker } from "./PointerTracker";
 import { RenderLoop } from "../Rendering/RenderLoop";
+import { Display } from "../DeviceProps";
 
 const MARGIN = 40;
 const HANDLE_SIZE = 60;
 const HANDLE_TIME_VISIBLE = 1000;
 const FADE_DURATION = 300;
+const HANDLE_OPACITY = 80; // %
+
+enum States {
+  VISIBLE,
+  FADING_OUT,
+  HIDDEN,
+}
 
 export class ScrollBars {
   private handle: HTMLDivElement;
   private yMax: ObservableProperty<number>;
   private pageSize: number;
   private lastUpdate: number;
+  private state: States;
 
   private pointer: { x: number; y: number };
   private pointerId: number;
@@ -21,6 +30,7 @@ export class ScrollBars {
   constructor(yMax: ObservableProperty<number>) {
     this.yMax = yMax;
     this.scrolling = false;
+    this.state = States.HIDDEN;
     this.lastUpdate = 0;
 
     this.handle = document.createElement("div");
@@ -48,15 +58,10 @@ export class ScrollBars {
     `;
     document.body.appendChild(this.handle);
 
-    View.onUpdate(() => this.showHandle());
-    yMax.onUpdate(() => this.updateHandle());
-    RenderLoop.onRender(() => this.updateHandle());
-
-    window.addEventListener("resize", () => this.updateHandle());
+    View.instance.onUpdate(() => this.showHandle());
+    // RenderLoop.onRender(this.updateHandle.bind(this), false);
 
     this.handle.addEventListener("pointerdown", (e) => this.handlePointerDown(e));
-    window.addEventListener("pointermove", (e) => this.handlePointerMove(e));
-    window.addEventListener("pointerup", (e) => this.handlePointerUp(e));
   }
 
   private handlePointerDown(e: PointerEvent) {
@@ -65,19 +70,22 @@ export class ScrollBars {
     this.scrolling = true;
     this.pointer = { x: e.x, y: e.y };
     this.pointerId = e.pointerId;
-    this.pageSize = View.getTop();
+    this.pageSize = View.instance.getTop();
     PointerTracker.instance.pause();
+
+    window.addEventListener("pointermove", this.handlePointerMove.bind(this));
+    window.addEventListener("pointerup", this.handlePointerUp.bind(this));
   }
 
   private handlePointerMove(e: PointerEvent) {
     if (this.scrolling) {
       if (this.pointerId == e.pointerId) {
-        const pageHeight = Math.max(this.yMax.get() - View.getHeight(), this.pageSize);
+        const pageHeight = Math.max(this.yMax.get() - View.instance.getHeight(), this.pageSize);
 
         let dy = e.y - this.pointer.y;
         dy = (dy / (innerHeight - 2 * MARGIN)) * pageHeight;
-        dy = Math.min(dy, pageHeight - View.getTop());
-        MutableView.applyTranslation(0, dy);
+        dy = Math.min(dy, pageHeight - View.instance.getTop());
+        MutableView.instance.applyTranslation(0, dy);
 
         this.pointer = { x: e.x, y: e.y };
       }
@@ -91,24 +99,42 @@ export class ScrollBars {
         this.pageSize = null;
         this.updateHandle();
         PointerTracker.instance.unpause();
+
+        window.removeEventListener("pointermove", this.handlePointerMove.bind(this));
+        window.removeEventListener("pointerup", this.handlePointerUp.bind(this));
       }
     }
   }
 
   private updateHandle() {
-    const pageSize = Math.max(this.yMax.get() - View.getHeight(), this.pageSize ?? View.getTop());
-    const barPos = View.getTop() / pageSize;
-    const barRange = innerHeight - 2 * MARGIN;
+    const opacityF = 1 - (Date.now() - this.lastUpdate - HANDLE_TIME_VISIBLE) / FADE_DURATION;
+    const opacity = Math.max(0, Math.min(1, opacityF));
 
-    this.handle.style.top = `${MARGIN + barPos * barRange}px`;
+    if (this.state == States.VISIBLE) {
+      const pageSize = Math.max(this.yMax.get() - View.instance.getHeight(), this.pageSize ?? View.instance.getTop());
+      const barPos = View.instance.getTop() / pageSize;
+      const barRange = Display.Height - 2 * MARGIN;
 
-    const opacity = 1 - (Date.now() - this.lastUpdate - HANDLE_TIME_VISIBLE) / FADE_DURATION;
-    if (opacity > 0) {
-      this.handle.style.visibility = "visible";
-      this.handle.style.opacity = `${Math.min(1, opacity) * 80}%`;
-      window.requestAnimationFrame(this.updateHandle.bind(this));
-    } else {
-      this.handle.style.visibility = "hidden";
+      this.handle.style.top = `${MARGIN + barPos * barRange}px`;
+
+      if (opacity < 1) {
+        this.state = States.FADING_OUT;
+      }
+    } else if (this.state == States.FADING_OUT) {
+      this.handle.style.opacity = `${Math.min(1, opacity) * HANDLE_OPACITY}%`;
+
+      if (opacity >= 1) {
+        this.state = States.VISIBLE;
+      } else if (opacity == 0) {
+        this.state = States.HIDDEN;
+        this.handle.style.visibility = "hidden";
+      }
+    } else if (this.state == States.HIDDEN) {
+      if (opacity > 0) {
+        this.handle.style.visibility = "visible";
+        this.handle.style.opacity = `${Math.min(1, opacity) * HANDLE_OPACITY}%`;
+        this.state = States.VISIBLE;
+      }
     }
   }
 

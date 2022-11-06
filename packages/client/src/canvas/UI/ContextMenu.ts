@@ -42,7 +42,7 @@ export function CreateOptionsMenu(toolManager: ToolManager) {
         longPressTimeout = window.setTimeout(longPressCompleted, LONG_PRESS_DURATION);
 
         state = States.PRESSING;
-        startingPos = e.fingers[0];
+        startingPos = new Vector2D(e.fingers[0].x, e.fingers[0].y);
       } else if (e.fingers.length > 1) {
         state = States.FAILED_LONG_PRESS;
       }

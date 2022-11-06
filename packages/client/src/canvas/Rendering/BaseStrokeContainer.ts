@@ -5,12 +5,6 @@ import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "./RenderLoop";
 import { View } from "../View/View";
 
-export function GetUniforms() {
-  return {
-    u_Matrix: View.getTransformMatrix(),
-  };
-}
-
 export const BUFFER_SIZE = 5e4;
 
 class StrokeBuffer {
@@ -21,7 +15,7 @@ class StrokeBuffer {
 
   constructor() {
     this.array = [];
-    this.buffer = GL.ctx.createBuffer();
+    this.buffer = GL.vectorProgram.createBuffer();
     this.synced = false;
     this.strokes = [];
   }
@@ -31,9 +25,7 @@ class StrokeBuffer {
   }
 
   add(id: string, array: number[]): void {
-    for (const x of array) {
-      this.array.push(x);
-    }
+    [].push.apply(this.array, array);
     this.synced = false;
     this.strokes.push({ id, size: array.length });
   }
@@ -58,13 +50,14 @@ class StrokeBuffer {
   }
 
   render(): void {
+    // GL.vectorProgram.bindVAO();
+
     GL.ctx.bindBuffer(GL.ctx.ARRAY_BUFFER, this.buffer);
     if (!this.synced) {
       GL.ctx.bufferData(GL.ctx.ARRAY_BUFFER, new Float32Array(this.array), GL.ctx.STREAM_DRAW);
       this.synced = true;
     }
-    GL.setProgram(GL.mainProgram, GetUniforms());
-    GL.ctx.drawArrays(GL.ctx.TRIANGLE_STRIP, 0, this.array.length / ELEMENTS_PER_VERTEX);
+    GL.vectorProgram.drawVector(this.array, View.instance.getTransformMatrix(), this.buffer);
   }
 
   isEmpty(): boolean {

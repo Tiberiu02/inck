@@ -40,19 +40,21 @@ export class TheirPen implements PenController, TheirTool {
   }
 
   loadPoints(newPoints: StrokePoint[]): void {
-    this.strokeBuilder = new StrokeBuilder(newPoints[0].timestamp, this.zIndex, this.color, this.width);
-    newPoints.forEach(p => this.strokeBuilder.push(p));
+    this.strokeBuilder = new StrokeBuilder();
+    this.strokeBuilder.newStroke(newPoints[0].timestamp, this.zIndex, this.color, this.width);
+    newPoints.forEach((p) => this.strokeBuilder.push(p.x, p.y, p.pressure, p.timestamp));
     RenderLoop.scheduleRender();
   }
 
   update(x: number, y: number, pressure: number, timestamp: number): void {
     if (pressure) {
       if (!this.drawing) {
-        this.strokeBuilder = new StrokeBuilder(timestamp, this.zIndex, this.color, this.width);
+        this.strokeBuilder = new StrokeBuilder();
+        this.strokeBuilder.newStroke(timestamp, this.zIndex, this.color, this.width);
         this.drawing = true;
       }
 
-      this.strokeBuilder.push({ x, y, pressure, timestamp });
+      this.strokeBuilder.push(x, y, pressure, timestamp);
     } else {
       if (this.drawing) {
         this.strokeBuilder = null;
@@ -67,8 +69,8 @@ export class TheirPen implements PenController, TheirTool {
 
   render(layerRendered: number): void {
     if (this.strokeBuilder && layerRendered == this.zIndex) {
-      const vector = this.strokeBuilder.getGraphic().vector;
-      GL.renderVector(vector, View.getTransformMatrix());
+      const vector = this.strokeBuilder.getVector();
+      GL.renderVector(vector, View.instance.getTransformMatrix());
     }
   }
 

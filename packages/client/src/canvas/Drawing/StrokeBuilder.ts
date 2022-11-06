@@ -32,109 +32,138 @@ export class StrokeBuilder {
 
   private mass?: MassPoint;
 
-  constructor(timestamp: number, zIndex: number, color: RGB, width: number, points: StrokePoint[] = []) {
+  // Use object pooling to reduce garbage collection
+  private objPool: StrokePoint[];
+  private extraPoints: StrokePoint[];
+
+  constructor() {
+    this.points = [];
+    this.extraPoints = [];
+    this.objPool = [];
+    this.mass = { x: 0, y: 0, p: 0, t: 0, vx: 0, vy: 0, vp: 0 };
+    this.vectorizer = new StrokeVectorizer(this.objPool);
+  }
+
+  newStroke(timestamp: number, zIndex: number, color: RGB, width: number) {
     this.timestamp = timestamp;
     this.zIndex = zIndex;
 
     this.width = width;
     this.color = color;
-    this.points = [];
+    this.objPool.push(...this.points);
+    this.points.splice(0);
+    this.extraPoints.splice(0);
 
-    this.vectorizer = new StrokeVectorizer(color, width);
-
-    for (const p of points) {
-      this.push(p);
-    }
+    this.vectorizer.newStroke(color, width);
   }
 
   getStroke(id: string): Stroke {
+    const polyLinePoints = [];
+    for (const p of this.points) {
+      polyLinePoints.push(new Vector3D(p.x, p.y, GetPointRadius(this.width, 0.5)));
+    }
     return {
       id: id,
       color: this.color,
       width: this.width,
-      points: [...this.points],
+      points: this.points.slice(),
       timestamp: this.timestamp,
       zIndex: this.zIndex,
       serializer: Serializers.STROKE,
-      geometry: new PolyLine(this.points.map((p) => new Vector3D(p.x, p.y, GetPointRadius(this.width, 0.5)))),
-      graphic: this.getGraphic(),
+      geometry: new PolyLine(polyLinePoints),
+      graphic: {
+        type: GraphicTypes.VECTOR,
+        zIndex: this.zIndex,
+        vector: this.getVector().slice(),
+      },
     };
   }
 
-  getGraphic(): VectorGraphic {
-    return this.vectorizer.getGraphic(this.zIndex, this.extendToLastPoint());
+  getVector() {
+    return this.vectorizer.getArray(this.extendToLastPoint());
   }
 
-  private getLastPoint(): StrokePoint {
-    const p = this.points[this.points.length - 1];
-    if (this.zIndex == 1) {
-      return p;
-    } else {
-      return {
-        ...p,
-        pressure: 0.5,
-      };
-    }
+  getPoints() {
+    return this.points;
   }
 
   private extendToLastPoint(): StrokePoint[] {
+    this.extraPoints.splice(0); // Extra points are added to object pool by Vectorizer
+
+    if (this.points.length == 0) {
+      return this.extraPoints;
+    }
+
     const dt = 1;
     const p0 = this.getLastPoint();
 
     if (this.points.length == 1) {
-      return [p0];
+      this.extraPoints.push(p0);
+      return this.extraPoints;
     }
 
-    let { x, y, p, vx, vy, vp, t } = this.mass;
+    const { x, y, p, vx, vy, vp, t } = this.mass;
 
-    let extraPoints: StrokePoint[] = [];
-
-    let dist = Math.sqrt((p0.x - x) ** 2 + (p0.y - y) ** 2);
+    let dist = Math.sqrt((p0.x - this.mass.x) ** 2 + (p0.y - this.mass.y) ** 2);
     while (dist > 0) {
-      const v = Math.sqrt(vx * vx + vy * vy);
+      const v = Math.sqrt(this.mass.vx * this.mass.vx + this.mass.vy * this.mass.vy);
       dist -= v * dt;
 
       if (v) {
-        extraPoints.push(this.getMassStrokePoint({ x, y, p, vx, vy, vp, t }));
+        this.extraPoints.push(this.getMassStrokePoint());
       }
 
-      const ax = (p0.x - x) * STIFFNESS - vx * DRAG;
-      const ay = (p0.y - y) * STIFFNESS - vy * DRAG;
-      const ap = (p0.pressure - p) * STIFFNESS_P - vp * DRAG;
+      const ax = (p0.x - this.mass.x) * STIFFNESS - this.mass.vx * DRAG;
+      const ay = (p0.y - this.mass.y) * STIFFNESS - this.mass.vy * DRAG;
+      const ap = (p0.pressure - this.mass.p) * STIFFNESS_P - this.mass.vp * DRAG;
 
-      x += vx * dt;
-      y += vy * dt;
-      p += vp * dt;
-      vx += ax * dt;
-      vy += ay * dt;
-      vp += ap * dt;
-      t += dt;
+      this.mass.x += this.mass.vx * dt;
+      this.mass.y += this.mass.vy * dt;
+      this.mass.p += this.mass.vp * dt;
+      this.mass.vx += ax * dt;
+      this.mass.vy += ay * dt;
+      this.mass.vp += ap * dt;
+      this.mass.t += dt;
     }
 
-    return extraPoints;
+    // Revert initial values
+    this.mass.x = x;
+    this.mass.y = y;
+    this.mass.p = p;
+    this.mass.vx = vx;
+    this.mass.vy = vy;
+    this.mass.vp = vp;
+    this.mass.t = t;
+
+    this.objPool.push(p0);
+
+    return this.extraPoints;
   }
 
-  push(p: StrokePoint) {
-    if (!this.mass) {
-      this.mass = {
-        x: p.x,
-        y: p.y,
-        p: this.zIndex ? p.pressure : 0.5,
-        t: p.timestamp,
-        vx: 0,
-        vy: 0,
-        vp: 0,
-      };
+  private getLastPoint(): StrokePoint {
+    const p = this.points[this.points.length - 1];
+    return this.newStrokePoint(p.x, p.y, this.zIndex ? p.pressure : 0.5, p.timestamp);
+  }
+
+  push(x: number, y: number, pressure: number, timestamp: number) {
+    if (!this.points.length) {
+      this.mass.x = x;
+      this.mass.y = y;
+      this.mass.p = this.zIndex ? pressure : 0.5;
+      this.mass.t = timestamp;
+      this.mass.vx = 0;
+      this.mass.vy = 0;
+      this.mass.vp = 0;
     } else {
       const p0 = this.getLastPoint();
 
-      while (this.mass.t < p.timestamp) {
+      while (this.mass.t < timestamp) {
         this.vectorizer.push(this.getMassStrokePoint());
 
-        const k = (this.mass.t - p0.timestamp) / (p.timestamp - p0.timestamp);
-        const X = p0.x * (1 - k) + p.x * k;
-        const Y = p0.y * (1 - k) + p.y * k;
-        const P = p0.pressure * (1 - k) + p.pressure * k;
+        const k = (this.mass.t - p0.timestamp) / (timestamp - p0.timestamp);
+        const X = p0.x * (1 - k) + x * k;
+        const Y = p0.y * (1 - k) + y * k;
+        const P = p0.pressure * (1 - k) + pressure * k;
 
         const ax = (X - this.mass.x) * STIFFNESS - this.mass.vx * DRAG;
         const ay = (Y - this.mass.y) * STIFFNESS - this.mass.vy * DRAG;
@@ -148,18 +177,33 @@ export class StrokeBuilder {
         this.mass.vp += ap * D_T;
         this.mass.t += D_T;
       }
+
+      this.objPool.push(p0);
     }
 
-    this.points.push(p);
+    this.points.push(this.newStrokePoint(x, y, pressure, timestamp));
   }
 
-  private getMassStrokePoint(mass?: MassPoint): StrokePoint {
-    mass = mass ?? this.mass;
-    return {
-      x: mass.x,
-      y: mass.y,
-      pressure: mass.p,
-      timestamp: mass.t,
-    };
+  private getMassStrokePoint(): StrokePoint {
+    return this.newStrokePoint(this.mass.x, this.mass.y, this.mass.p, this.mass.t);
+  }
+
+  private newStrokePoint(x: number, y: number, pressure: number, timestamp: number): StrokePoint {
+    const dst = this.objPool.pop();
+
+    if (dst) {
+      dst.x = x;
+      dst.y = y;
+      dst.pressure = pressure;
+      dst.timestamp = timestamp;
+      return dst;
+    } else {
+      return {
+        x,
+        y,
+        pressure,
+        timestamp,
+      };
+    }
   }
 }

@@ -6,7 +6,7 @@ import { View } from "../View/View";
 // Should be done at every render, not just at initialization
 // can be done with custom shaders
 function ClampPx(x: number, offset = 0) {
-  const pxSize = View.getWidth() / Display.Width / window.devicePixelRatio;
+  const pxSize = View.instance.getWidth() / Display.Width / window.devicePixelRatio;
   return Math.ceil((x - offset) / pxSize) * pxSize + offset;
 }
 
@@ -18,8 +18,8 @@ export function CreateRectangleVector(
   color: RGB,
   joinable: boolean = false
 ): number[] {
-  x = ClampPx(x, View.getTop());
-  y = ClampPx(y, View.getLeft());
+  x = ClampPx(x, View.instance.getTop());
+  y = ClampPx(y, View.instance.getLeft());
   w = ClampPx(w);
   h = ClampPx(h);
 
