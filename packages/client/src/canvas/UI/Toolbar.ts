@@ -57,6 +57,9 @@ export class Toolbar implements FloatingMenu {
   private container: HTMLDivElement;
   private buttonImgs: { [tool in ToolTypes]?: HTMLElement };
   private toolbar: HTMLDivElement;
+  private pinButton: HTMLElement;
+
+  public isPinned: boolean;
 
   constructor(toolManager: ToolManager) {
     this.toolManager = toolManager;
@@ -143,6 +146,8 @@ export class Toolbar implements FloatingMenu {
       })
     );
     toolbar.append(...this.createUndoRedoButtons());
+    this.pinButton = this.createPinButton();
+    toolbar.append(this.pinButton);
     toolbar.append(this.createDragHandle());
 
     return toolbar;
@@ -326,6 +331,38 @@ export class Toolbar implements FloatingMenu {
     return [undoBtn, redoBtn];
   }
 
+  private createPinButton() {
+    const [btn, img] = this.createButton(Icons.Pin);
+    img.style.color = "#C2C2C2";
+    img.style.border = "";
+    img.style.transitionDuration = "200ms";
+    btn.style.display = "none";
+
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      this.isPinned = !this.isPinned;
+      if (this.isPinned) {
+        img.style.color = "#000";
+        img.style.transform = "rotate(-45deg) translateY(-10%)";
+      } else {
+        img.style.color = "#C2C2C2";
+        img.style.backgroundColor = "";
+        img.style.transform = "";
+      }
+    });
+
+    PointerTracker.instance.onPenEvent((e) => {
+      if (!this.isPinned && e.pressure && btn.style.display != "none") {
+        const w0 = this.toolbar.getBoundingClientRect().width;
+        btn.style.display = "none";
+        const w1 = this.toolbar.getBoundingClientRect().width;
+        this.penFollowingEngine.translatePosition(new Vector2D(w0 - w1, 0), false);
+      }
+    });
+
+    return btn;
+  }
+
   private createActionButton(icon: HTMLElement, onClick: Function) {
     const [btn, img] = this.createButton(icon);
     img.style.color = "#C2C2C2";
@@ -458,6 +495,12 @@ export class Toolbar implements FloatingMenu {
       dragging = true;
 
       this.penFollowingEngine.menuIsBelowPen = false;
+
+      // Show pin buttton
+      const w0 = this.toolbar.getBoundingClientRect().width;
+      this.pinButton.style.display = "flex";
+      const w1 = this.toolbar.getBoundingClientRect().width;
+      this.penFollowingEngine.translatePosition(new Vector2D(w0 - w1, 0));
     });
     handle.addEventListener("pointermove", (e) => {
       if (dragging) {
@@ -716,6 +759,12 @@ class Icons {
         <path d="m12 27c0-0.51818 0.13697-1.0364 0.41096-1.5 0.24658-0.46364 0.63014-0.84546 1.0959-1.0909 0.43836-0.27273 0.9589-0.40909 1.4795-0.40909 0.54794 0 1.0685 0.13636 1.5068 0.40909 0.46575 0.24544 0.84932 0.62727 1.0959 1.0909 0.27398 0.46364 0.41096 0.98182 0.41096 1.5 0 0.51818-0.13697 1.0364-0.41096 1.5-0.24658 0.46364-0.63014 0.84545-1.0959 1.0909-0.43836 0.27273-0.9589 0.40909-1.5068 0.40909-0.52055 0-1.0411-0.13636-1.4795-0.40909-0.46576-0.24544-0.84932-0.62727-1.0959-1.0909-0.27398-0.46364-0.41096-0.98182-0.41096-1.5z"/>
         </g>
       </svg>
+    `);
+  }
+
+  static get Pin() {
+    return HtmlFromStr(`
+      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="-5 -5 36 36" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-width="2.5" d="M16,3 L10,9 C10,9 6,8 3,11 C3,11 13,21 13,21 C16,18 15,14 15,14 L21,8 L16,3 Z M1,23 L8,16"></path></svg>
     `);
   }
 }

@@ -34,6 +34,7 @@ export interface FloatingMenu {
   setInteractive(interactive: boolean): void;
   width: number;
   height: number;
+  isPinned: boolean;
 }
 
 export class PenFollowingEngine {
@@ -66,6 +67,8 @@ export class PenFollowingEngine {
   }
 
   private handlePenEvent(e: PenEvent) {
+    if (this.menu.isPinned) return;
+
     let pointer = e.pressure ? new Vector2D(e.x, e.y) : null;
 
     this.pointer = pointer;
@@ -158,7 +161,10 @@ export class PenFollowingEngine {
     requestAnimationFrame(() => this.update());
   }
 
-  translatePosition(d: Vector2D) {
-    this.target = this.pos = V2.add(this.pos, d);
+  translatePosition(d: Vector2D, translateTarget: boolean = true) {
+    this.pos = V2.add(this.pos, d);
+    if (translateTarget) {
+      this.target = V2.add(this.target, d);
+    }
   }
 }
