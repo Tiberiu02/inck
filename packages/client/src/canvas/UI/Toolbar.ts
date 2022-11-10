@@ -350,7 +350,7 @@ export class Toolbar implements FloatingMenu {
         img.style.color = "#777";
         img.style.transform = "rotate(-45deg) scale(0.9)";
       } else {
-        img.style.color = "#e0e0e0";
+        img.style.color = "#e4e2e2";
         img.style.backgroundColor = "";
         img.style.transform = "";
       }
