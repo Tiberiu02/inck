@@ -29,7 +29,6 @@ class VectorProgram {
   matrixLoc: WebGLUniformLocation;
   positionLoc: number;
   colorLoc: number;
-  vao: WebGLVertexArrayObject;
 
   constructor(gl: WebGL2RenderingContext) {
     this.ctx = gl;
@@ -37,8 +36,6 @@ class VectorProgram {
     this.program = GL.createProgram(MainVertexShaderSource, MainFragmentShaderSource);
     this.ctx.useProgram(this.program);
     GL.currentProgram = this.program;
-
-    this.vao = this.ctx.createVertexArray();
 
     this.buffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
@@ -107,7 +104,7 @@ class TransparentLayerProgram {
   private textureLoc: WebGLUniformLocation;
   private positionLoc: number;
 
-  constructor(ctx: WebGL2RenderingContext) {
+  constructor(ctx: WebGL2RenderingContext, opacity = 0.3) {
     this.ctx = ctx;
 
     // Create a buffer.
@@ -118,7 +115,7 @@ class TransparentLayerProgram {
     const positions = [0, 0, 0, +1, +1, 0, +1, +1];
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
 
-    this.program = GL.createProgram(LayerVertexShaderSource, LayerFragmentShaderSource);
+    this.program = GL.createProgram(LayerVertexShaderSource, LayerFragmentShaderSource.replaceAll("$OPACITY", opacity));
 
     this.ctx.useProgram(this.program);
     GL.currentProgram = this.program;
