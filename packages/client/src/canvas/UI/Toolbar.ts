@@ -146,6 +146,7 @@ export class Toolbar implements FloatingMenu {
       })
     );
     toolbar.append(...this.createUndoRedoButtons());
+    toolbar.append(this.createSpacer());
     this.pinButton = this.createPinButton();
     toolbar.append(this.pinButton);
     toolbar.append(this.createDragHandle());
@@ -333,19 +334,23 @@ export class Toolbar implements FloatingMenu {
 
   private createPinButton() {
     const [btn, img] = this.createButton(Icons.Pin);
-    img.style.color = "#C2C2C2";
+    img.style.color = "#e0e0e0";
     img.style.border = "";
+    img.style.transitionProperty = "transform, color";
     img.style.transitionDuration = "200ms";
     btn.style.display = "none";
+    btn.style.width = "";
+    btn.style.paddingRight = `${toolmenuHeight * 0.05}px`;
+    btn.style.marginLeft = `${-toolmenuHeight * 0.05}px`;
 
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.isPinned = !this.isPinned;
       if (this.isPinned) {
-        img.style.color = "#000";
-        img.style.transform = "rotate(-45deg) translateY(-10%)";
+        img.style.color = "#777";
+        img.style.transform = "rotate(-45deg) scale(0.9)";
       } else {
-        img.style.color = "#C2C2C2";
+        img.style.color = "#e0e0e0";
         img.style.backgroundColor = "";
         img.style.transform = "";
       }
@@ -477,10 +482,17 @@ export class Toolbar implements FloatingMenu {
     return [wrapper, outline, updateSize];
   }
 
+  private createSpacer() {
+    let spacer = document.createElement("span");
+    spacer.style.height = `${toolmenuHeight}px`;
+    spacer.style.width = `${toolmenuHeight * 0.2}px`;
+    return spacer;
+  }
   private createDragHandle() {
     let handle = document.createElement("span");
     handle.style.cursor = "pointer";
     handle.style.padding = `${toolmenuHeight * 0.3}px`;
+    handle.style.paddingLeft = `${toolmenuHeight * 0.1}px`;
 
     const icon = Icons.Handle;
     icon.style.height = `${toolmenuHeight * 0.4}px`;
@@ -764,7 +776,11 @@ class Icons {
 
   static get Pin() {
     return HtmlFromStr(`
-      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="-5 -5 36 36" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="currentColor" stroke-width="2.5" d="M16,3 L10,9 C10,9 6,8 3,11 C3,11 13,21 13,21 C16,18 15,14 15,14 L21,8 L16,3 Z M1,23 L8,16"></path></svg>
+      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="-8 -5 36 36" xmlns="http://www.w3.org/2000/svg">
+        <path fill="none" stroke="currentColor" stroke-width="2.5" d="M16,3 L10,9 C10,9 6,8 3,11 C3,11 13,21 13,21 C16,18 15,14 15,14 L21,8 L16,3 Z"></path>
+        <path fill="none" stroke="currentColor" stroke-width="4" d="M2,22 L8,16"></path>
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4" d="M1,23 L2,22"></path>
+      </svg>
     `);
   }
 }
