@@ -32,6 +32,7 @@ export function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps)
         publicAccess: newNoteAccess,
         backgroundType: newBackground,
         backgroundOptions: {
+          ...(file as NoteInfo).backgroundOptions,
           spacing: newBgSpacing / screen.width,
         },
       });
