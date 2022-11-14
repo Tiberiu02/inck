@@ -11,7 +11,6 @@ type Func = (...params: any[]) => any;
 type FuncSig<FuncType extends Func> = {
   params: Parameters<FuncType>;
   result: ReturnType<FuncType>;
-  isFunction: true;
 };
 
 type FuncTree = { [name: string]: Func | FuncTree };
