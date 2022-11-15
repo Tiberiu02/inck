@@ -119,7 +119,7 @@ export function EditFileModal({ file, onCancel, onSuccess }: EditFileModalProps)
 
             {newBackground == BackgroundTypes.pdf ? (
               <div>
-                <p className="text-sm">Upload new PDF:</p>
+                <p className="text-sm">Replace PDF:</p>
                 <PDFDropZone setFileSize={setFileSize} setPdfContent={setPdfContent} />
                 <p className={`text-sm text-right italic ${fileSize > 0.0 ? "" : "invisible"}`}>
                   File size: {fileSizeFormat} MB
