@@ -8,11 +8,11 @@ import { BackgroundOptions, BackgroundTypes } from "@inck/common-types/Notes";
 import GetApiPath from "../../GetApiPath";
 import { ApiUrlStrings } from "@inck/common-types/ApiUrlStrings";
 import { twMerge } from "tailwind-merge";
-import { useDropzone } from "react-dropzone";
 import { Dropdown, TextField } from "../../common/Input";
 import { LocalStorage } from "../../../LocalStorage";
 import { BackgroundSelector } from "../../common/BgSpacingSelector";
 import { ErrorContext } from "../AlertManager";
+import { PDFDropZone } from "./utils/PdfDropZone";
 
 function CreateNoteSubmodal({ onSuccess, path }) {
   const [name, setName] = useState("");
@@ -87,54 +87,11 @@ function CreateFolderSubmodal({ onSuccess, path }) {
   );
 }
 
-function PDFDropZone({ setPdfContent, setFileSize }) {
-  const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: async (acceptedFiles) => {
-      if (acceptedFiles.length > 0) {
-        const [file] = acceptedFiles;
-        setFileSize(file.size);
-        setPdfContent(file);
-      }
-    },
-    accept: {
-      "application/pdf": [".pdf"],
-    },
-  });
-
-  const isFileSelected = acceptedFiles.length > 0;
-
-  let dropZoneContent: string;
-
-  if (isDragActive) {
-    dropZoneContent = "Drop the files here ...";
-  } else if (acceptedFiles.length == 0) {
-    dropZoneContent = "Drop file here, or click to select ...";
-  } else {
-    dropZoneContent = acceptedFiles[0].name;
-  }
-
-  return (
-    <div
-      {...getRootProps({
-        className: `rounded-md p-3 border-dashed border-slate-500 border-2 text-sm h-16 italic 
-                  ${isFileSelected ? "" : "justify-center"} flex items-center  focus:none hover:bg-slate-100 ${
-          isDragActive ? "bg-slate-100" : ""
-        }
-                  
-                  `,
-      })}
-    >
-      <input {...getInputProps()} />
-      <p className="truncate text-ellipsis w-72">{dropZoneContent}</p>
-    </div>
-  );
-}
-
 function ImportPdfSubmodal({ onSuccess, path }) {
   const [name, setName] = useState("");
   const [publicAccess, setPublicAccess] = useState(AccessTypes.NONE);
   const [fileSize, setFileSize] = useState(0);
-  const [pdfConent, setPdfContent] = useState<File>(null);
+  const [pdfContent, setPdfContent] = useState<File>(null);
   const [disableSubmitButton, setDisableSubmitButton] = useState(false);
   const [buttonText, setButtonText] = useState("Import PDF");
 
@@ -147,7 +104,7 @@ function ImportPdfSubmodal({ onSuccess, path }) {
       pushError("Please provide a file name");
       return;
     }
-    if (pdfConent == null) {
+    if (pdfContent == null) {
       pushError("Please provide a PDF file");
       return;
     }
@@ -155,7 +112,7 @@ function ImportPdfSubmodal({ onSuccess, path }) {
     setDisableSubmitButton(true);
     setButtonText("Uploading PDF...");
     const formData = new FormData();
-    formData.append("file", pdfConent);
+    formData.append("file", pdfContent);
     formData.append("token", getAuthToken());
 
     const response = await fetch(GetApiPath(ApiUrlStrings.POST_PDF), {
@@ -166,7 +123,7 @@ function ImportPdfSubmodal({ onSuccess, path }) {
     const jsonReply = await response.json();
 
     if (!response.ok) {
-      pushError("Invalid file format");
+      pushError("Invalid file");
       setButtonText("Import PDF");
       setDisableSubmitButton(false);
       setPdfContent(null);

@@ -23,13 +23,7 @@ type FuncSigTree<T extends FuncTree> = {
     : number;
 };
 
+export const apiSchemaTypeName = "ApiSchema";
 export type ApiSchema = FuncSigTree<typeof api>;
 
-export type Test = {
-  // params: Parameters<typeof f>;
-  // ret: ReturnType<typeof f>;
-  p: [a: number, b: number];
-  name: string;
-  // value: number;
-  // sum: (a: number, b: number) => number;
-};
+export const apiFilePath = __filename;

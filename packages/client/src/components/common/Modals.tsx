@@ -28,15 +28,26 @@ export function ModalTitle({ children }) {
   return <div className="text-2xl font-semibold w-full text-center">{children}</div>;
 }
 
-export function ModalButtons({ submitText, onSubmit, onCancel, submitEnabled = true, submitButtonClassName = "" }) {
+export function ModalButtons({
+  submitText,
+  onSubmit,
+  onCancel,
+  submitEnabled = true,
+  submitButtonClassName = "",
+  disabled = false,
+}) {
   return (
     <div className="flex w-full justify-between items-center">
-      <button className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center" onClick={onCancel}>
+      <button
+        className="text-gray-600 hover:bg-gray-200 w-fit px-4 py-1 rounded-full self-center"
+        onClick={onCancel}
+        disabled={disabled}
+      >
         Cancel
       </button>
       <button
         onClick={onSubmit}
-        disabled={!submitEnabled}
+        disabled={!submitEnabled || disabled}
         className={twMerge(
           "hover:bg-slate-800 bg-slate-600 text-white w-fit px-4 py-1 rounded-full self-center ",
           submitButtonClassName
