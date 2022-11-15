@@ -1,9 +1,5 @@
-import { resolve } from "path";
-
 import * as TJS from "typescript-json-schema";
-
-const path = "src/api/test.ts";
-const typeName = "ApiSchema";
+import { api, apiFilePath, apiSchemaTypeName } from "./api/test";
 
 const isNumber = (val: any) => typeof val == "number";
 const isString = (val: any) => typeof val == "string";
@@ -15,15 +11,12 @@ const settings: TJS.PartialArgs = {
   required: true,
 };
 
-// optionally pass ts compiler options
-import { api } from "./api/test";
-
 const compilerOptions: TJS.CompilerOptions = {
   strictNullChecks: true,
 };
 
-const program = TJS.getProgramFromFiles([resolve(path)], compilerOptions);
-const schema = TJS.generateSchema(program, typeName, settings);
+const program = TJS.getProgramFromFiles([apiFilePath], compilerOptions);
+const schema = TJS.generateSchema(program, apiSchemaTypeName, settings);
 
 // console.log(JSON.stringify(schema, null, 2));
 
