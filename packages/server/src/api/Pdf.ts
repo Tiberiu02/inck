@@ -1,14 +1,19 @@
-import fs from "fs";
 import crypto from "crypto";
-import { generateNewFileName, insertNewNoteInDB, NEW_FILES_NAME_LENGTH } from "./FileExplorer";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { FileModel, NoteModel } from "../db/Models";
 import { Request, Response } from "express";
 import { Timer } from "../Timer";
 import { logEvent } from "../logging/AppendAnalytics";
 import path from "path";
 import { UploadedFile } from "express-fileupload";
 import AWS from "aws-sdk";
+
+AWS.config.update({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 const S3 = new AWS.S3();
 const PDF_LOCATION = "../user-data/pdfs";
