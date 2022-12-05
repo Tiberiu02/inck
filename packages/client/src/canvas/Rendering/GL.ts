@@ -12,6 +12,11 @@ import {
 
 export const ELEMENTS_PER_VERTEX = 6;
 
+const FRAMEBUFFER = {
+  RENDER: 0,
+  TEXTURE: 1,
+};
+
 export function desynchronizedHintAvailable() {
   const userAgent = window.navigator.userAgent;
   const chrome = userAgent.includes("Chrome");
@@ -101,6 +106,7 @@ class TransparentLayerProgram {
   private ctx: WebGL2RenderingContext;
   private program: WebGLProgram;
   private buffer: WebGLBuffer;
+  private opacityLoc: WebGLUniformLocation;
   private textureLoc: WebGLUniformLocation;
   private positionLoc: number;
 
@@ -115,16 +121,17 @@ class TransparentLayerProgram {
     const positions = [0, 0, 0, +1, +1, 0, +1, +1];
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
 
-    this.program = GL.createProgram(LayerVertexShaderSource, LayerFragmentShaderSource.replaceAll("$OPACITY", opacity));
+    this.program = GL.createProgram(LayerVertexShaderSource, LayerFragmentShaderSource);
 
     this.ctx.useProgram(this.program);
     GL.currentProgram = this.program;
 
+    this.opacityLoc = this.ctx.getUniformLocation(this.program, "u_Opacity");
     this.textureLoc = this.ctx.getUniformLocation(this.program, "u_Texture");
     this.positionLoc = this.ctx.getAttribLocation(this.program, "a_Position");
   }
 
-  renderLayer(tex: WebGLTexture) {
+  renderLayer(tex: WebGLTexture, opacity: number) {
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
 
     // Set program
@@ -134,6 +141,9 @@ class TransparentLayerProgram {
     // Set position attribute
     this.ctx.vertexAttribPointer(this.positionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(this.positionLoc);
+
+    // Set opacity
+    this.ctx.uniform1f(this.opacityLoc, opacity);
 
     // Tell the shader to get the texture from texture unit 0
     this.ctx.uniform1i(this.textureLoc, 0);
@@ -160,12 +170,19 @@ export class GL {
   private static width: number;
   private static height: number;
 
+  private static fb: WebGLFramebuffer[];
+  private static rb: WebGLRenderbuffer;
+
   static init() {
     const canvas = document.createElement("canvas");
     document.body.appendChild(canvas);
 
     // Init context
-    this.ctx = canvas.getContext("webgl2", { desynchronized: true, alpha: false, antialias: true });
+    this.ctx = canvas.getContext("webgl2", {
+      desynchronized: true,
+      alpha: false,
+      antialias: false,
+    });
 
     if (!this.ctx) {
       console.warn("WebGL not supported, falling back on experimental");
@@ -188,6 +205,69 @@ export class GL {
 
     // Init buffers
     this.initTexBuffers();
+  }
+
+  private static initLayerFb() {
+    const gl = this.ctx;
+
+    if (this.layerTex) {
+      gl.deleteTexture(this.layerTex);
+      gl.deleteFramebuffer(this.layerFb);
+      gl.deleteFramebuffer(this.fb[0]);
+      gl.deleteFramebuffer(this.fb[1]);
+      gl.deleteRenderbuffer(this.rb);
+    }
+
+    // Create 2 frame buffers
+    this.fb = [gl.createFramebuffer(), gl.createFramebuffer()];
+    // Create render buffer
+    this.rb = gl.createRenderbuffer();
+
+    // Bind render buffer
+    gl.bindRenderbuffer(gl.RENDERBUFFER, this.rb);
+
+    // Enable MSAA
+    gl.renderbufferStorageMultisample(
+      gl.RENDERBUFFER,
+      gl.getParameter(gl.MAX_SAMPLES),
+      gl.RGBA8,
+      this.width,
+      this.height
+    );
+
+    // Bind render frame buffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
+
+    // Attach render frame buffer to render buffer
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, this.rb);
+
+    // Create texture
+    this.layerTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.layerTex);
+    {
+      // define size and format of level 0
+      const level = 0;
+      const internalFormat = gl.RGBA;
+      const border = 0;
+      const format = gl.RGBA;
+      const type = gl.UNSIGNED_BYTE;
+      const data = null;
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, this.width, this.height, border, format, type, data);
+
+      // set the filtering so we don't need mips
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+
+    // Bind texture frame buffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb[FRAMEBUFFER.TEXTURE]);
+
+    // Bind texture to texture frame buffer
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.layerTex, 0);
+
+    // Unbind frame buffers
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
   public static ensureCanvasSize() {
@@ -213,52 +293,10 @@ export class GL {
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
   }
 
-  private static initLayerTex(width: number, height: number) {
-    this.width = width;
-    this.height = height;
-
-    if (this.layerTex) {
-      this.ctx.deleteTexture(this.layerTex);
-      this.ctx.deleteFramebuffer(this.layerFb);
-    }
-
-    // create to render to
-    this.layerTex = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.layerTex);
-
-    {
-      // define size and format of level 0
-      const level = 0;
-      const internalFormat = this.ctx.RGBA;
-      const border = 0;
-      const format = this.ctx.RGBA;
-      const type = this.ctx.UNSIGNED_BYTE;
-      const data = null;
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, level, internalFormat, width, height, border, format, type, data);
-
-      // set the filtering so we don't need mips
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-    }
-
-    // Create and bind the framebuffer
-    this.layerFb = this.ctx.createFramebuffer();
-    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.layerFb);
-
-    // attach the texture as the first color attachment
-    {
-      const attachmentPoint = this.ctx.COLOR_ATTACHMENT0;
-      const level = 0;
-      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, attachmentPoint, this.ctx.TEXTURE_2D, this.layerTex, level);
-    }
-
-    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
-  }
-
   static beginLayer() {
     // render to our targetTexture by binding the framebuffer
-    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.layerFb);
+    //this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.layerFb);
+    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
 
     // Clear the attachment(s).
     this.ctx.clearColor(0, 0, 0, 0); // clear to transparent
@@ -266,14 +304,31 @@ export class GL {
   }
 
   static finishLayer(opacity: number = 1) {
-    // WebGL 1 does not support framebuffer multi-sampling,
-    // thus highlighter strokes will not me anti-aliased
-    // see: https://stackoverflow.com/questions/47934444/webgl-framebuffer-multisampling
+    // https://stackoverflow.com/questions/47934444/webgl-framebuffer-multisampling
+
+    // "blit" the cube into the color buffer, which adds antialiasing
+    this.ctx.bindFramebuffer(this.ctx.READ_FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
+
+    this.ctx.bindFramebuffer(this.ctx.DRAW_FRAMEBUFFER, this.fb[FRAMEBUFFER.TEXTURE]);
+
+    this.ctx.clearBufferfv(this.ctx.COLOR, 0, [1.0, 1.0, 1.0, 1.0]);
+
+    this.ctx.blitFramebuffer(
+      0,
+      0,
+      this.width,
+      this.height,
+      0,
+      0,
+      this.width,
+      this.height,
+      this.ctx.COLOR_BUFFER_BIT,
+      this.ctx.LINEAR
+    );
 
     // render to the canvas
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
-
-    this.layerProgram.renderLayer(this.layerTex);
+    this.layerProgram.renderLayer(this.layerTex, opacity);
   }
 
   static createProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
@@ -314,29 +369,6 @@ export class GL {
     }
 
     return program;
-  }
-
-  static setAttribute(gl: WebGL2RenderingContext, program: WebGLProgram, name: string, size: number, offset: number) {
-    let location = gl.getAttribLocation(program, name);
-    gl.vertexAttribPointer(
-      location, // Attribute location
-      size, // Number of elements per attribute
-      gl.FLOAT, // Type of elements
-      false,
-      ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-      offset * Float32Array.BYTES_PER_ELEMENT // Offset
-    );
-    gl.enableVertexAttribArray(location);
-  }
-
-  static setUniform1f(gl: WebGL2RenderingContext, program: WebGLProgram, name: string, val: number) {
-    let location = gl.getUniformLocation(program, name);
-    gl.uniform1f(location, val);
-  }
-
-  static setUniformMatrix4fv(gl: WebGL2RenderingContext, program: WebGLProgram, name: string, val: Matrix4) {
-    let location = gl.getUniformLocation(program, name);
-    gl.uniformMatrix4fv(location, false, val);
   }
 
   // creates a texture info { width: w, height: h, texture: tex }
@@ -414,6 +446,9 @@ export class GL {
 
   static viewport(x: number, y: number, width: number, height: number) {
     this.ctx.viewport(x, y, width, height);
-    this.initLayerTex(width, height);
+    this.width = width;
+    this.height = height;
+
+    this.initLayerFb();
   }
 }

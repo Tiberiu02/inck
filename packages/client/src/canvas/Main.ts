@@ -86,8 +86,10 @@ export default class App {
       Profiler.stop("layer-0");
 
       Profiler.start("layer-1");
+      GL.beginLayer();
       strokeContainer.render(1);
       toolManager.render(1);
+      GL.finishLayer();
       Profiler.stop("layer-1");
     });
   }
