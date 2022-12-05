@@ -8,7 +8,7 @@ import ImageFragmentShader from "./Shaders/Image/fragment.glsl";
 export const ImageVertexShaderSource = ImageVertexShader;
 export const ImageFragmentShaderSource = ImageFragmentShader;
 
-import LayerVertexShader from "./Shaders/TransparentLayer/vertex.glsl";
-import LayerFragmentShader from "./Shaders/TransparentLayer/fragment.glsl";
+import LayerVertexShader from "./Shaders/Layer/vertex.glsl";
+import LayerFragmentShader from "./Shaders/Layer/fragment.glsl";
 export const LayerVertexShaderSource = LayerVertexShader;
 export const LayerFragmentShaderSource = LayerFragmentShader;
