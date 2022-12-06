@@ -19,7 +19,7 @@ export class PageSizeTracker implements LayeredStrokeContainer {
   getAll(): PersistentGraphic[] {
     return this.canvas.getAll();
   }
-  render(layerRendered: number): void {
-    this.canvas.render(layerRendered);
+  render(layerRendered: number, opacity?: number): void {
+    this.canvas.render(layerRendered, opacity);
   }
 }

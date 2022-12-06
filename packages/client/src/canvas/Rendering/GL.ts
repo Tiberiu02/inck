@@ -1,6 +1,7 @@
 import { Display } from "../DeviceProps";
 import { m4, Matrix4 } from "../Math/M4";
 import Profiler from "../Profiler";
+import { RGB } from "../types";
 import {
   MainFragmentShaderSource,
   MainVertexShaderSource,
@@ -131,7 +132,7 @@ class TransparentLayerProgram {
     this.positionLoc = this.ctx.getAttribLocation(this.program, "a_Position");
   }
 
-  renderLayer(tex: WebGLTexture, opacity: number) {
+  renderLayer(tex: WebGLTexture, opacity: number = 1) {
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
 
     // Set program
@@ -165,7 +166,7 @@ export class GL {
 
   private static texBuffer: WebGLBuffer;
 
-  private static layerTex: WebGLTexture;
+  public static layerTex: WebGLTexture;
   private static layerFb: WebGLFramebuffer;
   private static width: number;
   private static height: number;
@@ -205,6 +206,8 @@ export class GL {
 
     // Init buffers
     this.initTexBuffers();
+
+    this.ensureCanvasSize();
   }
 
   private static initLayerFb() {
@@ -295,7 +298,6 @@ export class GL {
 
   static beginLayer() {
     // render to our targetTexture by binding the framebuffer
-    //this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.layerFb);
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
 
     // Clear the attachment(s).
@@ -303,13 +305,22 @@ export class GL {
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
   }
 
-  static finishLayer(opacity: number = 1) {
+  static finishLayer(outputTexture: WebGLTexture) {
     // https://stackoverflow.com/questions/47934444/webgl-framebuffer-multisampling
 
     // "blit" the cube into the color buffer, which adds antialiasing
     this.ctx.bindFramebuffer(this.ctx.READ_FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
 
     this.ctx.bindFramebuffer(this.ctx.DRAW_FRAMEBUFFER, this.fb[FRAMEBUFFER.TEXTURE]);
+
+    // Bind texture to texture frame buffer
+    this.ctx.framebufferTexture2D(
+      this.ctx.DRAW_FRAMEBUFFER,
+      this.ctx.COLOR_ATTACHMENT0,
+      this.ctx.TEXTURE_2D,
+      outputTexture,
+      0
+    );
 
     this.ctx.clearBufferfv(this.ctx.COLOR, 0, [1.0, 1.0, 1.0, 1.0]);
 
@@ -326,9 +337,7 @@ export class GL {
       this.ctx.LINEAR
     );
 
-    // render to the canvas
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
-    this.layerProgram.renderLayer(this.layerTex, opacity);
   }
 
   static createProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
@@ -439,8 +448,8 @@ export class GL {
     this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, 4);
   }
 
-  static clear() {
-    this.ctx.clearColor(1, 1, 1, 1);
+  static clear(color: RGB = [1, 1, 1]) {
+    this.ctx.clearColor(...color, 1);
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
   }
 

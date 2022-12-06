@@ -95,4 +95,8 @@ export class ToolManager {
       this.tool.render(layerIndex);
     }
   }
+
+  hasLayer(layerIndex: number) {
+    return this.tool && (this.tool == this.selection || (this.tool == this.pen && this.pen.zIndex == layerIndex));
+  }
 }

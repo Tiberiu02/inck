@@ -4,6 +4,7 @@ import { ELEMENTS_PER_VERTEX, GL } from "./GL";
 import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "./RenderLoop";
 import { View } from "../View/View";
+import { Display } from "../DeviceProps";
 
 export const BUFFER_SIZE = 5e4;
 
@@ -109,10 +110,57 @@ class StrokeCluster {
 export class BaseStrokeContainer implements LayeredStrokeContainer {
   private layers: StrokeCluster[];
   private strokes: { [id: string]: PersistentVectorGraphic };
+  private layerTextures: WebGLTexture[];
 
   constructor(numLayers: number) {
     this.layers = [...Array(numLayers)].map((_) => new StrokeCluster());
     this.strokes = {};
+
+    this.initLayerTextures();
+    window.addEventListener("resize", () => this.initLayerTextures());
+
+    View.instance.onUpdate(() => this.drawAllLayers());
+  }
+
+  initLayerTextures() {
+    if (this.layerTextures) {
+      this.layerTextures.forEach((texture) => GL.ctx.deleteTexture(texture));
+    }
+
+    const gl = GL.ctx;
+
+    this.layerTextures = this.layers.map((_) => {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+
+      // define size and format of level 0
+      const level = 0;
+      const internalFormat = gl.RGBA;
+      const border = 0;
+      const format = gl.RGBA;
+      const type = gl.UNSIGNED_BYTE;
+      const data = null;
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, Display.Width, Display.Height, border, format, type, data);
+
+      // set the filtering so we don't need mips
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+      return tex;
+    });
+
+    this.drawAllLayers();
+  }
+
+  drawLayer(layer: number) {
+    GL.beginLayer();
+    this.layers[layer].render();
+    GL.finishLayer(this.layerTextures[layer]);
+  }
+
+  drawAllLayers() {
+    this.layers.forEach((_, layer) => this.drawLayer(layer));
   }
 
   add(graphic: PersistentGraphic): void {
@@ -124,6 +172,9 @@ export class BaseStrokeContainer implements LayeredStrokeContainer {
       this.strokes[graphic.id] = graphic as PersistentVectorGraphic;
       this.layers[vectorGraphic.zIndex].addStroke(graphic.id, vectorGraphic.vector);
     }
+
+    this.drawLayer(graphic.graphic.zIndex);
+
     RenderLoop.scheduleRender();
   }
 
@@ -146,7 +197,7 @@ export class BaseStrokeContainer implements LayeredStrokeContainer {
     return Object.values(this.strokes);
   }
 
-  render(layerIndex: number): void {
-    this.layers[layerIndex].render();
+  render(layerIndex: number, opacity: number = 1): void {
+    GL.layerProgram.renderLayer(this.layerTextures[layerIndex], opacity);
   }
 }

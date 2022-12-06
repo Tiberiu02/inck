@@ -20,6 +20,7 @@ import { BackgroundTypes } from "@inck/common-types/Notes";
 import { Toolbar } from "./UI/Toolbar";
 import { CreateOptionsMenu } from "./UI/ContextMenu";
 import Profiler from "./Profiler";
+import { newLayer } from "./Rendering/Layer";
 
 export const NUM_LAYERS = 2;
 export const HIGHLIGHTER_OPACITY = 0.35;
@@ -56,6 +57,10 @@ export default class App {
       }
     });
 
+    if (background) {
+      background = newLayer(() => background.render());
+    }
+
     // Enable navigation
     const pageNavigation = new PageNavigation();
     pointerTracker.onFingerEvent((e) => pageNavigation.handleFingerEvent(e));
@@ -73,24 +78,29 @@ export default class App {
     RenderLoop.onRender(() => {
       if (background) {
         background.render();
+      } else {
+        GL.clear();
       }
 
-      Profiler.start("layer-0");
-      GL.clear();
-      GL.beginLayer();
-      strokeContainer.render(0);
-      toolManager.render(0);
-      Profiler.start("finish-layer-0");
-      GL.finishLayer(HIGHLIGHTER_OPACITY);
-      Profiler.stop("finish-layer-0");
-      Profiler.stop("layer-0");
+      if (toolManager.hasLayer(0)) {
+        GL.beginLayer();
+        strokeContainer.render(0, 1);
+        toolManager.render(0);
+        GL.finishLayer(GL.layerTex);
+        GL.layerProgram.renderLayer(GL.layerTex, HIGHLIGHTER_OPACITY);
+      } else {
+        strokeContainer.render(0, HIGHLIGHTER_OPACITY);
+      }
 
-      Profiler.start("layer-1");
-      GL.beginLayer();
-      strokeContainer.render(1);
-      toolManager.render(1);
-      GL.finishLayer();
-      Profiler.stop("layer-1");
+      if (toolManager.hasLayer(1)) {
+        GL.beginLayer();
+        strokeContainer.render(1);
+        toolManager.render(1);
+        GL.finishLayer(GL.layerTex);
+        GL.layerProgram.renderLayer(GL.layerTex);
+      } else {
+        strokeContainer.render(1);
+      }
     });
   }
 }

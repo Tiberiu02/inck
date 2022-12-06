@@ -21,7 +21,7 @@ const LONG_PRESS_DIST = 5; // (px)
 export class MyPen implements MyTool {
   private color: RGB;
   private width: number;
-  private zIndex: number;
+  public zIndex: number;
   private timestamp: number;
 
   private strokeContainer: LayeredStrokeContainer;

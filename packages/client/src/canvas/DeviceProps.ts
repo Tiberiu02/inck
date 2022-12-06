@@ -10,51 +10,32 @@ function ComputeDPI() {
   return dpi;
 }
 
-export class Display {
-  private static _DPI: number;
-  private static _Width: number;
-  private static _Height: number;
-  private static _DevicePixelRatio: number;
-  private static _InitDone: boolean;
-
-  static get DPI(): number {
-    return this._DPI;
-  }
-
-  static get Width(): number {
-    return this._Width;
-  }
-
-  static get Height(): number {
-    return this._Height;
-  }
-
-  static get AspectRatio(): number {
-    return this._Width / this._Height;
-  }
-
-  static get DevicePixelRatio(): number {
-    return this._DevicePixelRatio;
-  }
-
-  private static ComputeScreenSize() {
-    this._Width = window.innerWidth;
-    this._Height = window.innerHeight;
-  }
-
-  static Init() {
-    if (this._InitDone) return;
-    this._InitDone = true;
-
-    this.ComputeScreenSize();
-    this._DPI = ComputeDPI();
-    this._DevicePixelRatio = window.devicePixelRatio;
-    window.addEventListener("resize", () => this.ComputeScreenSize());
-  }
-}
+export let Display: Readonly<{
+  DPI: number;
+  Width: number;
+  Height: number;
+  AspectRatio: number;
+  DevicePixelRatio: number;
+}>;
 
 if (typeof window !== "undefined") {
-  Display.Init();
+  Display = {
+    DPI: ComputeDPI(),
+    Width: window.innerWidth,
+    Height: window.innerHeight,
+    AspectRatio: window.innerWidth / window.innerHeight,
+    DevicePixelRatio: window.devicePixelRatio,
+  };
+
+  window.addEventListener("resize", () => {
+    Display = {
+      DPI: Display.DPI,
+      Width: window.innerWidth,
+      Height: window.innerHeight,
+      AspectRatio: window.innerWidth / window.innerHeight,
+      DevicePixelRatio: window.devicePixelRatio,
+    };
+  });
 }
 
 export function TestFastRenderingSupport(): boolean {

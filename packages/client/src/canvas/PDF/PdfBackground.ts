@@ -83,15 +83,7 @@ export class PdfBackground {
   }
 
   render(): void {
-    const bgVector = CreateRectangleVector(
-      View.instance.getLeft(),
-      View.instance.getTop(),
-      View.instance.getWidth(),
-      View.instance.getHeight(),
-      BG_COLOR
-    );
-
-    GL.renderVector(bgVector, View.instance.getTransformMatrix());
+    GL.clear(BG_COLOR);
 
     if (this.skeletonBuffer) {
       GL.renderVector(this.skeletonVector, View.instance.getTransformMatrix(), this.skeletonBuffer);

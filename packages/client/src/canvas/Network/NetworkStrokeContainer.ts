@@ -140,8 +140,8 @@ export class NetworkStrokeContainer implements LayeredStrokeContainer {
     return this.baseCanvas.getAll();
   }
 
-  render(layerIndex: number): void {
-    this.baseCanvas.render(layerIndex);
+  render(layerIndex: number, opacity?: number): void {
+    this.baseCanvas.render(layerIndex, opacity);
 
     for (let c of Object.values(this.collabs)) {
       c.render(layerIndex);
