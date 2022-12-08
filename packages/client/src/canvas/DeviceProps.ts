@@ -10,33 +10,33 @@ function ComputeDPI() {
   return dpi;
 }
 
-export let Display: Readonly<{
+export let DisplayData = {} as {
   DPI: number;
   Width: number;
   Height: number;
+  RealWidth: number;
+  RealHeight: number;
   AspectRatio: number;
   DevicePixelRatio: number;
-}>;
+};
 
 if (typeof window !== "undefined") {
-  Display = {
-    DPI: ComputeDPI(),
-    Width: window.innerWidth,
-    Height: window.innerHeight,
-    AspectRatio: window.innerWidth / window.innerHeight,
-    DevicePixelRatio: window.devicePixelRatio,
+  const updateDisplaData = () => {
+    DisplayData.DPI = ComputeDPI();
+    DisplayData.Width = window.innerWidth;
+    DisplayData.Height = window.innerHeight;
+    DisplayData.AspectRatio = window.innerWidth / window.innerHeight;
+    DisplayData.DevicePixelRatio = window.devicePixelRatio;
+    DisplayData.RealWidth = window.innerWidth * window.devicePixelRatio;
+    DisplayData.RealHeight = window.innerHeight * window.devicePixelRatio;
   };
 
-  window.addEventListener("resize", () => {
-    Display = {
-      DPI: Display.DPI,
-      Width: window.innerWidth,
-      Height: window.innerHeight,
-      AspectRatio: window.innerWidth / window.innerHeight,
-      DevicePixelRatio: window.devicePixelRatio,
-    };
-  });
+  window.addEventListener("resize", updateDisplaData);
+
+  updateDisplaData();
 }
+
+export const Display = DisplayData as Readonly<typeof DisplayData>;
 
 export function TestFastRenderingSupport(): boolean {
   if (typeof navigator == "undefined") return false;

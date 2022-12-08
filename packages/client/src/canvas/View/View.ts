@@ -33,6 +33,7 @@
  * The view has the same aspect ratio as the screen.
  */
 
+import { CreateEvent, EventCore, EventTrigger } from "../DesignPatterns/EventDriven";
 import { Display } from "../DeviceProps";
 import { m4, Matrix4 } from "../Math/M4";
 import { Vector2D } from "../Math/V2";

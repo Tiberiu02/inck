@@ -8,6 +8,9 @@ export class RenderLoop {
   private static frameRendered: boolean;
   private static rendering: boolean;
   private static fastRender: boolean;
+  private static enabled: boolean;
+  private static running: boolean;
+  private static renderLoopFn: () => void;
 
   public static get supportsFastRender() {
     if (this.fastRender == undefined) {
@@ -16,8 +19,16 @@ export class RenderLoop {
     return this.fastRender;
   }
 
+  public static setActive(enabled: boolean) {
+    this.enabled = enabled;
+  }
+
   static scheduleRender() {
     RenderLoop.rerender = true;
+    if (this.enabled && !this.running) {
+      this.running = true;
+      requestAnimationFrame(this.renderLoopFn);
+    }
   }
 
   static render() {
@@ -29,8 +40,6 @@ export class RenderLoop {
     Profiler.start("rendering");
 
     RenderLoop.rendering = true;
-
-    GL.ensureCanvasSize();
 
     for (const fn of RenderLoop.renderFns) {
       fn();
@@ -44,7 +53,9 @@ export class RenderLoop {
   static onRender(fn: () => void) {
     if (!RenderLoop.renderFns) {
       RenderLoop.renderFns = [];
-      requestAnimationFrame(() => RenderLoop.renderLoop());
+      this.renderLoopFn = () => RenderLoop.renderLoop();
+      this.enabled = true;
+      this.running = false;
     }
 
     RenderLoop.renderFns.push(fn);
@@ -52,11 +63,16 @@ export class RenderLoop {
 
   private static renderLoop() {
     if (RenderLoop.rerender && !RenderLoop.frameRendered) {
-      RenderLoop.render();
       RenderLoop.rerender = false;
+      RenderLoop.render();
     }
 
     RenderLoop.frameRendered = false;
-    requestAnimationFrame(() => RenderLoop.renderLoop());
+
+    if (this.enabled || RenderLoop.rerender) {
+      requestAnimationFrame(this.renderLoopFn);
+    } else {
+      this.running = false;
+    }
   }
 }

@@ -9,7 +9,7 @@ import { NetworkConnection } from "../../Network/NetworkConnection";
 import { RenderLoop } from "../../Rendering/RenderLoop";
 import { EmitterPen, PenController, SerializedPen } from "./TheirPen";
 import { DetectShape } from "../../ShapeRecognition/ShapeRecognition";
-import { GL } from "../../Rendering/GL";
+import { Layers } from "../../Rendering/GL";
 import { GenerateRandomString } from "../../Math/RandomString";
 import { RemovedGraphic } from "../../Drawing/Graphic";
 import Profiler from "../../Profiler";
@@ -63,6 +63,7 @@ export class MyPen implements MyTool {
         this.strokeBuilder.newStroke(timestamp, this.zIndex, this.color, width);
         this.drawing = true;
         this.lastTestForLongPress = now;
+        RenderLoop.setActive(false);
       }
 
       this.strokeBuilder.push(x, y, pressure, timestamp);
@@ -74,6 +75,7 @@ export class MyPen implements MyTool {
     } else {
       if (this.drawing) {
         this.release();
+        RenderLoop.setActive(true);
       }
     }
 
@@ -84,13 +86,20 @@ export class MyPen implements MyTool {
   }
 
   render(layerRendered: number): void {
-    if (this.drawing && layerRendered == this.zIndex) {
-      Profiler.start("vectorize");
-      const vector = this.strokeBuilder.getVector();
-      Profiler.stop("vectorize");
-      Profiler.start("draw");
-      GL.renderVector(vector, View.instance.getTransformMatrix());
-      Profiler.stop("draw");
+    const gl = this.zIndex == 0 ? Layers.highlighter.dynamic : Layers.pen.dynamic;
+    if (layerRendered == this.zIndex) {
+      if (this.drawing) {
+        Profiler.start("vectorize");
+        const vector = this.strokeBuilder.getVector();
+        Profiler.stop("vectorize");
+        Profiler.start("draw");
+        // gl.beginLayer();
+        gl.renderVector(vector, View.instance.getTransformMatrix());
+        // gl.finishLayer(null);
+        Profiler.stop("draw");
+      } else {
+        gl.clear();
+      }
     }
   }
 

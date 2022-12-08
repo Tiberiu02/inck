@@ -2,6 +2,7 @@ import { Display } from "../DeviceProps";
 import { m4, Matrix4 } from "../Math/M4";
 import Profiler from "../Profiler";
 import { RGB } from "../types";
+import { LAYER_SIZE } from "./BaseStrokeContainer";
 import {
   MainFragmentShaderSource,
   MainVertexShaderSource,
@@ -12,6 +13,7 @@ import {
 } from "./Shaders";
 
 export const ELEMENTS_PER_VERTEX = 6;
+export const HIGHLIGHTER_OPACITY = 0.35;
 
 const FRAMEBUFFER = {
   RENDER: 0,
@@ -35,13 +37,18 @@ class VectorProgram {
   matrixLoc: WebGLUniformLocation;
   positionLoc: number;
   colorLoc: number;
+  setProgram: (_: WebGLProgram) => void;
 
-  constructor(gl: WebGL2RenderingContext) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    createProgram: (vs: string, fs: string) => WebGLProgram,
+    setProgram: (_: WebGLProgram) => void
+  ) {
     this.ctx = gl;
+    this.setProgram = setProgram;
 
-    this.program = GL.createProgram(MainVertexShaderSource, MainFragmentShaderSource);
-    this.ctx.useProgram(this.program);
-    GL.currentProgram = this.program;
+    this.program = createProgram(MainVertexShaderSource, MainFragmentShaderSource);
+    this.setProgram(this.program);
 
     this.buffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
@@ -66,8 +73,7 @@ class VectorProgram {
     const buffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, buffer);
 
-    this.ctx.useProgram(this.program);
-    GL.currentProgram = this.program;
+    this.setProgram(this.program);
 
     const stride = ELEMENTS_PER_VERTEX * Float32Array.BYTES_PER_ELEMENT;
 
@@ -83,10 +89,7 @@ class VectorProgram {
   }
 
   drawVector(array: number[], transformMatrix: Matrix4, buffer?: WebGLBuffer) {
-    if (GL.currentProgram != this.program) {
-      this.ctx.useProgram(this.program);
-      GL.currentProgram = this.program;
-    }
+    this.setProgram(this.program);
 
     if (!buffer) {
       this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
@@ -110,9 +113,15 @@ class TransparentLayerProgram {
   private opacityLoc: WebGLUniformLocation;
   private textureLoc: WebGLUniformLocation;
   private positionLoc: number;
+  private setProgram: (_: WebGLProgram) => void;
 
-  constructor(ctx: WebGL2RenderingContext, opacity = 0.3) {
+  constructor(
+    ctx: WebGL2RenderingContext,
+    createProgram: (vs: string, fs: string) => WebGLProgram,
+    setProgram: (_: WebGLProgram) => void
+  ) {
     this.ctx = ctx;
+    this.setProgram = setProgram;
 
     // Create a buffer.
     this.buffer = this.ctx.createBuffer();
@@ -122,10 +131,9 @@ class TransparentLayerProgram {
     const positions = [0, 0, 0, +1, +1, 0, +1, +1];
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
 
-    this.program = GL.createProgram(LayerVertexShaderSource, LayerFragmentShaderSource);
+    this.program = createProgram(LayerVertexShaderSource, LayerFragmentShaderSource);
 
-    this.ctx.useProgram(this.program);
-    GL.currentProgram = this.program;
+    this.setProgram(this.program);
 
     this.opacityLoc = this.ctx.getUniformLocation(this.program, "u_Opacity");
     this.textureLoc = this.ctx.getUniformLocation(this.program, "u_Texture");
@@ -135,9 +143,7 @@ class TransparentLayerProgram {
   renderLayer(tex: WebGLTexture, opacity: number = 1) {
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
 
-    // Set program
-    this.ctx.useProgram(this.program);
-    GL.currentProgram = this.program;
+    this.setProgram(this.program);
 
     // Set position attribute
     this.ctx.vertexAttribPointer(this.positionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
@@ -155,98 +161,98 @@ class TransparentLayerProgram {
   }
 }
 
-export class GL {
-  static ctx: WebGL2RenderingContext;
-  static currentProgram: WebGLProgram;
+function createGL(container?: HTMLElement, scale: number = 1) {
+  console.log("Creating GL");
+  if (typeof window === "undefined") return null;
 
-  static mainProgram: WebGLProgram;
-  static imageProgram: WebGLProgram;
-  static vectorProgram: VectorProgram;
-  static layerProgram: TransparentLayerProgram;
+  let currentProgram: WebGLProgram;
 
-  private static texBuffer: WebGLBuffer;
+  let texBuffer: WebGLBuffer;
 
-  public static layerTex: WebGLTexture;
-  private static layerFb: WebGLFramebuffer;
-  private static width: number;
-  private static height: number;
+  let layerTex: WebGLTexture;
+  let layerFb: WebGLFramebuffer;
+  let width: number;
+  let height: number;
 
-  private static fb: WebGLFramebuffer[];
-  private static rb: WebGLRenderbuffer;
+  let fb: WebGLFramebuffer[];
+  let rb: WebGLRenderbuffer;
 
-  static init() {
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
+  const canvas = document.createElement("canvas");
+  canvas.style.position = "fixed";
+  canvas.style.top = "0px";
+  canvas.style.left = "0px";
+  canvas.style.pointerEvents = "none";
+  (container || document.body).appendChild(canvas);
 
-    // Init context
-    this.ctx = canvas.getContext("webgl2", {
-      desynchronized: true,
-      alpha: false,
-      antialias: false,
-    });
+  // Init context
+  let gl = canvas.getContext("webgl2", {
+    alpha: true,
+    // antialias: true,
+  });
 
-    if (!this.ctx) {
-      console.warn("WebGL not supported, falling back on experimental");
-      this.ctx = canvas.getContext("experimental-webgl") as WebGL2RenderingContext;
-    }
-
-    if (!this.ctx) alert("Your browser does not support WebGL");
-
-    this.ctx.enable(this.ctx.BLEND);
-    this.ctx.blendFunc(this.ctx.SRC_ALPHA, this.ctx.ONE_MINUS_SRC_ALPHA);
-    this.ctx.blendEquation(this.ctx.FUNC_ADD);
-
-    this.ctx.enable(this.ctx.DEPTH_TEST);
-    this.ctx.depthFunc(this.ctx.ALWAYS);
-
-    // Create programs
-    this.imageProgram = this.createProgram(ImageVertexShaderSource, ImageFragmentShaderSource);
-    this.vectorProgram = new VectorProgram(this.ctx);
-    this.layerProgram = new TransparentLayerProgram(this.ctx);
-
-    // Init buffers
-    this.initTexBuffers();
-
-    this.ensureCanvasSize();
+  if (!gl) {
+    console.warn("WebGL not supported, falling back on experimental");
+    gl = canvas.getContext("experimental-webgl") as WebGL2RenderingContext;
   }
 
-  private static initLayerFb() {
-    const gl = this.ctx;
+  if (!gl) alert("Your browser does not support WebGL");
 
-    if (this.layerTex) {
-      gl.deleteTexture(this.layerTex);
-      gl.deleteFramebuffer(this.layerFb);
-      gl.deleteFramebuffer(this.fb[0]);
-      gl.deleteFramebuffer(this.fb[1]);
-      gl.deleteRenderbuffer(this.rb);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.blendEquation(gl.FUNC_ADD);
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.ALWAYS);
+
+  function setProgram(program: WebGLProgram) {
+    if (currentProgram != program) {
+      currentProgram = program;
+      gl.useProgram(this.program);
+    }
+  }
+
+  // Create programs
+  const imageProgram = createProgram(ImageVertexShaderSource, ImageFragmentShaderSource);
+  const vectorProgram = new VectorProgram(gl, createProgram, setProgram);
+  const layerProgram = new TransparentLayerProgram(gl, createProgram, setProgram);
+
+  // Init buffers
+  initTexBuffers();
+
+  ensureCanvasSize();
+  window.addEventListener("resize", ensureCanvasSize);
+
+  function initLayerFb() {
+    if (layerTex) {
+      gl.deleteTexture(layerTex);
+      gl.deleteFramebuffer(layerFb);
+      gl.deleteFramebuffer(fb[0]);
+      gl.deleteFramebuffer(fb[1]);
+      gl.deleteRenderbuffer(rb);
     }
 
     // Create 2 frame buffers
-    this.fb = [gl.createFramebuffer(), gl.createFramebuffer()];
+    fb = [gl.createFramebuffer(), gl.createFramebuffer()];
     // Create render buffer
-    this.rb = gl.createRenderbuffer();
+    rb = gl.createRenderbuffer();
 
     // Bind render buffer
-    gl.bindRenderbuffer(gl.RENDERBUFFER, this.rb);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+
+    console.log("gl.MAX_SAMPLES", gl.getParameter(gl.MAX_SAMPLES));
 
     // Enable MSAA
-    gl.renderbufferStorageMultisample(
-      gl.RENDERBUFFER,
-      gl.getParameter(gl.MAX_SAMPLES),
-      gl.RGBA8,
-      this.width,
-      this.height
-    );
+    gl.renderbufferStorageMultisample(gl.RENDERBUFFER, gl.getParameter(gl.MAX_SAMPLES), gl.RGBA8, width, height);
 
     // Bind render frame buffer
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb[FRAMEBUFFER.RENDER]);
 
     // Attach render frame buffer to render buffer
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, this.rb);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rb);
 
     // Create texture
-    this.layerTex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.layerTex);
+    layerTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, layerTex);
     {
       // define size and format of level 0
       const level = 0;
@@ -255,7 +261,7 @@ export class GL {
       const format = gl.RGBA;
       const type = gl.UNSIGNED_BYTE;
       const data = null;
-      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, this.width, this.height, border, format, type, data);
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, data);
 
       // set the filtering so we don't need mips
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -264,85 +270,68 @@ export class GL {
     }
 
     // Bind texture frame buffer
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb[FRAMEBUFFER.TEXTURE]);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb[FRAMEBUFFER.TEXTURE]);
 
     // Bind texture to texture frame buffer
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.layerTex, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, layerTex, 0);
 
     // Unbind frame buffers
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
-  public static ensureCanvasSize() {
-    const width = Math.round(Display.Width * Display.DevicePixelRatio);
-    const height = Math.round(Display.Height * Display.DevicePixelRatio);
+  function ensureCanvasSize() {
+    const width = Math.round(Display.Width * Display.DevicePixelRatio * scale);
+    const height = Math.round(Display.Height * Display.DevicePixelRatio * scale);
 
-    if (this.ctx.canvas.width != width || this.ctx.canvas.height != height) {
-      this.ctx.canvas.style.width = Display.Width + "px";
-      this.ctx.canvas.style.height = Display.Height + "px";
-      this.ctx.canvas.width = width;
-      this.ctx.canvas.height = height;
-      GL.viewport(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    if (canvas.width != width || canvas.height != height) {
+      canvas.style.width = Display.Width * scale + "px";
+      canvas.style.height = Display.Height * scale + "px";
+      canvas.width = width;
+      canvas.height = height;
+      viewport(0, 0, width, height);
     }
   }
 
-  private static initTexBuffers() {
+  function initTexBuffers() {
     // Create a buffer.
-    this.texBuffer = this.ctx.createBuffer();
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texBuffer);
+    texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
 
     // Put a unit quad in the buffer
     const positions = [0, 0, 0, 1, 1, 0, 1, 1];
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(positions), this.ctx.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
   }
 
-  static beginLayer() {
+  function beginLayer() {
     // render to our targetTexture by binding the framebuffer
-    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb[FRAMEBUFFER.RENDER]);
 
     // Clear the attachment(s).
-    this.ctx.clearColor(0, 0, 0, 0); // clear to transparent
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
+    gl.clearColor(0, 0, 0, 0); // clear to transparent
+    gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  static finishLayer(outputTexture: WebGLTexture) {
+  function finishLayer(outputTexture: WebGLTexture) {
     // https://stackoverflow.com/questions/47934444/webgl-framebuffer-multisampling
 
     // "blit" the cube into the color buffer, which adds antialiasing
-    this.ctx.bindFramebuffer(this.ctx.READ_FRAMEBUFFER, this.fb[FRAMEBUFFER.RENDER]);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fb[FRAMEBUFFER.RENDER]);
 
-    this.ctx.bindFramebuffer(this.ctx.DRAW_FRAMEBUFFER, this.fb[FRAMEBUFFER.TEXTURE]);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fb[FRAMEBUFFER.TEXTURE]);
 
     // Bind texture to texture frame buffer
-    this.ctx.framebufferTexture2D(
-      this.ctx.DRAW_FRAMEBUFFER,
-      this.ctx.COLOR_ATTACHMENT0,
-      this.ctx.TEXTURE_2D,
-      outputTexture,
-      0
-    );
+    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture || layerTex, 0);
 
-    this.ctx.clearBufferfv(this.ctx.COLOR, 0, [1.0, 1.0, 1.0, 1.0]);
+    gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.LINEAR);
 
-    this.ctx.blitFramebuffer(
-      0,
-      0,
-      this.width,
-      this.height,
-      0,
-      0,
-      this.width,
-      this.height,
-      this.ctx.COLOR_BUFFER_BIT,
-      this.ctx.LINEAR
-    );
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
+    if (!outputTexture) {
+      layerProgram.renderLayer(layerTex);
+    }
   }
 
-  static createProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
-    const gl = this.ctx;
-
+  function createProgram(vertexShaderSource: string, fragmentShaderSource: string): WebGLProgram {
     // Create Shaders
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -383,8 +372,7 @@ export class GL {
   // creates a texture info { width: w, height: h, texture: tex }
   // The texture will start with 1x1 pixels and be updated
   // when the image has loaded
-  static createTexture(img: HTMLCanvasElement | HTMLImageElement): WebGLTexture {
-    const gl = this.ctx;
+  function createTexture(img: HTMLCanvasElement | HTMLImageElement): WebGLTexture {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -400,29 +388,29 @@ export class GL {
     return texture;
   }
 
-  static renderVector(array: number[], transformMatrix: Matrix4, buffer?: WebGLBuffer): void {
-    this.vectorProgram.drawVector(array, transformMatrix, buffer);
+  function renderVector(array: number[], transformMatrix: Matrix4, buffer?: WebGLBuffer): void {
+    vectorProgram.drawVector(array, transformMatrix, buffer);
   }
 
-  static renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number, opacity: number = 1) {
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.texBuffer);
+  function renderTexture(tex: WebGLTexture, width: number, height: number, x: number, y: number, opacity: number = 1) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
     const array = [0, 0, 0, 1, 1, 0, 1, 1];
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(array), this.ctx.STREAM_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STREAM_DRAW);
 
     // Set program
-    this.ctx.useProgram(this.imageProgram);
-    GL.currentProgram = this.imageProgram;
+    gl.useProgram(imageProgram);
+    currentProgram = imageProgram;
 
     // Set position attribute
-    const positionLocation = this.ctx.getAttribLocation(this.imageProgram, "a_Position");
-    this.ctx.vertexAttribPointer(positionLocation, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
-    this.ctx.enableVertexAttribArray(positionLocation);
+    const positionLocation = gl.getAttribLocation(imageProgram, "a_Position");
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
+    gl.enableVertexAttribArray(positionLocation);
 
     // Set matrix uniform
-    const matrixLocation = this.ctx.getUniformLocation(this.imageProgram, "u_Matrix");
+    const matrixLocation = gl.getUniformLocation(imageProgram, "u_Matrix");
     {
       // this matrix will convert from pixels to clip space
-      let matrix = m4.orthographic(0, this.ctx.canvas.width, this.ctx.canvas.height, 0, -1, 1);
+      let matrix = m4.orthographic(0, gl.canvas.width, gl.canvas.height, 0, -1, 1);
 
       // this matrix will translate our quad to x, y
       m4.translate(matrix, x, y, 0, matrix);
@@ -432,32 +420,91 @@ export class GL {
       m4.scale(matrix, width, height, 1, matrix);
 
       // Set the matrix.
-      this.ctx.uniformMatrix4fv(matrixLocation, false, matrix);
+      gl.uniformMatrix4fv(matrixLocation, false, matrix);
     }
 
     // Tell the shader to get the texture from texture unit 0
-    const textureLocation = this.ctx.getUniformLocation(this.imageProgram, "u_Texture");
-    this.ctx.uniform1i(textureLocation, 0);
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, tex);
+    const textureLocation = gl.getUniformLocation(imageProgram, "u_Texture");
+    gl.uniform1i(textureLocation, 0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
 
     // Set texture opacity
-    const alphaLocation = this.ctx.getUniformLocation(this.imageProgram, "u_Alpha");
-    this.ctx.uniform1f(alphaLocation, opacity);
+    const alphaLocation = gl.getUniformLocation(imageProgram, "u_Alpha");
+    gl.uniform1f(alphaLocation, opacity);
 
     // draw the quad (2 triangles, 4 vertices)
-    this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, 4);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
-  static clear(color: RGB = [1, 1, 1]) {
-    this.ctx.clearColor(...color, 1);
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
+  function clear(color: RGB = [1, 1, 1]) {
+    gl.clearColor(...color, 1);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  static viewport(x: number, y: number, width: number, height: number) {
-    this.ctx.viewport(x, y, width, height);
-    this.width = width;
-    this.height = height;
+  function viewport(x: number, y: number, w: number, h: number) {
+    gl.viewport(x, y, w, h);
+    width = w;
+    height = h;
 
-    this.initLayerFb();
+    initLayerFb();
   }
+
+  return {
+    beginLayer,
+    finishLayer,
+    clear,
+    createProgram,
+    createTexture,
+    renderVector,
+    renderTexture,
+    vectorProgram,
+    layerProgram,
+    set transform(val: string) {
+      canvas.style.transform = val;
+    },
+    get ctx() {
+      return gl;
+    },
+    get currentProgram() {
+      return currentProgram;
+    },
+    set currentProgram(program) {
+      currentProgram = program;
+    },
+  };
 }
+
+export let Layers = {
+  background: null as GL,
+  highlighter: {
+    static: null as GL,
+    dynamic: null as GL,
+  },
+  pen: {
+    static: null as GL,
+    dynamic: null as GL,
+  },
+};
+
+if (typeof window !== "undefined") {
+  Layers.background = createGL();
+
+  const highlighterLayer = document.createElement("div");
+  document.body.appendChild(highlighterLayer);
+  highlighterLayer.style.opacity = `${HIGHLIGHTER_OPACITY * 100}%`;
+  console.log(highlighterLayer);
+  console.log(highlighterLayer.style.opacity, "-->", `${HIGHLIGHTER_OPACITY * 100}%`, HIGHLIGHTER_OPACITY);
+
+  Layers.highlighter = {
+    static: createGL(highlighterLayer, LAYER_SIZE),
+    dynamic: createGL(highlighterLayer),
+  };
+
+  Layers.pen = {
+    static: createGL(null, LAYER_SIZE),
+    dynamic: createGL(),
+  };
+}
+
+export type GL = ReturnType<typeof createGL>;

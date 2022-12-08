@@ -313,27 +313,31 @@ export class MySelection extends SelectionBase implements MyTool {
     // Moving selection
     let pointer: Vector2D;
     let pointerId: number;
-    container.addEventListener("pointerdown", (e) => {
-      const x = View.instance.getCanvasX(e.x);
-      const y = View.instance.getCanvasY(e.y);
-      pointer = new Vector2D(x, y);
-      pointerId = e.pointerId;
-      PointerTracker.instance.pause();
-    });
-    window.addEventListener("pointermove", (e) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (pointer && e.pointerId == pointerId) {
         const x = View.instance.getCanvasX(e.x);
         const y = View.instance.getCanvasY(e.y);
         const newPointer = new Vector2D(x, y);
         this.setTranslation(V2.sub(newPointer, pointer));
       }
-    });
-    window.addEventListener("pointerup", (e) => {
+    };
+    const handlePointerUp = (e: PointerEvent) => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyTranslation();
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
         PointerTracker.instance.unpause();
       }
+    };
+    container.addEventListener("pointerdown", (e) => {
+      const x = View.instance.getCanvasX(e.x);
+      const y = View.instance.getCanvasY(e.y);
+      pointer = new Vector2D(x, y);
+      pointerId = e.pointerId;
+      PointerTracker.instance.pause();
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
     });
     document.body.appendChild(container);
 
@@ -436,8 +440,10 @@ export class MySelection extends SelectionBase implements MyTool {
       pointerId = e.pointerId;
       this.menu.style.visibility = "hidden";
       PointerTracker.instance.pause();
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
     });
-    window.addEventListener("pointermove", (e) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (pointer && e.pointerId == pointerId) {
         const x = View.instance.getCanvasX(e.x);
         const y = View.instance.getCanvasY(e.y);
@@ -445,15 +451,17 @@ export class MySelection extends SelectionBase implements MyTool {
         const angle = V2.angle(V2.sub(newPointer, this.selectionCenter), V2.sub(pointer, this.selectionCenter));
         this.setRotation(angle);
       }
-    });
-    window.addEventListener("pointerup", (e) => {
+    };
+    const handlePointerUp = (e: PointerEvent) => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyRotation();
         this.menu.style.visibility = "";
         PointerTracker.instance.unpause();
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
       }
-    });
+    };
 
     return btn;
   }
@@ -485,8 +493,10 @@ export class MySelection extends SelectionBase implements MyTool {
       pointer = new Vector2D(x, y);
       pointerId = e.pointerId;
       PointerTracker.instance.pause();
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
     });
-    window.addEventListener("pointermove", (e) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (pointer && e.pointerId == pointerId) {
         const x = View.instance.getCanvasX(e.x);
         const y = View.instance.getCanvasY(e.y);
@@ -494,14 +504,16 @@ export class MySelection extends SelectionBase implements MyTool {
         const factor = V2.dist(newPointer, this.selectionCenter) / V2.dist(pointer, this.selectionCenter);
         this.setScaling(factor);
       }
-    });
-    window.addEventListener("pointerup", (e) => {
+    };
+    const handlePointerUp = (e: PointerEvent) => {
       if (pointer && e.pointerId == pointerId) {
         pointer = null;
         this.applyScaling();
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
         PointerTracker.instance.unpause();
       }
-    });
+    };
 
     return btn;
   }

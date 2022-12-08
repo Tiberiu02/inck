@@ -1,22 +1,26 @@
 import { Graphic, GraphicTypes, PersistentGraphic } from "../Drawing/Graphic";
 import { PersistentVectorGraphic, VectorGraphic } from "../Drawing/VectorGraphic";
-import { ELEMENTS_PER_VERTEX, GL } from "./GL";
+import { Layers } from "./GL";
+import type { GL } from "./GL";
 import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "./RenderLoop";
 import { View } from "../View/View";
 import { Display } from "../DeviceProps";
+import { m4, Matrix4 } from "../Math/M4";
 
-export const BUFFER_SIZE = 5e4;
+export const BUFFER_SIZE = 5e3;
 
 class StrokeBuffer {
   private array: number[];
   private buffer: WebGLBuffer;
   private synced: boolean;
   private strokes: { id: string; size: number }[];
+  private gl: GL;
 
-  constructor() {
+  constructor(gl: GL) {
+    this.gl = gl;
     this.array = [];
-    this.buffer = GL.vectorProgram.createBuffer();
+    this.buffer = this.gl.vectorProgram.createBuffer();
     this.synced = false;
     this.strokes = [];
   }
@@ -50,15 +54,15 @@ class StrokeBuffer {
     return true;
   }
 
-  render(): void {
+  render(transform: Matrix4): void {
     // GL.vectorProgram.bindVAO();
 
-    GL.ctx.bindBuffer(GL.ctx.ARRAY_BUFFER, this.buffer);
+    this.gl.ctx.bindBuffer(this.gl.ctx.ARRAY_BUFFER, this.buffer);
     if (!this.synced) {
-      GL.ctx.bufferData(GL.ctx.ARRAY_BUFFER, new Float32Array(this.array), GL.ctx.STREAM_DRAW);
+      this.gl.ctx.bufferData(this.gl.ctx.ARRAY_BUFFER, new Float32Array(this.array), this.gl.ctx.STREAM_DRAW);
       this.synced = true;
     }
-    GL.vectorProgram.drawVector(this.array, View.instance.getTransformMatrix(), this.buffer);
+    this.gl.vectorProgram.drawVector(this.array, transform, this.buffer);
   }
 
   isEmpty(): boolean {
@@ -66,13 +70,101 @@ class StrokeBuffer {
   }
 }
 
+// Size of layer cache relative to visible
+// A value of 2 means that we draw a rectangle 2 times bigger (in both width and height)
+// this is usefull because it allows for scrolling without redrawing every frame
+export const LAYER_SIZE = 1.5;
+
 class StrokeCluster {
   private buffers: StrokeBuffer[];
   private strokeLocation: { [id: string]: StrokeBuffer };
+  private layerTexture: WebGLTexture; // Strokes are drawn here and only re-drawn on updates
+  private redrawnRequired: boolean;
+  private gl: GL;
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  scale: number;
+  viewState: "updating" | "justStabilized" | "stable";
 
-  constructor() {
+  constructor(gl: GL) {
     this.buffers = [];
     this.strokeLocation = {};
+    this.gl = gl;
+
+    this.initLayerTexture();
+    window.addEventListener("resize", () => this.initLayerTexture());
+
+    this.viewState = "updating";
+    View.instance.onUpdate(() => (this.viewState = "updating"));
+  }
+
+  initLayerTexture() {
+    if (this.layerTexture) {
+      this.gl.ctx.deleteTexture(this.layerTexture);
+    }
+
+    const gl = this.gl.ctx;
+
+    this.layerTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.layerTexture);
+
+    // define size and format of level 0
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const border = 0;
+    const format = gl.RGBA;
+    const type = gl.UNSIGNED_BYTE;
+    const data = null;
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      level,
+      internalFormat,
+      Display.RealWidth,
+      Display.RealHeight,
+      border,
+      format,
+      type,
+      data
+    );
+
+    // set the filtering so we don't need mips
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    this.redrawnRequired = true;
+  }
+
+  drawLayer() {
+    console.log("redarwing layer");
+    const transform = m4.multiply(
+      m4.scaling(1 / LAYER_SIZE, 1 / LAYER_SIZE, 1 / LAYER_SIZE),
+      View.instance.getTransformMatrix()
+    );
+    this.gl.beginLayer();
+    for (const buffer of this.buffers) {
+      buffer.render(transform);
+    }
+    this.gl.finishLayer(null);
+
+    this.width = View.instance.getWidth() * LAYER_SIZE;
+    this.height = View.instance.getHeight() * LAYER_SIZE;
+    this.top = View.instance.getTop() - (View.instance.getHeight() / 2) * (LAYER_SIZE - 1);
+    this.left = View.instance.getLeft() - (View.instance.getWidth() / 2) * (LAYER_SIZE - 1);
+    this.computeTransform();
+  }
+
+  computeTransform() {
+    const scale = this.width / LAYER_SIZE / View.instance.getWidth();
+    const tx = -((View.instance.getLeft() - this.left - this.width / 2) * scale + this.width / 2) / this.width / scale;
+    const ty = -((View.instance.getTop() - this.top - this.height / 2) * scale + this.height / 2) / this.height / scale;
+    const txPx = Math.round(tx * Display.Width * LAYER_SIZE * Display.DevicePixelRatio) / Display.DevicePixelRatio;
+    const tyPx = Math.round(ty * Display.Height * LAYER_SIZE * Display.DevicePixelRatio) / Display.DevicePixelRatio;
+    this.gl.transform = `scale(${scale}) translate(${txPx}px, ${tyPx}px)`;
+
+    this.scale = scale;
   }
 
   addStroke(id: string, array: number[]) {
@@ -81,11 +173,13 @@ class StrokeCluster {
       buffer.add(id, array);
       this.strokeLocation[id] = buffer;
     } else {
-      const buffer = new StrokeBuffer();
+      const buffer = new StrokeBuffer(this.gl);
       buffer.add(id, array);
       this.buffers.push(buffer);
       this.strokeLocation[id] = buffer;
     }
+
+    this.redrawnRequired = true;
   }
 
   removeStroke(id: string): boolean {
@@ -97,12 +191,39 @@ class StrokeCluster {
     if (buffer.isEmpty()) {
       this.buffers = this.buffers.filter((b) => b != buffer);
     }
+
+    this.redrawnRequired ||= status;
+
     return status;
   }
 
   render() {
-    for (const buffer of this.buffers) {
-      buffer.render();
+    if (this.viewState == "updating") {
+      if (
+        !this.redrawnRequired &&
+        this.top <= View.instance.getTop() &&
+        this.left <= View.instance.getLeft() &&
+        this.top + this.height >= View.instance.getTop() + View.instance.getHeight() &&
+        this.left + this.width >= View.instance.getLeft() + View.instance.getWidth()
+      ) {
+        this.computeTransform();
+      } else {
+        this.drawLayer();
+        this.redrawnRequired = false;
+      }
+
+      this.viewState = "justStabilized";
+      RenderLoop.scheduleRender();
+    } else if (this.viewState == "justStabilized") {
+      if (this.redrawnRequired || this.scale != 1) {
+        this.drawLayer();
+        this.redrawnRequired = false;
+      }
+
+      this.viewState = "stable";
+    } else if (this.redrawnRequired) {
+      this.drawLayer();
+      this.redrawnRequired = false;
     }
   }
 }
@@ -110,57 +231,10 @@ class StrokeCluster {
 export class BaseStrokeContainer implements LayeredStrokeContainer {
   private layers: StrokeCluster[];
   private strokes: { [id: string]: PersistentVectorGraphic };
-  private layerTextures: WebGLTexture[];
 
-  constructor(numLayers: number) {
-    this.layers = [...Array(numLayers)].map((_) => new StrokeCluster());
+  constructor() {
+    this.layers = [new StrokeCluster(Layers.highlighter.static), new StrokeCluster(Layers.pen.static)];
     this.strokes = {};
-
-    this.initLayerTextures();
-    window.addEventListener("resize", () => this.initLayerTextures());
-
-    View.instance.onUpdate(() => this.drawAllLayers());
-  }
-
-  initLayerTextures() {
-    if (this.layerTextures) {
-      this.layerTextures.forEach((texture) => GL.ctx.deleteTexture(texture));
-    }
-
-    const gl = GL.ctx;
-
-    this.layerTextures = this.layers.map((_) => {
-      const tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-
-      // define size and format of level 0
-      const level = 0;
-      const internalFormat = gl.RGBA;
-      const border = 0;
-      const format = gl.RGBA;
-      const type = gl.UNSIGNED_BYTE;
-      const data = null;
-      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, Display.Width, Display.Height, border, format, type, data);
-
-      // set the filtering so we don't need mips
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-      return tex;
-    });
-
-    this.drawAllLayers();
-  }
-
-  drawLayer(layer: number) {
-    GL.beginLayer();
-    this.layers[layer].render();
-    GL.finishLayer(this.layerTextures[layer]);
-  }
-
-  drawAllLayers() {
-    this.layers.forEach((_, layer) => this.drawLayer(layer));
   }
 
   add(graphic: PersistentGraphic): void {
@@ -172,8 +246,6 @@ export class BaseStrokeContainer implements LayeredStrokeContainer {
       this.strokes[graphic.id] = graphic as PersistentVectorGraphic;
       this.layers[vectorGraphic.zIndex].addStroke(graphic.id, vectorGraphic.vector);
     }
-
-    this.drawLayer(graphic.graphic.zIndex);
 
     RenderLoop.scheduleRender();
   }
@@ -198,6 +270,6 @@ export class BaseStrokeContainer implements LayeredStrokeContainer {
   }
 
   render(layerIndex: number, opacity: number = 1): void {
-    GL.layerProgram.renderLayer(this.layerTextures[layerIndex], opacity);
+    this.layers[layerIndex].render();
   }
 }

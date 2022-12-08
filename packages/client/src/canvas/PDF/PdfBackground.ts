@@ -2,7 +2,7 @@ import * as PDFJS from "pdfjs-dist/legacy/build/pdf";
 import { RenderLoop } from "../Rendering/RenderLoop";
 import { MutableView, View } from "../View/View";
 import { MutableObservableProperty } from "../DesignPatterns/Observable";
-import { GL } from "../Rendering/GL";
+import { Layers } from "../Rendering/GL";
 import { RGB } from "../types";
 import { CreateRectangleVector } from "../Rendering/Utils";
 import { Display } from "../DeviceProps";
@@ -11,6 +11,8 @@ export const BG_COLOR: RGB = [0.9, 0.9, 0.9];
 export const PAGE_GAP = 0.01; // %w
 export const PDF_FULL_WIDTH = 3; // %w
 export const PDF_PADDING_TOP = 0.2; // %w
+
+const GL = Layers.background;
 
 enum PdfPageStatus {
   LOADED,

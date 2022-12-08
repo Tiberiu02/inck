@@ -11,8 +11,6 @@ import { MutableObservableProperty, ObservableProperty } from "./DesignPatterns/
 import { RenderLoop } from "./Rendering/RenderLoop";
 import { PageSizeTracker } from "./Drawing/PageSizeTracker";
 import { PdfBackground } from "./PDF/PdfBackground";
-import GetApiPath from "../components/GetApiPath";
-import { GL } from "./Rendering/GL";
 import { LinesBackground } from "./Backgrounds/LinesBackground";
 import { Background } from "./types";
 import { GridBackground } from "./Backgrounds/GridBackground";
@@ -30,10 +28,7 @@ export default class App {
     // Pointer tracker
     const pointerTracker = new PointerTracker();
 
-    // Init graphics
-    GL.init();
-
-    let strokeContainer: LayeredStrokeContainer = new BaseStrokeContainer(NUM_LAYERS);
+    let strokeContainer: LayeredStrokeContainer = new BaseStrokeContainer();
 
     // Horizontal page size
     const yMax = new MutableObservableProperty<number>(0);
@@ -76,31 +71,44 @@ export default class App {
 
     // Enable rendering
     RenderLoop.onRender(() => {
+      Profiler.start("render");
+
+      // Layers.background.clear();
+      strokeContainer.render(0);
+      strokeContainer.render(1);
+
+      // Layers.pen.dynamic.clear();
+      // toolManager.render(1);
+      // Profiler.stop("render");
+      // return;
+
       if (background) {
         background.render();
-      } else {
-        GL.clear();
       }
 
-      if (toolManager.hasLayer(0)) {
-        GL.beginLayer();
-        strokeContainer.render(0, 1);
-        toolManager.render(0);
-        GL.finishLayer(GL.layerTex);
-        GL.layerProgram.renderLayer(GL.layerTex, HIGHLIGHTER_OPACITY);
-      } else {
-        strokeContainer.render(0, HIGHLIGHTER_OPACITY);
-      }
+      // Profiler.start("layer-0");
+      toolManager.render(0);
+      toolManager.render(1);
 
-      if (toolManager.hasLayer(1)) {
-        GL.beginLayer();
-        strokeContainer.render(1);
-        toolManager.render(1);
-        GL.finishLayer(GL.layerTex);
-        GL.layerProgram.renderLayer(GL.layerTex);
-      } else {
-        strokeContainer.render(1);
-      }
+      // if (toolManager.hasLayer(0)) {
+      //   GL.beginLayer();
+      //   strokeContainer.render(0, 1);
+      //   toolManager.render(0);
+      //   GL.finishLayer(GL.layerTex);
+      //   GL.layerProgram.renderLayer(GL.layerTex, HIGHLIGHTER_OPACITY);
+      // } else {
+      //   strokeContainer.render(0, HIGHLIGHTER_OPACITY);
+      // }
+      // Profiler.stop("layer-0");
+
+      // Profiler.start("layer-1");
+      // setGL(Layers.pen.static);
+      // strokeContainer.render(1);
+      // setGL(Layers.pen.dynamic);
+      // toolManager.render(1);
+      // Profiler.stop("layer-1");
+
+      Profiler.stop("render");
     });
   }
 }

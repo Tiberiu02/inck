@@ -1,4 +1,4 @@
-import { FingerEvent } from "../UI/PointerTracker";
+import { FingerEvent, PenEvent, PointerTracker } from "../UI/PointerTracker";
 import { V2, Vector2D } from "../Math/V2";
 import { MutableView, View } from "./View";
 
@@ -20,7 +20,7 @@ export class PageNavigation {
     this.disableWindowOverscrolling();
 
     window.addEventListener("wheel", (e) => this.handleWheelEvent(e), { passive: false });
-    window.addEventListener("mousemove", (e) => this.handleMouseEvent(e));
+    PointerTracker.instance.onPenEvent((e: PenEvent) => this.handleMouseEvent(e));
   }
 
   private disableWindowOverscrolling() {
@@ -127,8 +127,9 @@ export class PageNavigation {
     }
   }
 
-  private handleMouseEvent(e: MouseEvent) {
-    this.mouse = new Vector2D(e.clientX, e.clientY);
+  private handleMouseEvent(e: PenEvent) {
+    this.mouse.x = e.x;
+    this.mouse.y = e.y;
   }
 }
 

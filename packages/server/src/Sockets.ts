@@ -159,6 +159,8 @@ async function requestDocumentFn(
   socket: WebSocket,
   cache: RedisCache
 ) {
+  console.log("Document requested", id);
+
   if (user.docId) {
     return;
   }
@@ -204,10 +206,13 @@ async function requestDocumentFn(
   }
 
   // Check authentication here
+  console.log("testing rights");
   const [owner, canRead, canWrite] = await docRights(id, user);
+  console.log("Rights fetched");
   user.userId = owner;
   if (!canRead) {
     socket.emit("unauthorized");
+    console.log("unauthorized");
     return;
   }
   user.docId = id;
@@ -232,6 +237,7 @@ async function requestDocumentFn(
   }
 
   socket.emit("load note", note);
+  console.log("sent document", id);
   logEvent("request_document_strokes", {
     docId: id,
     userId: owner ? owner : "None",

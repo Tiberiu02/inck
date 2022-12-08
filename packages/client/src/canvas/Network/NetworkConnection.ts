@@ -29,18 +29,6 @@ export class NetworkConnection {
     this.docId = (wloc && wloc[1]) || "";
 
     this.canWrite = false;
-    this.worker = StartWorker(`${window.location.host.split(":")[0]}:${SERVER_PORT}`, getAuthToken(), this.docId);
-
-    this.worker.onmessage = (e: MessageEvent<any[]>) => {
-      // console.log(e.data);
-      if (this.handlers.has(e.data[0])) {
-        const args = e.data.slice(1);
-        for (const handler of this.handlers.get(e.data[0])) {
-          handler(...args);
-        }
-      }
-    };
-    this.worker.postMessage("hello");
 
     this.on("connect_error", (err) => {
       console.log(err.message);
@@ -66,27 +54,32 @@ export class NetworkConnection {
 
     this.on("disconnect", () => {
       this.connected = false;
-      console.log("Disconneccted");
+      console.log("Disconnected");
       document.getElementById("offline-warning").style.visibility = "visible";
     });
 
-    window.addEventListener("pointermove", (e) => {
-      if (e.pointerType != "touch") {
-        this.updatePointer(View.instance.getCanvasX(e.x), View.instance.getCanvasY(e.y));
+    // window.addEventListener("pointermove", (e) => {
+    //   if (e.pointerType != "touch") {
+    //     this.updatePointer(View.instance.getCanvasX(e.x), View.instance.getCanvasY(e.y));
+    //   }
+    // });
+
+    this.worker = StartWorker(`${window.location.host.split(":")[0]}:${SERVER_PORT}`, getAuthToken(), this.docId);
+    this.worker.onmessage = (e: MessageEvent<any[]>) => {
+      if (this.handlers.has(e.data[0])) {
+        const args = e.data.slice(1);
+        for (const handler of this.handlers.get(e.data[0])) {
+          handler(...args);
+        }
       }
-    });
+    };
   }
 
   emit(...args: [string, ...any[]]) {
-    if (this.connected) {
-      //   this.socket.emit(name, ...args);
-    }
-    // console.log(name, args);
     this.worker.postMessage(args);
   }
 
   on(name: string, handler: any) {
-    // this.socket.on(name, handler);
     if (!this.handlers.has(name)) {
       this.handlers.set(name, []);
     }
