@@ -15,11 +15,13 @@ export class ToolManager {
   strokeContainer: LayeredStrokeContainer;
   actionStack: ActionStack;
   network: NetworkConnection;
+  layers: HTMLDivElement[];
 
-  constructor(strokeContainer: LayeredStrokeContainer, network: NetworkConnection) {
+  constructor(strokeContainer: LayeredStrokeContainer, network: NetworkConnection, layers: HTMLDivElement[]) {
     this.strokeContainer = strokeContainer;
     this.network = network;
     this.actionStack = new ActionStack();
+    this.layers = layers;
 
     network.on("new collaborator", (id: string) => {
       if (this.tool) {
@@ -63,7 +65,7 @@ export class ToolManager {
 
   selectPen(color: RGB, width: number, zIndex: number) {
     if (this.tool) this.tool.release();
-    this.tool = new MyPen(color, width, zIndex, this.strokeContainer, this.actionStack, this.network);
+    this.tool = new MyPen(color, width, zIndex, this.strokeContainer, this.actionStack, this.network, this.layers);
     this.network.setTool(this.tool.serialize());
   }
 

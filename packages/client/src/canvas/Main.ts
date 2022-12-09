@@ -23,6 +23,28 @@ import { CreateOptionsMenu } from "./UI/ContextMenu";
 export const NUM_LAYERS = 2;
 export const HIGHLIGHTER_OPACITY = 0.35;
 
+function createContainer() {
+  const container = document.createElement("div");
+  container.style.position = "absolute";
+  container.style.top = "0px";
+  container.style.left = "0px";
+  container.style.width = "1px";
+  container.style.height = "1px";
+  container.style.pointerEvents = "none";
+  document.body.appendChild(container);
+
+  const updateTransform = () => {
+    container.style.transformOrigin = "top left";
+    container.style.transform =
+      `scale(${innerWidth * View.getZoom()})` + `translate(${-View.getLeft() * 100}%, ${-View.getTop() * 100}%)`;
+  };
+
+  updateTransform();
+  // View.onUpdate(updateTransform);
+
+  return container;
+}
+
 export default class App {
   constructor() {
     // Pointer tracker
@@ -31,7 +53,9 @@ export default class App {
     // Init graphics
     GL.init();
 
-    let strokeContainer: LayeredStrokeContainer = new BaseStrokeContainer(NUM_LAYERS);
+    const layers = [createContainer(), createContainer()];
+
+    let strokeContainer: LayeredStrokeContainer = new BaseStrokeContainer(layers);
 
     // Horizontal page size
     const yMax = new MutableObservableProperty<number>(0);
@@ -61,7 +85,7 @@ export default class App {
     View.onUpdate(() => RenderLoop.scheduleRender());
 
     // Enable tooling
-    const toolManager = new ToolManager(strokeContainer, network);
+    const toolManager = new ToolManager(strokeContainer, network, layers);
 
     // Create UI
     new ScrollHandle(yMax as ObservableProperty<number>);

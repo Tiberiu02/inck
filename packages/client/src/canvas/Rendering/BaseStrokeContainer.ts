@@ -4,6 +4,7 @@ import { ELEMENTS_PER_VERTEX, GL } from "./GL";
 import { LayeredStrokeContainer } from "../LayeredStrokeContainer";
 import { RenderLoop } from "./RenderLoop";
 import { View } from "../View/View";
+import { OFFSET_INPUT } from "../Drawing/Stroke";
 
 export function GetUniforms() {
   return {
@@ -73,52 +74,75 @@ class StrokeBuffer {
 }
 
 class StrokeCluster {
-  private buffers: StrokeBuffer[];
-  private strokeLocation: { [id: string]: StrokeBuffer };
+  private strokes: Map<string, Element>;
+  private container: SVGSVGElement;
 
-  constructor() {
-    this.buffers = [];
-    this.strokeLocation = {};
+  constructor(container: SVGSVGElement) {
+    this.strokes = new Map();
+    this.container = container;
   }
 
   addStroke(id: string, array: number[]) {
-    if (this.buffers.length && this.buffers[this.buffers.length - 1].canAdd(array)) {
-      const buffer = this.buffers[this.buffers.length - 1];
-      buffer.add(id, array);
-      this.strokeLocation[id] = buffer;
-    } else {
-      const buffer = new StrokeBuffer();
-      buffer.add(id, array);
-      this.buffers.push(buffer);
-      this.strokeLocation[id] = buffer;
+    const xs = [];
+    const ys = [];
+
+    for (let i = 0; i < array.length; i += ELEMENTS_PER_VERTEX * 2) {
+      xs.push(array[i]);
+      ys.push(array[i + 1]);
     }
+
+    xs.reverse();
+    ys.reverse();
+
+    for (let i = ELEMENTS_PER_VERTEX; i < array.length; i += ELEMENTS_PER_VERTEX * 2) {
+      xs.push(array[i]);
+      ys.push(array[i + 1]);
+    }
+
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    xs.forEach((x, i) => poly.points.appendItem(new DOMPoint(x, ys[i])));
+    // poly.setAttribute("points", xs.map((x, i) => `${x},${ys[i]}`).join(" "));
+    poly.setAttribute("fill", `rbg(${array.slice(2, 5).map((v) => Math.floor(v * 255))})`);
+
+    this.container.appendChild(poly);
+
+    this.strokes.set(id, poly);
   }
 
   removeStroke(id: string): boolean {
-    const buffer = this.strokeLocation[id];
+    if (!this.strokes.has(id)) return false;
 
-    if (!buffer) return false;
+    this.container.removeChild(this.strokes.get(id));
+    this.strokes.delete(id);
 
-    const status = buffer.remove(id);
-    if (buffer.isEmpty()) {
-      this.buffers = this.buffers.filter((b) => b != buffer);
-    }
-    return status;
+    return true;
   }
 
   render() {
-    for (const buffer of this.buffers) {
-      buffer.render();
-    }
+    // this.container.style.transformOrigin = "top left";
+    // this.container.style.transform =
+    //   `scale(${innerWidth * View.getZoom()})` + `translate(${-View.getLeft() * 100}%, ${-View.getTop() * 100}%)`;
   }
 }
 
 export class BaseStrokeContainer implements LayeredStrokeContainer {
   private layers: StrokeCluster[];
+  private containers: HTMLDivElement[];
   private strokes: { [id: string]: PersistentVectorGraphic };
 
-  constructor(numLayers: number) {
-    this.layers = [...Array(numLayers)].map((_) => new StrokeCluster());
+  constructor(containers: HTMLDivElement[]) {
+    this.containers = containers;
+    this.layers = containers.map((container) => {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", `1`);
+      svg.setAttribute("height", `10`);
+      svg.style.position = `absolute`;
+      svg.style.left = `0px`;
+      svg.style.top = `0px`;
+      container.appendChild(svg);
+
+      return new StrokeCluster(svg);
+    });
     this.strokes = {};
   }
 
