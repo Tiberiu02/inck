@@ -1,6 +1,6 @@
 import Head from "next/head";
 import React, { useState, useEffect, PointerEvent, ReactNode } from "react";
-import { FaAngleDown, FaAngleRight, FaBook, FaFolder, FaFolderOpen } from "react-icons/fa";
+import { FaAngleDown, FaAngleRight, FaBook, FaExclamationTriangle, FaFolder, FaFolderOpen } from "react-icons/fa";
 import { getAuthToken } from "../AuthToken";
 import { IconType } from "react-icons/lib";
 import { HttpServer } from "../../ServerConnector";
@@ -333,6 +333,21 @@ function FileExplorer({ files, path, selectedFiles, setPath, setSelectedFiles, s
 
       <div className="relative flex flex-col w-full h-full px-10 py-3 overflow-scroll">
         <PathNavigator files={files} path={path} setPath={setPath} />
+
+        <div className="flex sm:flex-row flex-col gap-4 sm:gap-8 p-4 sm:px-8 rounded-lg bg-yellow-100 mt-4 sm:mt-4 items-center">
+          <FaExclamationTriangle className="text-5xl text-yellow-400 shrink-0" />
+          <div className="flex flex-col">
+            <div className="font-bold">Very important anouncement!</div>
+            <div>
+              Inck will be discontinued on 1st of October 2023 due to insurmountable technical limitations. Please make
+              sure to download all your notes before that date. You can read more about our decision{" "}
+              <a className="underline font-semibold underline-offset-2" href="/discontinuation" target="_blank">
+                here
+              </a>
+              . If it takes too long to download a folder, try downloading each node individually.
+            </div>
+          </div>
+        </div>
 
         {/** Notes */}
         <div className="flex flex-row flex-wrap gap-4 sm:gap-8 pt-8 sm:pt-16 pb-40 justify-around sm:justify-start">
