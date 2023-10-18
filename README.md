@@ -2,7 +2,7 @@
 
 Space efficient, time efficient, web-based note taking app with real time collaboration.
 
-Built with WebGL and web sockets.
+Built in Next.js using WebGL and web sockets.
 
 # Screenshots
 
@@ -95,7 +95,3 @@ This command is scheduled to run at startup automatically using chromtab `cronta
 # Other
 
 See number of lines of code using `npm run line-count`.
-
-# License
-
-No licence. All right reserved.
