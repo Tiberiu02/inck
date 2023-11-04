@@ -66,12 +66,13 @@ export class GL {
     const width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
     const height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
 
-    if (this.ctx.canvas.width != width || this.ctx.canvas.height != height) {
-      this.ctx.canvas.style.width = document.documentElement.clientWidth + "px";
-      this.ctx.canvas.style.height = document.documentElement.clientHeight + "px";
-      this.ctx.canvas.width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
-      this.ctx.canvas.height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
-      GL.viewport(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    const canvas = this.ctx.canvas as HTMLCanvasElement;
+    if (canvas.width != width || canvas.height != height) {
+      canvas.style.width = document.documentElement.clientWidth + "px";
+      canvas.style.height = document.documentElement.clientHeight + "px";
+      canvas.width = Math.round(document.documentElement.clientWidth * window.devicePixelRatio);
+      canvas.height = Math.round(document.documentElement.clientHeight * window.devicePixelRatio);
+      GL.viewport(0, 0, canvas.width, canvas.height);
     }
   }
 
