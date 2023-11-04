@@ -12,6 +12,8 @@ Built in Next.js using WebGL and web sockets.
 ![alt text](screenshots/2.png)
 ![alt text](screenshots/1.png)
 
+Try it out at [inck.io](https://inck.io)
+
 # Contents
 
 - [Dependencies](#dependencies)
@@ -23,7 +25,7 @@ Built in Next.js using WebGL and web sockets.
 
 # Dependencies
 
-Node.js, MongoDB, as well as a few Node.js packages.
+Node.js, MongoDB, Redis, as well as a few Node.js packages.
 
 # Installation
 
