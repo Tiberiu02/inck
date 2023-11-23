@@ -19,7 +19,7 @@ export default function Note() {
 
       <Canvas />
       <FullScreenButton />
-      <LoadingNoteAnimation />
+      {/* <LoadingNoteAnimation /> */}
       <OfflineWarning />
     </div>
   );
