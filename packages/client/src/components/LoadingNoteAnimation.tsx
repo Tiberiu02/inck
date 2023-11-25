@@ -14,7 +14,7 @@ function LoadingMessage({ children, id, className = "" }) {
 
 export function LoadingNoteAnimation() {
   return (
-    <div className="flex flex-col items-center absolute top-4 left-1/2 -translate-x-1/2">
+    <div className="flex flex-col items-center absolute top-4 left-1/2 -translate-x-1/2 opacity-0">
       <LoadingMessage id="note-spinner" className="mb-2">
         Loading note
       </LoadingMessage>
